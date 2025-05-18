@@ -5,19 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search } from 'lucide-react';
 
-// Mock data
+// Real token addresses
 const mockIndexes = [{
   id: '1',
   name: 'Dog Coin Army',
   tokens: [{
-    name: 'DOGE',
-    address: 'addr1'
+    name: 'MOON',
+    address: 'CgZTsf3rNnXsy3YkXmRr988p1Lrv9FpqBpLPWrAbmoon'
   }, {
-    name: 'SHIB',
-    address: 'addr2'
+    name: 'PUMP',
+    address: 'F63yhiWVe8k338Lt8TyeyN242ECxgv7cbffM8zUNpump'
   }, {
-    name: 'FLOKI',
-    address: 'addr3'
+    name: 'POMP',
+    address: 'E5sJv2tTUVdBzqcrG5BfsLCmCukUrXgb9bC9Soidpump'
   }],
   gainPercentage: 24.5,
   upvotes: 142,
@@ -103,6 +103,7 @@ const mockIndexes = [{
   category: 'recent',
   createdAt: new Date('2023-05-18')
 }];
+
 const Index: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
@@ -171,4 +172,5 @@ const Index: React.FC = () => {
       </Tabs>
     </Layout>;
 };
+
 export default Index;
