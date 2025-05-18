@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { calculateIndexGainPercentage, calculateIndexMarketCap } from '@/lib/tokenService';
 import { useIndexStore, IndexData } from '@/stores/useIndexStore';
 
@@ -11,7 +11,7 @@ export function useTokenRefresh() {
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const { getAllIndexes, updateIndexGains } = useIndexStore();
 
-  const refreshTokenData = async () => {
+  const refreshTokenData = useCallback(async () => {
     if (isRefreshing) return;
     
     setIsRefreshing(true);
@@ -41,7 +41,7 @@ export function useTokenRefresh() {
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [getAllIndexes, updateIndexGains, isRefreshing]);
 
   // Set up periodic refresh
   useEffect(() => {
@@ -53,7 +53,7 @@ export function useTokenRefresh() {
     
     // Clean up
     return () => clearInterval(intervalId);
-  }, []);
+  }, [refreshTokenData]);
 
   return {
     isRefreshing,
