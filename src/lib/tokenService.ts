@@ -1,3 +1,4 @@
+
 import { PublicKey } from '@solana/web3.js';
 
 export interface TokenData {
@@ -72,6 +73,9 @@ export const fetchTokenData = async (address: string): Promise<TokenData | null>
         symbol: tokenInfo.symbol || '???',
         imageUrl: tokenInfo.logoURI || undefined,
         decimals: tokenInfo.decimals,
+        price: Math.random() * 100, // Mock price for demonstration
+        marketCap: Math.round(1000000 + Math.random() * 10000000000), // Mock market cap
+        change24h: parseFloat((Math.random() * 40 - 20).toFixed(2)), // Mock 24h change
       };
     }
     
@@ -80,6 +84,9 @@ export const fetchTokenData = async (address: string): Promise<TokenData | null>
       address,
       name: `Token ${address.substring(0, 4)}...${address.substring(address.length - 4)}`,
       symbol: '???',
+      price: Math.random() * 10,
+      marketCap: Math.round(10000 + Math.random() * 1000000),
+      change24h: parseFloat((Math.random() * 20 - 10).toFixed(2)),
     };
   } catch (error) {
     console.error('Error fetching token data:', error);
@@ -90,12 +97,23 @@ export const fetchTokenData = async (address: string): Promise<TokenData | null>
 /**
  * Calculate weighted market cap for an index based on its tokens
  */
-export const calculateIndexMarketCap = (tokens: string[]): Promise<number> => {
-  // In a real implementation, we would:
-  // 1. Get market cap for each token
-  // 2. Sum them with appropriate weighting
-  // For demo purposes, we'll return a reasonable mock value
-  return Promise.resolve(Math.round(10000 + Math.random() * 25000000));
+export const calculateIndexMarketCap = async (tokens: string[]): Promise<number> => {
+  try {
+    let totalMarketCap = 0;
+    
+    // Get market cap for each token and sum them
+    for (const tokenAddress of tokens) {
+      const tokenData = await getTokenData(tokenAddress);
+      if (tokenData && tokenData.marketCap) {
+        totalMarketCap += tokenData.marketCap;
+      }
+    }
+    
+    return totalMarketCap || 10000000; // Fallback to reasonable value if calculation fails
+  } catch (error) {
+    console.error('Error calculating index market cap:', error);
+    return 10000000; // Fallback value
+  }
 };
 
 /**
@@ -160,10 +178,19 @@ export const getTokenData = async (address: string): Promise<TokenData | null> =
       decimals: token.decimals,
       // We would get these from a price API in a real implementation
       price: parseFloat((Math.random() * 100).toFixed(4)),
-      marketCap: Math.round(Math.random() * 10000000),
+      marketCap: Math.round(1000000 + Math.random() * 10000000000),
       change24h: parseFloat((Math.random() * 40 - 20).toFixed(2)),
     };
   }
   
-  return null;
+  // For tokens not in the list, provide fallback data
+  return {
+    address,
+    name: `Token ${address.substring(0, 4)}...${address.substring(address.length - 4)}`,
+    symbol: '???',
+    imageUrl: undefined,
+    price: parseFloat((Math.random() * 10).toFixed(4)),
+    marketCap: Math.round(10000 + Math.random() * 1000000),
+    change24h: parseFloat((Math.random() * 20 - 10).toFixed(2)),
+  };
 };
