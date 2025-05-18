@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Heart, CircleDot } from 'lucide-react';
@@ -13,16 +12,10 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { useToast } from '@/hooks/use-toast';
 import { useIndexStore, IndexData, Token } from '@/stores/useIndexStore';
-import { generateChartData, getTokenData, TokenData } from '@/lib/tokenService';
+import { generateChartData, getTokenData } from '@/lib/tokenService';
 
 interface IndexCardProps {
   index: IndexData;
-}
-
-interface EnhancedToken extends Token {
-  marketCap?: number;
-  price?: number;
-  change24h?: number;
 }
 
 const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
@@ -31,9 +24,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
   const [showSwapSheet, setShowSwapSheet] = useState(false);
   const [solanaAmount, setSolanaAmount] = useState('1');
   const [chartData, setChartData] = useState<any[]>([]);
-  const [enhancedTokens, setEnhancedTokens] = useState<EnhancedToken[]>([]);
-  const [isLoadingTokens, setIsLoadingTokens] = useState(true);
-  const [totalMarketCap, setTotalMarketCap] = useState<number | null>(null);
+  const [tokenDetails, setTokenDetails] = useState<Record<string, { marketCap?: number }>>({});
   
   const { connected, publicKey } = useWallet();
   const { setVisible } = useWalletModal();
@@ -49,43 +40,20 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
     
     // Fetch additional token details including market cap
     const fetchTokenDetails = async () => {
-      setIsLoadingTokens(true);
-      try {
-        const enhancedTokensData: EnhancedToken[] = [];
-        let calculatedMarketCap = 0;
-        
-        await Promise.all(
-          tokens.map(async (token) => {
-            const tokenData = await getTokenData(token.address);
-            if (tokenData) {
-              const enhancedToken: EnhancedToken = {
-                ...token,
-                marketCap: tokenData.marketCap,
-                price: tokenData.price,
-                change24h: tokenData.change24h,
-                imageUrl: tokenData.imageUrl || token.imageUrl,
-                name: tokenData.name || token.name,
-                symbol: tokenData.symbol || token.symbol,
-              };
-              
-              if (tokenData.marketCap) {
-                calculatedMarketCap += tokenData.marketCap;
-              }
-              
-              enhancedTokensData.push(enhancedToken);
-            } else {
-              enhancedTokensData.push(token);
-            }
-          })
-        );
-        
-        setEnhancedTokens(enhancedTokensData);
-        setTotalMarketCap(calculatedMarketCap || null);
-      } catch (error) {
-        console.error('Error fetching token details:', error);
-      } finally {
-        setIsLoadingTokens(false);
-      }
+      const details: Record<string, { marketCap?: number }> = {};
+      
+      await Promise.all(
+        tokens.map(async (token) => {
+          const tokenData = await getTokenData(token.address);
+          if (tokenData) {
+            details[token.address] = {
+              marketCap: tokenData.marketCap
+            };
+          }
+        })
+      );
+      
+      setTokenDetails(details);
     };
     
     fetchTokenDetails();
@@ -148,7 +116,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
   };
   
   const gainColor = gainPercentage >= 0 ? 'text-green-500' : 'text-red-500';
-  const formattedMarketCap = totalMarketCap ? formatMarketCap(totalMarketCap) : (marketCap ? formatMarketCap(marketCap) : 'Calculating...');
+  const formattedMarketCap = marketCap ? `$${marketCap.toLocaleString()}` : 'Calculating...';
   
   return (
     <>
@@ -166,22 +134,18 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
             <div>
               <h4 className="text-sm font-medium text-stake-muted mb-2">tokens</h4>
               <div className="flex flex-wrap gap-2">
-                {isLoadingTokens ? (
-                  <span className="text-xs text-stake-muted">Loading token data...</span>
-                ) : (
-                  enhancedTokens.map((token) => (
-                    <span 
-                      key={token.address} 
-                      className="inline-flex items-center gap-1 bg-stake-darkbg rounded-full px-3 py-1 text-xs text-stake-text"
-                      title={`Market Cap: ${formatMarketCap(token.marketCap)}`}
-                    >
-                      {token.symbol || token.name}
-                      <span className="text-xs text-stake-muted ml-1">
-                        {formatMarketCap(token.marketCap)}
-                      </span>
+                {tokens.map((token) => (
+                  <span 
+                    key={token.address} 
+                    className="inline-flex items-center gap-1 bg-stake-darkbg rounded-full px-3 py-1 text-xs text-stake-text"
+                    title={`Market Cap: ${formatMarketCap(tokenDetails[token.address]?.marketCap)}`}
+                  >
+                    {token.symbol || token.name}
+                    <span className="text-xs text-stake-muted ml-1">
+                      {formatMarketCap(tokenDetails[token.address]?.marketCap)}
                     </span>
-                  ))
-                )}
+                  </span>
+                ))}
               </div>
             </div>
             
@@ -243,53 +207,47 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
             <div className="mb-6">
               <h3 className="text-lg font-bold text-stake-text mb-3">tokens</h3>
               <div className="space-y-3">
-                {isLoadingTokens ? (
-                  <div className="bg-stake-card p-3 rounded-lg text-center">
-                    <span className="text-stake-muted">Loading token data...</span>
-                  </div>
-                ) : (
-                  enhancedTokens.map((token) => (
-                    <div 
-                      key={token.address} 
-                      className="flex justify-between items-center bg-stake-card p-3 rounded-lg"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={token.imageUrl} alt={token.name} />
-                          <AvatarFallback className="bg-stake-darkbg text-xs">
-                            {token.symbol ? token.symbol.substring(0, 2) : token.name.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <span className="font-medium text-stake-text">{token.name}</span>
-                          <div className="text-xs text-stake-muted">
-                            Market Cap: {formatMarketCap(token.marketCap)}
-                          </div>
+                {tokens.map((token) => (
+                  <div 
+                    key={token.address} 
+                    className="flex justify-between items-center bg-stake-card p-3 rounded-lg"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={token.imageUrl} alt={token.name} />
+                        <AvatarFallback className="bg-stake-darkbg text-xs">
+                          {token.symbol ? token.symbol.substring(0, 2) : token.name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <span className="font-medium text-stake-text">{token.name}</span>
+                        <div className="text-xs text-stake-muted">
+                          Market Cap: {formatMarketCap(tokenDetails[token.address]?.marketCap)}
                         </div>
                       </div>
-                      <div className="flex items-center">
-                        <span className="text-xs text-stake-muted mr-2 truncate max-w-[120px]">
-                          {`${token.address.substring(0, 6)}...${token.address.substring(token.address.length - 4)}`}
-                        </span>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => handleCopyAddress(token.address)}
-                            >
-                              copy
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-2 text-xs">
-                            address copied!
-                          </PopoverContent>
-                        </Popover>
-                      </div>
                     </div>
-                  ))
-                )}
+                    <div className="flex items-center">
+                      <span className="text-xs text-stake-muted mr-2 truncate max-w-[120px]">
+                        {`${token.address.substring(0, 6)}...${token.address.substring(token.address.length - 4)}`}
+                      </span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => handleCopyAddress(token.address)}
+                          >
+                            copy
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2 text-xs">
+                          address copied!
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
             
