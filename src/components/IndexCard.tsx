@@ -33,10 +33,10 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
   const gainColor = gainPercentage >= 0 ? 'text-green-500' : 'text-red-500';
   
   return (
-    <Card className="overflow-hidden card-hover border border-gray-100">
-      <CardHeader className="p-4 bg-gray-50">
+    <Card className="overflow-hidden card-hover border border-stake-card bg-stake-card">
+      <CardHeader className="p-4 bg-stake-darkbg border-b border-stake-background">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-lg font-bold">{name}</CardTitle>
+          <CardTitle className="text-lg font-bold text-stake-text">{name}</CardTitle>
           <span className={`font-bold ${gainColor}`}>
             {gainPercentage >= 0 ? '+' : ''}{gainPercentage}%
           </span>
@@ -45,12 +45,12 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
       <CardContent className="p-4">
         <div className="space-y-4">
           <div>
-            <h4 className="text-sm font-medium text-muted-foreground mb-2">Tokens</h4>
+            <h4 className="text-sm font-medium text-stake-muted mb-2">Tokens</h4>
             <div className="flex flex-wrap gap-2">
               {tokens.map((token) => (
                 <span 
                   key={token.address} 
-                  className="inline-block bg-gray-100 rounded-full px-3 py-1 text-xs"
+                  className="inline-block bg-stake-darkbg rounded-full px-3 py-1 text-xs text-stake-text"
                 >
                   {token.name}
                 </span>
@@ -58,16 +58,16 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
             </div>
           </div>
           
-          <div className="flex justify-between items-center pt-2 border-t">
+          <div className="flex justify-between items-center pt-2 border-t border-stake-background">
             <button 
               onClick={handleUpvote} 
-              className={`flex items-center gap-1 text-sm ${upvoted ? 'text-solana-purple' : 'text-gray-500'} hover:text-solana-purple transition-colors`}
+              className={`flex items-center gap-1 text-sm ${upvoted ? 'text-stake-accent' : 'text-stake-muted'} hover:text-stake-accent transition-colors`}
             >
-              <Heart size={16} className={upvoted ? 'fill-solana-purple' : ''} />
+              <Heart size={16} className={upvoted ? 'fill-stake-accent' : ''} />
               <span>{currentUpvotes}</span>
             </button>
             
-            <button className="text-sm text-solana-teal hover:underline">
+            <button className="text-sm text-stake-accent hover:underline">
               View Details
             </button>
           </div>

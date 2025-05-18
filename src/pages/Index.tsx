@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import IndexCard from '@/components/IndexCard';
@@ -103,6 +104,7 @@ const mockIndexes = [{
   category: 'recent',
   createdAt: new Date('2023-05-18')
 }];
+
 const Index: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
@@ -118,29 +120,29 @@ const Index: React.FC = () => {
   });
   return <Layout>
       <div className="mb-8 max-w-2xl mx-auto text-center animate-fade-in">
-        <h1 className="text-4xl font-bold mb-4">INDEX.FUN</h1>
-        <p className="text-gray-600 text-lg">Create instantly tradable token indexes. Get paid when others swap.</p>
+        <h1 className="text-4xl font-bold mb-4 text-stake-text">INDEX.FUN</h1>
+        <p className="text-stake-muted text-lg">Create instantly tradable token indexes. Get paid when others swap.</p>
       </div>
       
       <div className="mb-8 max-w-md mx-auto relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search size={18} className="text-gray-400" />
+          <Search size={18} className="text-stake-muted" />
         </div>
-        <Input type="text" placeholder="Search by INDEX name or token" className="pl-10 rounded-full border-gray-200" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+        <Input type="text" placeholder="Search by INDEX name or token" className="pl-10 rounded-md bg-stake-card border-stake-card text-stake-text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
       </div>
       
       <Tabs defaultValue="all" className="mb-8" onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-4 max-w-md mx-auto">
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="top">Top Rated</TabsTrigger>
-          <TabsTrigger value="gainers">Best Gainers</TabsTrigger>
-          <TabsTrigger value="recent">Most Recent</TabsTrigger>
+        <TabsList className="grid grid-cols-4 max-w-md mx-auto bg-stake-darkbg">
+          <TabsTrigger value="all" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">All</TabsTrigger>
+          <TabsTrigger value="top" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">Top Rated</TabsTrigger>
+          <TabsTrigger value="gainers" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">Best Gainers</TabsTrigger>
+          <TabsTrigger value="recent" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">Most Recent</TabsTrigger>
         </TabsList>
         
         <TabsContent value="all" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredIndexes.length > 0 ? filteredIndexes.map(index => <IndexCard key={index.id} id={index.id} name={index.name} tokens={index.tokens} gainPercentage={index.gainPercentage} upvotes={index.upvotes} />) : <div className="col-span-full text-center py-8">
-                <p className="text-gray-500">No INDEXES found matching your search.</p>
+                <p className="text-stake-muted">No INDEXES found matching your search.</p>
               </div>}
           </div>
         </TabsContent>
@@ -148,7 +150,7 @@ const Index: React.FC = () => {
         <TabsContent value="top" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredIndexes.length > 0 ? filteredIndexes.map(index => <IndexCard key={index.id} id={index.id} name={index.name} tokens={index.tokens} gainPercentage={index.gainPercentage} upvotes={index.upvotes} />) : <div className="col-span-full text-center py-8">
-                <p className="text-gray-500">No top-rated INDEXES found.</p>
+                <p className="text-stake-muted">No top-rated INDEXES found.</p>
               </div>}
           </div>
         </TabsContent>
@@ -156,7 +158,7 @@ const Index: React.FC = () => {
         <TabsContent value="gainers" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredIndexes.length > 0 ? filteredIndexes.map(index => <IndexCard key={index.id} id={index.id} name={index.name} tokens={index.tokens} gainPercentage={index.gainPercentage} upvotes={index.upvotes} />) : <div className="col-span-full text-center py-8">
-                <p className="text-gray-500">No gaining INDEXES found.</p>
+                <p className="text-stake-muted">No gaining INDEXES found.</p>
               </div>}
           </div>
         </TabsContent>
@@ -164,7 +166,7 @@ const Index: React.FC = () => {
         <TabsContent value="recent" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredIndexes.length > 0 ? filteredIndexes.map(index => <IndexCard key={index.id} id={index.id} name={index.name} tokens={index.tokens} gainPercentage={index.gainPercentage} upvotes={index.upvotes} />) : <div className="col-span-full text-center py-8">
-                <p className="text-gray-500">No recent INDEXES found.</p>
+                <p className="text-stake-muted">No recent INDEXES found.</p>
               </div>}
           </div>
         </TabsContent>

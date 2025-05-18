@@ -58,6 +58,15 @@ export default {
 					'dark-purple': '#7E69AB',
 					teal: '#0EA5E9'
 				},
+				stake: {
+					background: '#1A1F2C',
+					darkbg: '#161B27',
+					card: '#222A3A',
+					accent: '#3898FF',
+					highlight: '#4F66FF',
+					text: '#FFFFFF',
+					muted: '#A0AEC0'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',

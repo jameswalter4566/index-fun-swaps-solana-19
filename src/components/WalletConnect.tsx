@@ -30,14 +30,14 @@ const WalletConnect: React.FC = () => {
       {connected ? (
         <Button
           onClick={disconnectWallet}
-          className="bg-white border border-solana-purple text-solana-purple hover:bg-gray-100 rounded-full"
+          className="bg-stake-card border border-stake-accent text-stake-text hover:bg-stake-darkbg rounded-md"
         >
           {walletAddress}
         </Button>
       ) : (
         <Button 
           onClick={connectWallet}
-          className="bg-solana-teal hover:opacity-90 text-white rounded-full"
+          className="bg-stake-highlight hover:opacity-90 text-white rounded-md"
         >
           Connect Wallet
         </Button>
