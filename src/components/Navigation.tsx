@@ -31,14 +31,14 @@ const Navigation: React.FC = () => {
           <div className="flex items-center space-x-4">
             <Drawer>
               <DrawerTrigger asChild>
-                <Button className="bg-stake-accent hover:bg-stake-highlight text-white rounded-md">Create Index</Button>
+                <Button className="bg-stake-accent hover:bg-stake-highlight text-white rounded-md">create index</Button>
               </DrawerTrigger>
               <DrawerContent className="h-[90vh] overflow-y-auto">
                 <div className="container mx-auto max-w-md p-4 relative">
                   <DrawerHeader className="text-center">
-                    <DrawerTitle className="text-2xl font-bold">Create a New INDEX</DrawerTitle>
+                    <DrawerTitle className="text-2xl font-bold">create a new index</DrawerTitle>
                     <DrawerDescription>
-                      Create a bundle of tokens that people can swap into with a single transaction
+                      create a bundle of tokens that people can swap into with a single transaction
                     </DrawerDescription>
                   </DrawerHeader>
                   <DrawerClose className="absolute right-4 top-4 rounded-full p-2 hover:bg-slate-100">
@@ -51,7 +51,7 @@ const Navigation: React.FC = () => {
             </Drawer>
             
             <Button variant="ghost" className="hover:bg-stake-card rounded-md text-stake-muted hover:text-stake-text" onClick={() => setIsModalOpen(true)}>
-              How it Works
+              how it works
             </Button>
             
             <WalletConnect />

@@ -39,7 +39,7 @@ const WalletConnect: React.FC = () => {
           onClick={connectWallet}
           className="bg-stake-highlight hover:opacity-90 text-white rounded-md"
         >
-          Connect Wallet
+          connect wallet
         </Button>
       )}
     </div>

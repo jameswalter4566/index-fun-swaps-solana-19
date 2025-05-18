@@ -30,8 +30,8 @@ const CreateSwapForm: React.FC = () => {
     // Validate form
     if (!formData.name || !formData.token1 || !formData.token2) {
       toast({
-        title: "Form Validation Error",
-        description: "INDEX name and at least 2 tokens are required.",
+        title: "form validation error",
+        description: "index name and at least 2 tokens are required.",
         variant: "destructive",
       });
       return;
@@ -45,8 +45,8 @@ const CreateSwapForm: React.FC = () => {
       
       // Show success message
       toast({
-        title: "INDEX Created!",
-        description: `Your ${formData.name} INDEX has been created successfully.`,
+        title: "index created!",
+        description: `your ${formData.name} index has been created successfully.`,
       });
       
       // Clear form and close drawer (relies on parent component)
@@ -66,8 +66,8 @@ const CreateSwapForm: React.FC = () => {
     } catch (error) {
       console.error("Error creating INDEX:", error);
       toast({
-        title: "Error Creating INDEX",
-        description: "There was an error creating your INDEX. Please try again.",
+        title: "error creating index",
+        description: "there was an error creating your index. please try again.",
         variant: "destructive",
       });
     } finally {
@@ -94,7 +94,7 @@ const CreateSwapForm: React.FC = () => {
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="name">INDEX Name</Label>
+            <Label htmlFor="name">index name</Label>
             <Input
               id="name"
               name="name"
@@ -107,10 +107,10 @@ const CreateSwapForm: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token1">Token 1 (Required)</Label>
+            <Label htmlFor="token1">token 1 (required)</Label>
             <div className="flex gap-2 items-center">
               <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback className="bg-stake-darkbg text-xs">T1</AvatarFallback>
+                <AvatarFallback className="bg-stake-darkbg text-xs">t1</AvatarFallback>
               </Avatar>
               <Input
                 id="token1"
@@ -125,10 +125,10 @@ const CreateSwapForm: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token2">Token 2 (Required)</Label>
+            <Label htmlFor="token2">token 2 (required)</Label>
             <div className="flex gap-2 items-center">
               <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback className="bg-stake-darkbg text-xs">T2</AvatarFallback>
+                <AvatarFallback className="bg-stake-darkbg text-xs">t2</AvatarFallback>
               </Avatar>
               <Input
                 id="token2"
@@ -143,10 +143,10 @@ const CreateSwapForm: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token3">Token 3 (Optional)</Label>
+            <Label htmlFor="token3">token 3 (optional)</Label>
             <div className="flex gap-2 items-center">
               <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback className="bg-stake-darkbg text-xs">T3</AvatarFallback>
+                <AvatarFallback className="bg-stake-darkbg text-xs">t3</AvatarFallback>
               </Avatar>
               <Input
                 id="token3"
@@ -160,10 +160,10 @@ const CreateSwapForm: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token4">Token 4 (Optional)</Label>
+            <Label htmlFor="token4">token 4 (optional)</Label>
             <div className="flex gap-2 items-center">
               <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback className="bg-stake-darkbg text-xs">T4</AvatarFallback>
+                <AvatarFallback className="bg-stake-darkbg text-xs">t4</AvatarFallback>
               </Avatar>
               <Input
                 id="token4"
@@ -181,7 +181,7 @@ const CreateSwapForm: React.FC = () => {
             className="w-full btn-solana"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Creating...' : 'Create INDEX'}
+            {isSubmitting ? 'creating...' : 'create index'}
           </Button>
         </form>
       </CardContent>
