@@ -67,8 +67,8 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
               <span>{currentUpvotes}</span>
             </button>
             
-            <button className="text-sm text-stake-accent hover:underline">
-              View Details
+            <button className="text-sm bg-green-500 hover:bg-green-600 text-white py-1 px-4 rounded-full transition-colors">
+              Swap
             </button>
           </div>
         </div>
