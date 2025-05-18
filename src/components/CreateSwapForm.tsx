@@ -115,7 +115,7 @@ const CreateSwapForm: React.FC = () => {
               <Input
                 id="token1"
                 name="token1"
-                placeholder="Token address or select from dropdown"
+                placeholder="token address"
                 value={formData.token1}
                 onChange={handleChange}
                 className="rounded-lg flex-grow"
@@ -133,7 +133,7 @@ const CreateSwapForm: React.FC = () => {
               <Input
                 id="token2"
                 name="token2"
-                placeholder="Token address or select from dropdown"
+                placeholder="token address"
                 value={formData.token2}
                 onChange={handleChange}
                 className="rounded-lg flex-grow"
@@ -151,7 +151,7 @@ const CreateSwapForm: React.FC = () => {
               <Input
                 id="token3"
                 name="token3"
-                placeholder="Token address or select from dropdown"
+                placeholder="token address"
                 value={formData.token3}
                 onChange={handleChange}
                 className="rounded-lg flex-grow"
@@ -168,7 +168,7 @@ const CreateSwapForm: React.FC = () => {
               <Input
                 id="token4"
                 name="token4"
-                placeholder="Token address or select from dropdown"
+                placeholder="token address"
                 value={formData.token4}
                 onChange={handleChange}
                 className="rounded-lg flex-grow"
