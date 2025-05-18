@@ -45,7 +45,9 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
       </div>
       
       <div className="mb-6">
-        <h3 className="text-md font-medium text-gray-300 mb-3">Your Indexes</h3>
+        <label className="block text-sm font-medium text-gray-300 mb-2">
+          Your Indexes
+        </label>
         <div className="bg-stake-card p-4 rounded-md min-h-24 flex items-center justify-center">
           <p className="text-gray-400 text-sm">You haven't created any indexes yet</p>
         </div>
