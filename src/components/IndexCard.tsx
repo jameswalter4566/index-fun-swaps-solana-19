@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Heart, CircleDot } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -12,49 +12,35 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { useToast } from '@/hooks/use-toast';
-
-interface Token {
-  name: string;
-  address: string;
-  // Adding optional image URL for token
-  imageUrl?: string;
-}
+import { useIndexStore, IndexData, Token } from '@/stores/useIndexStore';
+import { generateChartData } from '@/lib/tokenService';
 
 interface IndexCardProps {
-  id: string;
-  name: string;
-  tokens: Token[];
-  gainPercentage: number;
-  upvotes: number;
+  index: IndexData;
 }
 
-// Mock chart data
-const generateChartData = () => {
-  const data = [];
-  for (let i = 0; i < 30; i++) {
-    data.push({
-      date: `Day ${i + 1}`,
-      value: 1000 + Math.random() * 500 + (i * 10),
-    });
-  }
-  return data;
-};
-
-const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage, upvotes }) => {
-  const [upvoted, setUpvoted] = useState(false);
-  const [currentUpvotes, setCurrentUpvotes] = useState(upvotes);
+const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
+  const { id, name, tokens, upvotes, gainPercentage = 0, marketCap = 0 } = index;
+  
   const [showSwapSheet, setShowSwapSheet] = useState(false);
   const [solanaAmount, setSolanaAmount] = useState('1');
+  const [chartData, setChartData] = useState<any[]>([]);
   
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
   const { setVisible } = useWalletModal();
   const { toast } = useToast();
+  const { upvoteIndex, downvoteIndex } = useIndexStore();
   
-  const chartData = generateChartData();
-  const totalMarketCap = 12500000; // Mock total weighted market cap
+  // Check if the current user has upvoted this index
+  const isUpvoted = publicKey && index.upvotedBy.includes(publicKey.toString());
+  
+  useEffect(() => {
+    // Generate chart data when component mounts
+    setChartData(generateChartData());
+  }, [id]);
   
   const handleUpvote = () => {
-    if (!connected) {
+    if (!connected || !publicKey) {
       toast({
         title: "wallet not connected",
         description: "please connect your wallet to upvote",
@@ -64,12 +50,12 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
       return;
     }
     
-    if (!upvoted) {
-      setCurrentUpvotes(currentUpvotes + 1);
-      setUpvoted(true);
+    const walletAddress = publicKey.toString();
+    
+    if (isUpvoted) {
+      downvoteIndex(id, walletAddress);
     } else {
-      setCurrentUpvotes(currentUpvotes - 1);
-      setUpvoted(false);
+      upvoteIndex(id, walletAddress);
     }
   };
   
@@ -96,6 +82,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
   };
   
   const gainColor = gainPercentage >= 0 ? 'text-green-500' : 'text-red-500';
+  const formattedMarketCap = marketCap ? `$${marketCap.toLocaleString()}` : 'Calculating...';
   
   return (
     <>
@@ -116,9 +103,9 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
                 {tokens.map((token) => (
                   <span 
                     key={token.address} 
-                    className="inline-block bg-stake-darkbg rounded-full px-3 py-1 text-xs text-stake-text"
+                    className="inline-flex items-center gap-1 bg-stake-darkbg rounded-full px-3 py-1 text-xs text-stake-text"
                   >
-                    {token.name}
+                    {token.symbol || token.name}
                   </span>
                 ))}
               </div>
@@ -127,10 +114,10 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
             <div className="flex justify-between items-center pt-2 border-t border-stake-background">
               <button 
                 onClick={handleUpvote} 
-                className={`flex items-center gap-1 text-sm ${upvoted ? 'text-stake-accent' : 'text-stake-muted'} hover:text-stake-accent transition-colors`}
+                className={`flex items-center gap-1 text-sm ${isUpvoted ? 'text-stake-accent' : 'text-stake-muted'} hover:text-stake-accent transition-colors`}
               >
-                <Heart size={16} className={upvoted ? 'fill-stake-accent' : ''} />
-                <span>{currentUpvotes}</span>
+                <Heart size={16} className={isUpvoted ? 'fill-stake-accent' : ''} />
+                <span>{upvotes}</span>
               </button>
               
               <button 
@@ -153,7 +140,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
           <div className="mt-6">
             <div className="mb-4">
               <h3 className="text-lg font-bold text-stake-text mb-1">total weighted market cap</h3>
-              <p className="text-2xl font-bold text-green-500">${totalMarketCap.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-green-500">{formattedMarketCap}</p>
             </div>
             
             <div className="h-[200px] mb-6 bg-stake-card rounded-lg p-2">
@@ -191,7 +178,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={token.imageUrl} alt={token.name} />
                         <AvatarFallback className="bg-stake-darkbg text-xs">
-                          {token.name.substring(0, 2).toUpperCase()}
+                          {token.symbol ? token.symbol.substring(0, 2) : token.name.substring(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <span className="font-medium text-stake-text">{token.name}</span>

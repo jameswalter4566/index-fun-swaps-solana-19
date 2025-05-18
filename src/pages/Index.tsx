@@ -1,123 +1,66 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import IndexCard from '@/components/IndexCard';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search } from 'lucide-react';
+import { useIndexStore, IndexData } from '@/stores/useIndexStore';
+import { useTokenRefresh } from '@/hooks/useTokenRefresh';
+import { useWallet } from '@solana/wallet-adapter-react';
 
-// Mock data
-const mockIndexes = [{
-  id: '1',
-  name: 'Dog Coin Army',
-  tokens: [{
-    name: 'DOGE',
-    address: 'addr1'
-  }, {
-    name: 'SHIB',
-    address: 'addr2'
-  }, {
-    name: 'FLOKI',
-    address: 'addr3'
-  }],
-  gainPercentage: 24.5,
-  upvotes: 142,
-  category: 'gainers',
-  createdAt: new Date('2023-05-10')
-}, {
-  id: '2',
-  name: 'Solana Stars',
-  tokens: [{
-    name: 'BONK',
-    address: 'addr4'
-  }, {
-    name: 'SAMO',
-    address: 'addr5'
-  }],
-  gainPercentage: 36.8,
-  upvotes: 89,
-  category: 'gainers',
-  createdAt: new Date('2023-05-14')
-}, {
-  id: '3',
-  name: 'Meme Legends',
-  tokens: [{
-    name: 'PEPE',
-    address: 'addr6'
-  }, {
-    name: 'WIF',
-    address: 'addr7'
-  }, {
-    name: 'BONK',
-    address: 'addr8'
-  }, {
-    name: 'MONG',
-    address: 'addr9'
-  }],
-  gainPercentage: -12.3,
-  upvotes: 215,
-  category: 'top',
-  createdAt: new Date('2023-05-01')
-}, {
-  id: '4',
-  name: 'New Wave',
-  tokens: [{
-    name: 'BOOK',
-    address: 'addr10'
-  }, {
-    name: 'TIKI',
-    address: 'addr11'
-  }],
-  gainPercentage: 7.2,
-  upvotes: 32,
-  category: 'recent',
-  createdAt: new Date('2023-05-17')
-}, {
-  id: '5',
-  name: 'AI Tokens',
-  tokens: [{
-    name: 'BRAIN',
-    address: 'addr12'
-  }, {
-    name: 'CHAT',
-    address: 'addr13'
-  }, {
-    name: 'PREDICT',
-    address: 'addr14'
-  }],
-  gainPercentage: 15.9,
-  upvotes: 178,
-  category: 'top',
-  createdAt: new Date('2023-05-08')
-}, {
-  id: '6',
-  name: 'Fresh Picks',
-  tokens: [{
-    name: 'NEW1',
-    address: 'addr15'
-  }, {
-    name: 'NEW2',
-    address: 'addr16'
-  }],
-  gainPercentage: 3.1,
-  upvotes: 12,
-  category: 'recent',
-  createdAt: new Date('2023-05-18')
-}];
 const Index: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-
+  const { getAllIndexes } = useIndexStore();
+  const { publicKey } = useWallet();
+  const { isRefreshing, lastRefreshed, refreshData } = useTokenRefresh();
+  
+  // Get indexes and sort them
+  const indexes = getAllIndexes();
+  
   // Filter indexes based on search query and active tab
-  const filteredIndexes = mockIndexes.filter(index => {
+  const filteredIndexes = indexes.filter(index => {
     // Filter by search
-    const matchesSearch = searchQuery === "" || index.name.toLowerCase().includes(searchQuery.toLowerCase()) || index.tokens.some(token => token.name.toLowerCase().includes(searchQuery.toLowerCase()));
-
+    const matchesSearch = 
+      searchQuery === "" || 
+      index.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      index.tokens.some(token => 
+        token.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (token.symbol && token.symbol.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    
     // Filter by tab
-    const matchesTab = activeTab === "all" || activeTab === "top" && index.upvotes > 100 || activeTab === "gainers" && index.gainPercentage > 0 || activeTab === "recent" && (new Date().getTime() - index.createdAt.getTime()) / (1000 * 60 * 60 * 24) < 7;
+    const matchesTab = 
+      activeTab === "all" || 
+      (activeTab === "top" && index.upvotes >= 50) || 
+      (activeTab === "gainers" && (index.gainPercentage || 0) > 0) || 
+      (activeTab === "recent" && new Date(index.createdAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000) ||
+      (activeTab === "mine" && publicKey && index.creatorAddress === publicKey.toString());
+    
     return matchesSearch && matchesTab;
   });
-  return <Layout>
+  
+  // Sort indexes based on the active tab
+  const sortedIndexes = [...filteredIndexes].sort((a, b) => {
+    if (activeTab === "top") {
+      return b.upvotes - a.upvotes;
+    } else if (activeTab === "gainers") {
+      return (b.gainPercentage || 0) - (a.gainPercentage || 0);
+    } else if (activeTab === "recent") {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    // Default sort by creation date (newest first)
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+  
+  // Initial data loading effect
+  useEffect(() => {
+    refreshData();
+  }, []);
+  
+  return (
+    <Layout>
       <div className="mb-8 max-w-2xl mx-auto text-center animate-fade-in">
         <h1 className="text-4xl font-bold mb-4 text-stake-text">index</h1>
         <p className="text-stake-muted text-lg">create instantly tradable token indexes. get paid when others swap.</p>
@@ -127,49 +70,88 @@ const Index: React.FC = () => {
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <Search size={18} className="text-stake-muted" />
         </div>
-        <Input type="text" placeholder="search by index name or token" className="pl-10 rounded-md bg-stake-card border-stake-card text-stake-text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+        <Input 
+          type="text" 
+          placeholder="search by index name or token" 
+          className="pl-10 rounded-md bg-stake-card border-stake-card text-stake-text" 
+          value={searchQuery} 
+          onChange={e => setSearchQuery(e.target.value)} 
+        />
       </div>
       
       <Tabs defaultValue="all" className="mb-8" onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-4 max-w-md mx-auto bg-stake-darkbg">
+        <TabsList className="grid grid-cols-5 max-w-md mx-auto bg-stake-darkbg">
           <TabsTrigger value="all" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">all</TabsTrigger>
           <TabsTrigger value="top" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">top rated</TabsTrigger>
-          <TabsTrigger value="gainers" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">best gainers</TabsTrigger>
-          <TabsTrigger value="recent" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">most recent</TabsTrigger>
+          <TabsTrigger value="gainers" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">gainers</TabsTrigger>
+          <TabsTrigger value="recent" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">recent</TabsTrigger>
+          <TabsTrigger value="mine" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">mine</TabsTrigger>
         </TabsList>
         
         <TabsContent value="all" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredIndexes.length > 0 ? filteredIndexes.map(index => <IndexCard key={index.id} id={index.id} name={index.name} tokens={index.tokens} gainPercentage={index.gainPercentage} upvotes={index.upvotes} />) : <div className="col-span-full text-center py-8">
+            {sortedIndexes.length > 0 ? (
+              sortedIndexes.map(index => <IndexCard key={index.id} index={index} />)
+            ) : (
+              <div className="col-span-full text-center py-8">
                 <p className="text-stake-muted">no indexes found matching your search.</p>
-              </div>}
+              </div>
+            )}
           </div>
         </TabsContent>
         
         <TabsContent value="top" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredIndexes.length > 0 ? filteredIndexes.map(index => <IndexCard key={index.id} id={index.id} name={index.name} tokens={index.tokens} gainPercentage={index.gainPercentage} upvotes={index.upvotes} />) : <div className="col-span-full text-center py-8">
+            {sortedIndexes.length > 0 ? (
+              sortedIndexes.map(index => <IndexCard key={index.id} index={index} />)
+            ) : (
+              <div className="col-span-full text-center py-8">
                 <p className="text-stake-muted">no top-rated indexes found.</p>
-              </div>}
+              </div>
+            )}
           </div>
         </TabsContent>
         
         <TabsContent value="gainers" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredIndexes.length > 0 ? filteredIndexes.map(index => <IndexCard key={index.id} id={index.id} name={index.name} tokens={index.tokens} gainPercentage={index.gainPercentage} upvotes={index.upvotes} />) : <div className="col-span-full text-center py-8">
+            {sortedIndexes.length > 0 ? (
+              sortedIndexes.map(index => <IndexCard key={index.id} index={index} />)
+            ) : (
+              <div className="col-span-full text-center py-8">
                 <p className="text-stake-muted">no gaining indexes found.</p>
-              </div>}
+              </div>
+            )}
           </div>
         </TabsContent>
         
         <TabsContent value="recent" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredIndexes.length > 0 ? filteredIndexes.map(index => <IndexCard key={index.id} id={index.id} name={index.name} tokens={index.tokens} gainPercentage={index.gainPercentage} upvotes={index.upvotes} />) : <div className="col-span-full text-center py-8">
+            {sortedIndexes.length > 0 ? (
+              sortedIndexes.map(index => <IndexCard key={index.id} index={index} />)
+            ) : (
+              <div className="col-span-full text-center py-8">
                 <p className="text-stake-muted">no recent indexes found.</p>
-              </div>}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="mine" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sortedIndexes.length > 0 ? (
+              sortedIndexes.map(index => <IndexCard key={index.id} index={index} />)
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <p className="text-stake-muted">
+                  {publicKey ? "you haven't created any indexes yet." : "connect your wallet to see your indexes."}
+                </p>
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
-    </Layout>;
+    </Layout>
+  );
 };
+
 export default Index;
