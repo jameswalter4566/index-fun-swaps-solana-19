@@ -98,7 +98,7 @@ const CreateSwapForm: React.FC = () => {
             <Input
               id="name"
               name="name"
-              placeholder="e.g., Meme Heroes"
+              placeholder="e.g. fucking mooners"
               value={formData.name}
               onChange={handleChange}
               className="rounded-lg"
