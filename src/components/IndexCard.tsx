@@ -8,7 +8,6 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { useTokenMetadata, useMultipleTokenMetadata, formatMarketCap, TokenMetadata } from '@/utils/tokenUtils';
 
 interface Token {
   name: string;
@@ -42,10 +41,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
   const [solanaAmount, setSolanaAmount] = useState('1');
   
   const chartData = generateChartData();
-  
-  const { data: tokenMetadataArray, isLoading: isLoadingTokens } = useMultipleTokenMetadata(
-    tokens.map(token => token.address)
-  );
+  const totalMarketCap = 12500000; // Mock total weighted market cap
   
   const handleUpvote = () => {
     if (!upvoted) {
@@ -64,11 +60,6 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
     // You could add a toast notification here
   };
   
-  // Calculate total market cap from all tokens
-  const totalMarketCap = tokenMetadataArray
-    ? tokenMetadataArray.reduce((sum, token) => sum + (token.marketCap || 0), 0)
-    : 0;
-  
   return (
     <>
       <Card className="overflow-hidden card-hover border border-stake-card bg-stake-card">
@@ -85,18 +76,14 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
             <div>
               <h4 className="text-sm font-medium text-stake-muted mb-2">Tokens</h4>
               <div className="flex flex-wrap gap-2">
-                {isLoadingTokens ? (
-                  <span className="text-xs text-stake-muted">Loading tokens...</span>
-                ) : (
-                  tokenMetadataArray?.map((token, index) => (
-                    <span 
-                      key={token.address} 
-                      className="inline-block bg-stake-darkbg rounded-full px-3 py-1 text-xs text-stake-text"
-                    >
-                      {token.symbol}
-                    </span>
-                  ))
-                )}
+                {tokens.map((token) => (
+                  <span 
+                    key={token.address} 
+                    className="inline-block bg-stake-darkbg rounded-full px-3 py-1 text-xs text-stake-text"
+                  >
+                    {token.name}
+                  </span>
+                ))}
               </div>
             </div>
             
@@ -129,7 +116,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
           <div className="mt-6">
             <div className="mb-4">
               <h3 className="text-lg font-bold text-stake-text mb-1">Total Weighted Market Cap</h3>
-              <p className="text-2xl font-bold text-green-500">{formatMarketCap(totalMarketCap)}</p>
+              <p className="text-2xl font-bold text-green-500">${totalMarketCap.toLocaleString()}</p>
             </div>
             
             <div className="h-[200px] mb-6 bg-stake-card rounded-lg p-2">
@@ -158,55 +145,34 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
             <div className="mb-6">
               <h3 className="text-lg font-bold text-stake-text mb-3">Tokens</h3>
               <div className="space-y-3">
-                {isLoadingTokens ? (
-                  <div className="bg-stake-card p-3 rounded-lg">
-                    <span className="text-stake-muted">Loading token data...</span>
-                  </div>
-                ) : (
-                  tokenMetadataArray?.map((token, index) => (
-                    <div 
-                      key={token.address} 
-                      className="flex justify-between items-center bg-stake-card p-3 rounded-lg"
-                    >
-                      <div className="flex items-center">
-                        {token.image && (
-                          <img 
-                            src={token.image} 
-                            alt={token.symbol} 
-                            className="w-6 h-6 rounded-full mr-2"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        )}
-                        <span className="font-medium text-stake-text">{token.symbol}</span>
-                        <span className="ml-2 text-xs text-stake-muted">
-                          {formatMarketCap(token.marketCap)}
-                        </span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="text-xs text-stake-muted mr-2 truncate max-w-[120px]">
-                          {`${token.address.substring(0, 6)}...${token.address.substring(token.address.length - 4)}`}
-                        </span>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => handleCopyAddress(token.address)}
-                            >
-                              Copy
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-2 text-xs">
-                            Address copied!
-                          </PopoverContent>
-                        </Popover>
-                      </div>
+                {tokens.map((token) => (
+                  <div 
+                    key={token.address} 
+                    className="flex justify-between items-center bg-stake-card p-3 rounded-lg"
+                  >
+                    <span className="font-medium text-stake-text">{token.name}</span>
+                    <div className="flex items-center">
+                      <span className="text-xs text-stake-muted mr-2 truncate max-w-[120px]">
+                        {`${token.address.substring(0, 6)}...${token.address.substring(token.address.length - 4)}`}
+                      </span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => handleCopyAddress(token.address)}
+                          >
+                            Copy
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2 text-xs">
+                          Address copied!
+                        </PopoverContent>
+                      </Popover>
                     </div>
-                  ))
-                )}
+                  </div>
+                ))}
               </div>
             </div>
             

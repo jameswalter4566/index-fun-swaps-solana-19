@@ -1,71 +1,34 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { fetchTokenMetadata, TokenMetadata } from '@/utils/tokenUtils';
-
-interface TokenInputState {
-  address: string;
-  isLoading: boolean;
-  metadata: TokenMetadata | null;
-  error: string | null;
-}
 
 const CreateSwapForm: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [name, setName] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    token1: '',
+    token2: '',
+    token3: '',
+    token4: '',
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const [tokens, setTokens] = useState<TokenInputState[]>([
-    { address: '', isLoading: false, metadata: null, error: null },
-    { address: '', isLoading: false, metadata: null, error: null },
-    { address: '', isLoading: false, metadata: null, error: null },
-    { address: '', isLoading: false, metadata: null, error: null },
-  ]);
 
-  const handleAddressChange = async (index: number, address: string) => {
-    const newTokens = [...tokens];
-    newTokens[index] = {
-      address,
-      isLoading: address.length > 30, // Only start loading if address looks valid
-      metadata: null,
-      error: null
-    };
-    setTokens(newTokens);
-    
-    // If address looks like a valid Solana address, fetch metadata
-    if (address.length > 30) {
-      try {
-        const metadata = await fetchTokenMetadata(address);
-        newTokens[index] = {
-          address,
-          isLoading: false,
-          metadata,
-          error: null
-        };
-        setTokens([...newTokens]);
-      } catch (error) {
-        newTokens[index] = {
-          address,
-          isLoading: false,
-          metadata: null,
-          error: 'Invalid token address'
-        };
-        setTokens([...newTokens]);
-      }
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate form
-    if (!name || !tokens[0].address || !tokens[1].address) {
+    if (!formData.name || !formData.token1 || !formData.token2) {
       toast({
         title: "Form Validation Error",
         description: "INDEX name and at least 2 tokens are required.",
@@ -78,15 +41,12 @@ const CreateSwapForm: React.FC = () => {
       setIsSubmitting(true);
       
       // Mock submission - in a real app this would interact with Solana
-      console.log("Creating INDEX:", {
-        name,
-        tokens: tokens.filter(t => t.address && t.metadata)
-      });
+      console.log("Creating INDEX:", formData);
       
       // Show success message
       toast({
         title: "INDEX Created!",
-        description: `Your ${name} INDEX has been created successfully.`,
+        description: `Your ${formData.name} INDEX has been created successfully.`,
       });
       
       // Navigate back to home page
@@ -117,54 +77,64 @@ const CreateSwapForm: React.FC = () => {
             <Label htmlFor="name">INDEX Name</Label>
             <Input
               id="name"
+              name="name"
               placeholder="e.g., Meme Heroes"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={formData.name}
+              onChange={handleChange}
               className="rounded-lg"
               required
             />
           </div>
           
-          {tokens.map((token, index) => (
-            <div key={index} className="space-y-2">
-              <Label htmlFor={`token${index + 1}`}>
-                Token {index + 1} {index < 2 ? "(Required)" : "(Optional)"}
-              </Label>
-              <div>
-                <Input
-                  id={`token${index + 1}`}
-                  placeholder="Token address"
-                  value={token.address}
-                  onChange={(e) => handleAddressChange(index, e.target.value)}
-                  className="rounded-lg mb-1"
-                  required={index < 2}
-                />
-                {token.isLoading && (
-                  <p className="text-xs text-stake-muted">Loading token data...</p>
-                )}
-                {token.metadata && (
-                  <div className="flex items-center mt-1">
-                    {token.metadata.image && (
-                      <img 
-                        src={token.metadata.image} 
-                        alt={token.metadata.symbol} 
-                        className="w-4 h-4 rounded-full mr-1"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    )}
-                    <p className="text-xs text-green-500">
-                      {token.metadata.symbol}: {token.metadata.name}
-                    </p>
-                  </div>
-                )}
-                {token.error && (
-                  <p className="text-xs text-red-500">{token.error}</p>
-                )}
-              </div>
-            </div>
-          ))}
+          <div className="space-y-2">
+            <Label htmlFor="token1">Token 1 (Required)</Label>
+            <Input
+              id="token1"
+              name="token1"
+              placeholder="Token address or select from dropdown"
+              value={formData.token1}
+              onChange={handleChange}
+              className="rounded-lg"
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="token2">Token 2 (Required)</Label>
+            <Input
+              id="token2"
+              name="token2"
+              placeholder="Token address or select from dropdown"
+              value={formData.token2}
+              onChange={handleChange}
+              className="rounded-lg"
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="token3">Token 3 (Optional)</Label>
+            <Input
+              id="token3"
+              name="token3"
+              placeholder="Token address or select from dropdown"
+              value={formData.token3}
+              onChange={handleChange}
+              className="rounded-lg"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="token4">Token 4 (Optional)</Label>
+            <Input
+              id="token4"
+              name="token4"
+              placeholder="Token address or select from dropdown"
+              value={formData.token4}
+              onChange={handleChange}
+              className="rounded-lg"
+            />
+          </div>
           
           <Button 
             type="submit" 
