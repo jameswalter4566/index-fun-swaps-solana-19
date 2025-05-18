@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Save, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Drawer, DrawerTrigger, DrawerContent } from '@/components/ui/sheet';
+import { Drawer, DrawerTrigger, DrawerContent } from '@/components/ui/drawer';
 import CreateSwapForm from './CreateSwapForm';
 
 interface UserProfileProps {
