@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import IndexCard from '@/components/IndexCard';
@@ -104,7 +103,6 @@ const mockIndexes = [{
   category: 'recent',
   createdAt: new Date('2023-05-18')
 }];
-
 const Index: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
@@ -120,7 +118,7 @@ const Index: React.FC = () => {
   });
   return <Layout>
       <div className="mb-8 max-w-2xl mx-auto text-center animate-fade-in">
-        <h1 className="text-4xl font-bold mb-4 text-stake-text">INDEX.FUN</h1>
+        <h1 className="text-4xl font-bold mb-4 text-stake-text">Index</h1>
         <p className="text-stake-muted text-lg">Create instantly tradable token indexes. Get paid when others swap.</p>
       </div>
       
