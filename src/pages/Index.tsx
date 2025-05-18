@@ -119,7 +119,7 @@ const Index: React.FC = () => {
   return <Layout>
       <div className="mb-8 max-w-2xl mx-auto text-center animate-fade-in">
         <h1 className="text-4xl font-bold mb-4">INDEX.FUN</h1>
-        <p className="text-gray-600 text-lg">Create instantly tradable token indexes and start earning fees on transactions</p>
+        <p className="text-gray-600 text-lg">Create instantly tradable token indexes. Get paid when others swap.</p>
       </div>
       
       <div className="mb-8 max-w-md mx-auto relative">
