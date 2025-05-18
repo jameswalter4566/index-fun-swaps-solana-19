@@ -4,6 +4,10 @@
 @tailwind utilities;
 
 @layer base {
+  * {
+    text-transform: lowercase;
+  }
+
   :root {
     --background: 220 20% 14%;
     --foreground: 0 0% 100%;
@@ -47,10 +51,6 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
   body {
     @apply bg-stake-background text-foreground;
     font-family: 'Inter', sans-serif;
