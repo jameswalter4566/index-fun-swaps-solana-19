@@ -1,17 +1,20 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Heart } from 'lucide-react';
+import { Heart, CircleDot } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ChartContainer, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface Token {
   name: string;
   address: string;
+  // Adding optional image URL for token
+  imageUrl?: string;
 }
 
 interface IndexCardProps {
@@ -150,7 +153,15 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
                     key={token.address} 
                     className="flex justify-between items-center bg-stake-card p-3 rounded-lg"
                   >
-                    <span className="font-medium text-stake-text">{token.name}</span>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={token.imageUrl} alt={token.name} />
+                        <AvatarFallback className="bg-stake-darkbg text-xs">
+                          {token.name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium text-stake-text">{token.name}</span>
+                    </div>
                     <div className="flex items-center">
                       <span className="text-xs text-stake-muted mr-2 truncate max-w-[120px]">
                         {`${token.address.substring(0, 6)}...${token.address.substring(token.address.length - 4)}`}
