@@ -14,23 +14,23 @@ export interface TokenMetadata {
 const API_KEY = 'ae627906-aa82-432d-9d4f-511db3fe7b70'; // Public API key for demo purposes
 
 // Token information we know about 
-const KNOWN_TOKENS: Record<string, Partial<TokenMetadata>> = {
+export const KNOWN_TOKENS: Record<string, Partial<TokenMetadata>> = {
   'CgZTsf3rNnXsy3YkXmRr988p1Lrv9FpqBpLPWrAbmoon': {
-    name: 'MOON',
+    name: 'Moon Token',
     symbol: 'MOON',
     image: 'https://arweave.net/Vk8dpgYIYu3BnQgm0JP4UjwbYm9P1FYdvFYGsQTz3Ow',
     price: 0.0123,
     marketCap: 12300000,
   },
   'F63yhiWVe8k338Lt8TyeyN242ECxgv7cbffM8zUNpump': {
-    name: 'PUMP',
+    name: 'Pump Token',
     symbol: 'PUMP',
     image: 'https://arweave.net/DrMnV8ixLcH17oamJ12BiooQh-JBFtjLbcH3WQ5qQ7s',
     price: 0.0456,
     marketCap: 45600000,
   },
   'E5sJv2tTUVdBzqcrG5BfsLCmCukUrXgb9bC9Soidpump': {
-    name: 'POMP',
+    name: 'Pomp Token',
     symbol: 'POMP',
     image: 'https://arweave.net/g1JmYC9FOG2bUJN1m7gsKCAgQhCLCgvySD7wxZGc9Ao',
     price: 0.0789,
@@ -85,13 +85,24 @@ export async function fetchTokenMetadata(address: string): Promise<TokenMetadata
     console.error(`Error fetching token metadata for ${address}:`, error);
     
     // Fall back to mock data for demo purposes
+    const fallbackData = KNOWN_TOKENS[address];
+    if (fallbackData) {
+      return {
+        name: fallbackData.name || 'Unknown',
+        symbol: fallbackData.symbol || 'Unknown',
+        address: address,
+        image: fallbackData.image,
+        price: fallbackData.price || 0,
+        marketCap: fallbackData.marketCap || 0
+      };
+    }
+    
     return {
-      name: KNOWN_TOKENS[address]?.name || 'Unknown',
-      symbol: KNOWN_TOKENS[address]?.symbol || 'Unknown',
+      name: 'Unknown',
+      symbol: 'Unknown',
       address: address,
-      image: KNOWN_TOKENS[address]?.image,
-      price: KNOWN_TOKENS[address]?.price || 0,
-      marketCap: KNOWN_TOKENS[address]?.marketCap || 0
+      price: 0,
+      marketCap: 0
     };
   }
 }
