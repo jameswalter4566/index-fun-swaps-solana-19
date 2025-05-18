@@ -1,16 +1,19 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { useWalletStore } from '@/stores/useWalletStore';
 import { useToast } from '@/hooks/use-toast';
 import { Wallet } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import UserProfile from './UserProfile';
 
 const WalletConnect: React.FC = () => {
   const { connected, publicKey, disconnect } = useWallet();
   const { setVisible } = useWalletModal();
   const { toast } = useToast();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   const { 
     walletAddress, 
@@ -46,6 +49,7 @@ const WalletConnect: React.FC = () => {
   const disconnectWallet = async () => {
     try {
       await disconnect();
+      setIsProfileOpen(false);
       toast({
         title: "wallet disconnected",
         description: "your wallet has been disconnected",
@@ -62,13 +66,32 @@ const WalletConnect: React.FC = () => {
   return (
     <div>
       {connected && publicKey ? (
-        <Button
-          onClick={disconnectWallet}
-          className="bg-stake-card border border-stake-accent text-stake-text hover:bg-stake-darkbg rounded-md"
-        >
-          <Wallet className="mr-2 h-4 w-4" />
-          {walletAddress ? formatWalletAddress(walletAddress) : "connected"}
-        </Button>
+        <Sheet open={isProfileOpen} onOpenChange={setIsProfileOpen}>
+          <SheetTrigger asChild>
+            <Button
+              className="bg-stake-card border border-stake-accent text-stake-text hover:bg-stake-darkbg rounded-md"
+            >
+              <Wallet className="mr-2 h-4 w-4" />
+              {walletAddress ? formatWalletAddress(walletAddress) : "connected"}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-full sm:max-w-md p-0">
+            <div className="h-full flex flex-col">
+              <div className="flex-1 overflow-auto p-6">
+                <UserProfile onClose={() => setIsProfileOpen(false)} />
+              </div>
+              <div className="p-4 border-t">
+                <Button 
+                  onClick={disconnectWallet}
+                  variant="outline" 
+                  className="w-full border-red-300 text-red-500 hover:bg-red-50"
+                >
+                  disconnect wallet
+                </Button>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
       ) : (
         <Button 
           onClick={connectWallet}
