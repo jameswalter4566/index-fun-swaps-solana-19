@@ -26,24 +26,19 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="p-4 bg-white rounded-md shadow-md w-full max-w-sm">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Your Profile</h2>
+    <div className="p-6 rounded-xl shadow-lg w-full max-w-sm bg-stake-darkbg border border-stake-card">
+      <div className="flex justify-between items-center mb-5">
+        <h2 className="text-xl font-bold text-white">Your Profile</h2>
         <button 
-          className="text-gray-500 hover:text-gray-700"
+          className="text-gray-400 hover:text-white transition-colors"
           onClick={onClose}
         >
           &times;
         </button>
       </div>
       
-      <div className="mb-4">
-        <p className="text-sm text-gray-500 mb-1">Wallet Address</p>
-        <p className="text-sm font-mono bg-gray-100 p-2 rounded break-all">{walletAddress}</p>
-      </div>
-      
-      <div className="mb-4">
-        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+      <div className="mb-5">
+        <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
           Username
         </label>
         <Input
@@ -51,20 +46,20 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Enter username"
-          className="w-full"
+          className="w-full bg-stake-card border-stake-muted focus-visible:ring-stake-accent"
         />
       </div>
       
       <div className="mb-6">
-        <h3 className="text-md font-semibold mb-2">Your Indexes</h3>
-        <div className="bg-gray-100 p-3 rounded min-h-16 flex items-center justify-center">
-          <p className="text-gray-500 text-sm">You haven't created any indexes yet</p>
+        <h3 className="text-md font-medium text-gray-300 mb-3">Your Indexes</h3>
+        <div className="bg-stake-card p-4 rounded-md min-h-24 flex items-center justify-center">
+          <p className="text-gray-400 text-sm">You haven't created any indexes yet</p>
         </div>
       </div>
       
       <Button 
         onClick={handleSave}
-        className="w-full bg-stake-highlight hover:bg-green-600 text-white"
+        className="w-full bg-green-600 hover:bg-green-700 text-white font-medium"
       >
         <Save className="mr-2 h-4 w-4" /> save profile
       </Button>
