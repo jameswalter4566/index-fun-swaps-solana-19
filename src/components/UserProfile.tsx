@@ -29,12 +29,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
     <div className="p-6 rounded-xl shadow-lg w-full max-w-sm bg-stake-darkbg border border-stake-card">
       <div className="flex justify-between items-center mb-5">
         <h2 className="text-xl font-bold text-white">Your Profile</h2>
-        <button 
-          className="text-gray-400 hover:text-white transition-colors"
-          onClick={onClose}
-        >
-          &times;
-        </button>
       </div>
       
       <div className="mb-5">
