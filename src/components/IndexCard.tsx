@@ -9,6 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { useToast } from '@/hooks/use-toast';
 
 interface Token {
   name: string;
@@ -43,10 +46,24 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
   const [showSwapSheet, setShowSwapSheet] = useState(false);
   const [solanaAmount, setSolanaAmount] = useState('1');
   
+  const { connected } = useWallet();
+  const { setVisible } = useWalletModal();
+  const { toast } = useToast();
+  
   const chartData = generateChartData();
   const totalMarketCap = 12500000; // Mock total weighted market cap
   
   const handleUpvote = () => {
+    if (!connected) {
+      toast({
+        title: "wallet not connected",
+        description: "please connect your wallet to upvote",
+        variant: "destructive",
+      });
+      setVisible(true);
+      return;
+    }
+    
     if (!upvoted) {
       setCurrentUpvotes(currentUpvotes + 1);
       setUpvoted(true);
@@ -55,13 +72,30 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
       setUpvoted(false);
     }
   };
-
-  const gainColor = gainPercentage >= 0 ? 'text-green-500' : 'text-red-500';
   
+  const handleSwap = () => {
+    if (!connected) {
+      toast({
+        title: "wallet not connected",
+        description: "please connect your wallet to swap",
+        variant: "destructive",
+      });
+      setVisible(true);
+      return;
+    }
+    
+    setShowSwapSheet(true);
+  };
+
   const handleCopyAddress = (address: string) => {
     navigator.clipboard.writeText(address);
-    // You could add a toast notification here
+    toast({
+      title: "address copied",
+      description: "token address copied to clipboard",
+    });
   };
+  
+  const gainColor = gainPercentage >= 0 ? 'text-green-500' : 'text-red-500';
   
   return (
     <>
@@ -77,7 +111,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
         <CardContent className="p-4">
           <div className="space-y-4">
             <div>
-              <h4 className="text-sm font-medium text-stake-muted mb-2">Tokens</h4>
+              <h4 className="text-sm font-medium text-stake-muted mb-2">tokens</h4>
               <div className="flex flex-wrap gap-2">
                 {tokens.map((token) => (
                   <span 
@@ -101,9 +135,9 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
               
               <button 
                 className="text-sm bg-green-500 hover:bg-green-600 text-white py-1 px-4 rounded-full transition-colors"
-                onClick={() => setShowSwapSheet(true)}
+                onClick={handleSwap}
               >
-                Swap
+                swap
               </button>
             </div>
           </div>
@@ -113,12 +147,12 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
       <Sheet open={showSwapSheet} onOpenChange={setShowSwapSheet}>
         <SheetContent className="w-[90%] sm:max-w-[540px] bg-stake-background border-stake-card">
           <SheetHeader>
-            <SheetTitle className="text-xl font-bold text-stake-text">{name} Index</SheetTitle>
+            <SheetTitle className="text-xl font-bold text-stake-text">{name} index</SheetTitle>
           </SheetHeader>
           
           <div className="mt-6">
             <div className="mb-4">
-              <h3 className="text-lg font-bold text-stake-text mb-1">Total Weighted Market Cap</h3>
+              <h3 className="text-lg font-bold text-stake-text mb-1">total weighted market cap</h3>
               <p className="text-2xl font-bold text-green-500">${totalMarketCap.toLocaleString()}</p>
             </div>
             
@@ -146,7 +180,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
             </div>
             
             <div className="mb-6">
-              <h3 className="text-lg font-bold text-stake-text mb-3">Tokens</h3>
+              <h3 className="text-lg font-bold text-stake-text mb-3">tokens</h3>
               <div className="space-y-3">
                 {tokens.map((token) => (
                   <div 
@@ -174,11 +208,11 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
                             className="h-7 px-2 text-xs"
                             onClick={() => handleCopyAddress(token.address)}
                           >
-                            Copy
+                            copy
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-2 text-xs">
-                          Address copied!
+                          address copied!
                         </PopoverContent>
                       </Popover>
                     </div>
@@ -188,14 +222,14 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
             </div>
             
             <div className="bg-stake-card p-4 rounded-lg">
-              <h3 className="text-lg font-bold text-stake-text mb-3">Swap</h3>
+              <h3 className="text-lg font-bold text-stake-text mb-3">swap</h3>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 bg-[#9945FF] rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-xs font-bold">SOL</span>
+                  <span className="text-white text-xs font-bold">sol</span>
                 </div>
                 <Input
                   type="number"
-                  placeholder="Amount"
+                  placeholder="amount"
                   className="bg-stake-darkbg border-stake-card text-stake-text"
                   value={solanaAmount}
                   onChange={(e) => setSolanaAmount(e.target.value)}
@@ -204,7 +238,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
               <Button 
                 className="w-full bg-green-500 hover:bg-green-600 text-white rounded-full py-2"
               >
-                Swap {solanaAmount} SOL for {name}
+                swap {solanaAmount} sol for {name}
               </Button>
             </div>
           </div>

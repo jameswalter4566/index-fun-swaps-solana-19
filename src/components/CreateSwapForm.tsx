@@ -6,9 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 
 const CreateSwapForm: React.FC = () => {
   const { toast } = useToast();
+  const { connected } = useWallet();
+  const { setVisible } = useWalletModal();
+  
   const [formData, setFormData] = useState({
     name: '',
     token1: '',
@@ -26,6 +31,17 @@ const CreateSwapForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if wallet is connected
+    if (!connected) {
+      toast({
+        title: "wallet not connected",
+        description: "please connect your wallet to create an index",
+        variant: "destructive",
+      });
+      setVisible(true);
+      return;
+    }
     
     // Validate form
     if (!formData.name || !formData.token1 || !formData.token2) {
@@ -77,16 +93,16 @@ const CreateSwapForm: React.FC = () => {
 
   // Add placeholder tokens for preview
   const previewTokens = [
-    { name: 'Token 1', address: formData.token1 || '0x...', imageUrl: '' },
-    { name: 'Token 2', address: formData.token2 || '0x...', imageUrl: '' }
+    { name: 'token 1', address: formData.token1 || '0x...', imageUrl: '' },
+    { name: 'token 2', address: formData.token2 || '0x...', imageUrl: '' }
   ];
 
   if (formData.token3) {
-    previewTokens.push({ name: 'Token 3', address: formData.token3, imageUrl: '' });
+    previewTokens.push({ name: 'token 3', address: formData.token3, imageUrl: '' });
   }
 
   if (formData.token4) {
-    previewTokens.push({ name: 'Token 4', address: formData.token4, imageUrl: '' });
+    previewTokens.push({ name: 'token 4', address: formData.token4, imageUrl: '' });
   }
 
   return (
