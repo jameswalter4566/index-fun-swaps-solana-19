@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Heart, CircleDot } from 'lucide-react';
@@ -13,7 +12,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { useToast } from '@/hooks/use-toast';
 import { useIndexStore, IndexData, Token } from '@/stores/useIndexStore';
-import { generateChartData } from '@/lib/tokenService';
+import { generateChartData, getTokenData } from '@/lib/tokenService';
 
 interface IndexCardProps {
   index: IndexData;
@@ -25,6 +24,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
   const [showSwapSheet, setShowSwapSheet] = useState(false);
   const [solanaAmount, setSolanaAmount] = useState('1');
   const [chartData, setChartData] = useState<any[]>([]);
+  const [tokenDetails, setTokenDetails] = useState<Record<string, { marketCap?: number }>>({});
   
   const { connected, publicKey } = useWallet();
   const { setVisible } = useWalletModal();
@@ -37,7 +37,27 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
   useEffect(() => {
     // Generate chart data when component mounts
     setChartData(generateChartData());
-  }, [id]);
+    
+    // Fetch additional token details including market cap
+    const fetchTokenDetails = async () => {
+      const details: Record<string, { marketCap?: number }> = {};
+      
+      await Promise.all(
+        tokens.map(async (token) => {
+          const tokenData = await getTokenData(token.address);
+          if (tokenData) {
+            details[token.address] = {
+              marketCap: tokenData.marketCap
+            };
+          }
+        })
+      );
+      
+      setTokenDetails(details);
+    };
+    
+    fetchTokenDetails();
+  }, [id, tokens]);
   
   const handleUpvote = () => {
     if (!connected || !publicKey) {
@@ -81,6 +101,20 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
     });
   };
   
+  const formatMarketCap = (marketCap?: number) => {
+    if (!marketCap) return 'N/A';
+    
+    if (marketCap >= 1000000000) {
+      return `$${(marketCap / 1000000000).toFixed(1)}B`;
+    } else if (marketCap >= 1000000) {
+      return `$${(marketCap / 1000000).toFixed(1)}M`;
+    } else if (marketCap >= 1000) {
+      return `$${(marketCap / 1000).toFixed(1)}K`;
+    } else {
+      return `$${marketCap}`;
+    }
+  };
+  
   const gainColor = gainPercentage >= 0 ? 'text-green-500' : 'text-red-500';
   const formattedMarketCap = marketCap ? `$${marketCap.toLocaleString()}` : 'Calculating...';
   
@@ -104,8 +138,12 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
                   <span 
                     key={token.address} 
                     className="inline-flex items-center gap-1 bg-stake-darkbg rounded-full px-3 py-1 text-xs text-stake-text"
+                    title={`Market Cap: ${formatMarketCap(tokenDetails[token.address]?.marketCap)}`}
                   >
                     {token.symbol || token.name}
+                    <span className="text-xs text-stake-muted ml-1">
+                      {formatMarketCap(tokenDetails[token.address]?.marketCap)}
+                    </span>
                   </span>
                 ))}
               </div>
@@ -181,7 +219,12 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
                           {token.symbol ? token.symbol.substring(0, 2) : token.name.substring(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="font-medium text-stake-text">{token.name}</span>
+                      <div>
+                        <span className="font-medium text-stake-text">{token.name}</span>
+                        <div className="text-xs text-stake-muted">
+                          Market Cap: {formatMarketCap(tokenDetails[token.address]?.marketCap)}
+                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center">
                       <span className="text-xs text-stake-muted mr-2 truncate max-w-[120px]">
