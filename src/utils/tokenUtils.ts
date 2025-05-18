@@ -10,10 +10,28 @@ export interface TokenMetadata {
   marketCap?: number;
 }
 
-// Birdeye API to get token data
-const API_KEY = 'ae627906-aa82-432d-9d4f-511db3fe7b70'; // Public API key for demo purposes
+interface JupiterToken {
+  address: string;
+  chainId: number;
+  decimals: number;
+  name: string;
+  symbol: string;
+  logoURI?: string;
+  tags?: string[];
+  extensions?: Record<string, any>;
+}
 
-// Token information we know about 
+interface JupiterPriceResponse {
+  data: Record<string, {
+    id: string;
+    mintSymbol: string;
+    vsToken: string;
+    vsTokenSymbol: string;
+    price: number;
+  }>;
+}
+
+// Fallback token information for when API fails
 export const KNOWN_TOKENS: Record<string, Partial<TokenMetadata>> = {
   'CgZTsf3rNnXsy3YkXmRr988p1Lrv9FpqBpLPWrAbmoon': {
     name: 'Moon Token',
@@ -38,55 +56,107 @@ export const KNOWN_TOKENS: Record<string, Partial<TokenMetadata>> = {
   }
 };
 
-export async function fetchTokenMetadata(address: string): Promise<TokenMetadata> {
+// Cache for Jupiter token list to avoid repeated fetches
+let jupiterTokensCache: Record<string, JupiterToken> | null = null;
+let lastFetchTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Function to get Jupiter token list and create a lookup map
+async function getJupiterTokenMap(): Promise<Record<string, JupiterToken>> {
+  const now = Date.now();
+  
+  // Return from cache if available and not expired
+  if (jupiterTokensCache && (now - lastFetchTime < CACHE_DURATION)) {
+    console.log('Using cached Jupiter token list');
+    return jupiterTokensCache;
+  }
+  
   try {
-    // First check if we have this token in our known list
-    if (KNOWN_TOKENS[address]) {
-      console.log(`Using cached data for token: ${address}`);
-      const knownData = KNOWN_TOKENS[address];
-      return {
-        name: knownData.name || 'Unknown',
-        symbol: knownData.symbol || 'Unknown',
-        address: address,
-        image: knownData.image,
-        price: knownData.price || 0,
-        marketCap: knownData.marketCap || 0,
-      };
-    }
-    
-    // If not in our known list, try the API
-    console.log(`Fetching token data from Birdeye for: ${address}`);
-    const response = await fetch(`https://public-api.birdeye.so/public/token_list/solana?address=${address}`, {
-      headers: {
-        'X-API-KEY': API_KEY,
-      },
-    });
+    console.log('Fetching Jupiter token list...');
+    const response = await fetch('https://quote-api.jup.ag/v6/tokens');
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch token data: ${response.status}`);
+      throw new Error(`Failed to fetch token list: ${response.status}`);
     }
     
-    const data = await response.json();
+    const tokens = await response.json() as JupiterToken[];
     
-    if (data.success && data.data && data.data.length > 0) {
-      const tokenData = data.data[0];
+    // Create lookup by mint address
+    const map: Record<string, JupiterToken> = {};
+    tokens.forEach(token => {
+      map[token.address] = token;
+    });
+    
+    // Update cache
+    jupiterTokensCache = map;
+    lastFetchTime = now;
+    
+    console.log(`Loaded ${tokens.length} tokens from Jupiter API`);
+    return map;
+  } catch (error) {
+    console.error('Error fetching Jupiter token list:', error);
+    throw error;
+  }
+}
+
+// Function to fetch token price from Jupiter
+async function getTokenPrice(address: string): Promise<number | undefined> {
+  try {
+    console.log(`Fetching price for token: ${address}`);
+    const response = await fetch(`https://price.jup.ag/v4/price?ids=${address}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch token price: ${response.status}`);
+    }
+    
+    const data = await response.json() as JupiterPriceResponse;
+    return data.data[address]?.price;
+  } catch (error) {
+    console.error(`Error fetching price for ${address}:`, error);
+    return undefined;
+  }
+}
+
+// Main function to fetch token metadata from Jupiter API
+export async function fetchTokenMetadata(address: string): Promise<TokenMetadata> {
+  try {
+    // Get Jupiter token data
+    const tokenMap = await getJupiterTokenMap();
+    const jupiterToken = tokenMap[address];
+    
+    if (jupiterToken) {
+      console.log(`Found Jupiter data for token: ${address}`);
+      
+      // Try to get the price
+      let price: number | undefined;
+      try {
+        price = await getTokenPrice(address);
+      } catch (priceError) {
+        console.error(`Error fetching price, using default: ${priceError}`);
+      }
+      
+      // Estimate market cap - this is a very rough estimation
+      // In reality, we would need circulating supply data which Jupiter doesn't provide
+      const marketCap = price ? price * 100000000 : undefined; // Arbitrary multiplier
+      
       return {
-        name: tokenData.name || tokenData.symbol || 'Unknown',
-        symbol: tokenData.symbol || 'Unknown',
+        name: jupiterToken.name || 'Unknown',
+        symbol: jupiterToken.symbol || 'Unknown',
         address: address,
-        image: tokenData.logoURI || undefined,
-        price: tokenData.price || 0,
-        marketCap: tokenData.marketCap || 0,
+        image: jupiterToken.logoURI,
+        price,
+        marketCap,
       };
     }
     
-    throw new Error('Token data not found');
+    throw new Error('Token not found in Jupiter list');
   } catch (error) {
-    console.error(`Error fetching token metadata for ${address}:`, error);
+    console.error(`Error fetching Jupiter metadata for ${address}:`, error);
     
-    // Fall back to mock data for demo purposes
+    // Fall back to known tokens
     const fallbackData = KNOWN_TOKENS[address];
     if (fallbackData) {
+      console.log(`Using fallback data for token: ${address}`);
       return {
         name: fallbackData.name || 'Unknown',
         symbol: fallbackData.symbol || 'Unknown',
@@ -97,6 +167,7 @@ export async function fetchTokenMetadata(address: string): Promise<TokenMetadata
       };
     }
     
+    // If all else fails, return minimal data
     return {
       name: 'Unknown',
       symbol: 'Unknown',
