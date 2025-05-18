@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const CreateSwapForm: React.FC = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
@@ -51,8 +49,20 @@ const CreateSwapForm: React.FC = () => {
         description: `Your ${formData.name} INDEX has been created successfully.`,
       });
       
-      // Navigate back to home page
-      setTimeout(() => navigate('/'), 2000);
+      // Clear form and close drawer (relies on parent component)
+      setFormData({
+        name: '',
+        token1: '',
+        token2: '',
+        token3: '',
+        token4: '',
+      });
+      
+      // The drawer will close after successful create
+      const drawerCloseButton = document.querySelector('[data-drawer-close="true"]') as HTMLButtonElement;
+      if (drawerCloseButton) {
+        setTimeout(() => drawerCloseButton.click(), 1500);
+      }
     } catch (error) {
       console.error("Error creating INDEX:", error);
       toast({
@@ -80,14 +90,8 @@ const CreateSwapForm: React.FC = () => {
   }
 
   return (
-    <Card className="max-w-lg mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center">Create a New INDEX</CardTitle>
-        <CardDescription className="text-center">
-          Create a bundle of tokens that people can swap into with a single transaction
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <Card className="mt-2">
+      <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="name">INDEX Name</Label>
