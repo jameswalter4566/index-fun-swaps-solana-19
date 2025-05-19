@@ -22,7 +22,7 @@ export function useSupabaseRealtime<T>(
         },
         (payload) => {
           onChange(payload.new as T);
-        }
+        },
       )
       .subscribe();
 
