@@ -2,6 +2,7 @@
 import React from 'react';
 import { Heart } from 'lucide-react';
 import { Token } from '@/stores/useIndexStore';
+import { useMultiTokenSubscription } from '@/hooks/useTokenSubscription';
 
 interface IndexCardContentProps {
   name: string;
@@ -28,6 +29,31 @@ const IndexCardContent: React.FC<IndexCardContentProps> = ({
   onUpvote,
   onSwap
 }) => {
+  // Subscribe to all tokens in this index for real-time updates
+  const tokenAddresses = tokens.map(token => token.address);
+  const liveTokenData = useMultiTokenSubscription(tokenAddresses);
+
+  // Calculate the live 24h percentage change based on all tokens
+  const liveGainPercentage = tokenAddresses.length > 0 
+    ? tokenAddresses.reduce((sum, address) => {
+        const tokenData = liveTokenData[address];
+        if (tokenData?.change24h !== undefined) {
+          return sum + (tokenData.change24h || 0);
+        }
+        return sum;
+      }, 0) / tokenAddresses.length
+    : gainPercentage;
+
+  // Use live data if available, otherwise fall back to the provided value
+  const displayedGainPercentage = isNaN(liveGainPercentage) ? 
+    gainPercentage : 
+    liveGainPercentage;
+  
+  // Calculate the color based on the displayed percentage
+  const displayedGainColor = displayedGainPercentage >= 0 
+    ? 'text-green-500' 
+    : 'text-red-500';
+
   return (
     <div className="space-y-4">
       {/* Display weighted market cap */}
@@ -39,14 +65,25 @@ const IndexCardContent: React.FC<IndexCardContentProps> = ({
       <div>
         <h4 className="text-sm font-medium text-stake-muted mb-2">tokens</h4>
         <div className="flex flex-wrap gap-2">
-          {tokens.map((token) => (
-            <span 
-              key={token.address} 
-              className="inline-flex items-center gap-1 bg-stake-darkbg rounded-full px-3 py-1 text-xs text-stake-text"
-            >
-              {token.symbol || token.name}
-            </span>
-          ))}
+          {tokens.map((token) => {
+            // Get live token data if available
+            const liveToken = liveTokenData[token.address];
+            
+            return (
+              <span 
+                key={token.address} 
+                className="inline-flex items-center gap-1 bg-stake-darkbg rounded-full px-3 py-1 text-xs text-stake-text"
+              >
+                {(liveToken?.symbol || token.symbol || token.name)}
+                
+                {liveToken?.change24h !== undefined && (
+                  <span className={liveToken.change24h >= 0 ? 'text-green-500' : 'text-red-500'}>
+                    {liveToken.change24h >= 0 ? '+' : ''}{liveToken.change24h.toFixed(1)}%
+                  </span>
+                )}
+              </span>
+            );
+          })}
         </div>
       </div>
       
