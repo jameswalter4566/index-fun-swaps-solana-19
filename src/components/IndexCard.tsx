@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Heart, CircleDot } from 'lucide-react';
@@ -77,8 +76,8 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
     fetchWeightedMarketCap();
   }, [tokens]);
   
+  // Generate chart data when component mounts
   useEffect(() => {
-    // Generate chart data when component mounts
     setChartData(generateChartData());
   }, [id]);
 
@@ -231,7 +230,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
           <div className="space-y-4">
             {/* Display weighted market cap */}
             <div className="bg-stake-darkbg/50 p-2 rounded-md">
-              <span className="text-xs text-stake-muted">total market cap</span>
+              <span className="text-xs text-stake-muted">total weighted market cap</span>
               <p className="text-sm font-semibold text-stake-text">{formattedWeightedMarketCap}</p>
             </div>
             
@@ -284,7 +283,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
           <div className="mt-6">
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <h3 className="text-sm font-medium text-stake-muted">total market cap</h3>
+                <h3 className="text-sm font-medium text-stake-muted">total weighted market cap</h3>
                 <p className="text-xl font-bold text-stake-text">{formattedWeightedMarketCap}</p>
               </div>
               <div>
