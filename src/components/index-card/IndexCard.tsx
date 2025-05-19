@@ -87,9 +87,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
   };
   
   const gainColor = getPercentageColor(gainPercentage);
-  const formattedWeightedMarketCap = isLoadingMarketCap
-    ? 'Calculating...'
-    : formatMarketCap(weightedMarketCap);
+  const formattedWeightedMarketCap = formatMarketCap(weightedMarketCap);
   const formattedVolume = formatVolume(totalVolume);
   
   return (
@@ -115,6 +113,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
             isUpvoted={!!isUpvoted}
             onUpvote={handleUpvote}
             onSwap={handleSwap}
+            isLoadingMarketCap={isLoadingMarketCap}
           />
         </CardContent>
       </Card>

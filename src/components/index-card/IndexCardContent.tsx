@@ -2,6 +2,7 @@
 import React from 'react';
 import { Heart } from 'lucide-react';
 import { Token } from '@/stores/useIndexStore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface IndexCardContentProps {
   name: string;
@@ -14,6 +15,7 @@ interface IndexCardContentProps {
   isUpvoted: boolean;
   onUpvote: () => void;
   onSwap: () => void;
+  isLoadingMarketCap?: boolean;
 }
 
 const IndexCardContent: React.FC<IndexCardContentProps> = ({
@@ -26,14 +28,19 @@ const IndexCardContent: React.FC<IndexCardContentProps> = ({
   upvotes,
   isUpvoted,
   onUpvote,
-  onSwap
+  onSwap,
+  isLoadingMarketCap = false
 }) => {
   return (
     <div className="space-y-4">
       {/* Display weighted market cap */}
       <div className="bg-stake-darkbg/50 p-2 rounded-md">
         <span className="text-xs text-stake-muted">total weighted market cap</span>
-        <p className="text-sm font-semibold text-stake-text">{formattedWeightedMarketCap}</p>
+        {isLoadingMarketCap ? (
+          <Skeleton className="h-4 w-24 bg-stake-darkbg mt-1" />
+        ) : (
+          <p className="text-sm font-semibold text-stake-text">{formattedWeightedMarketCap}</p>
+        )}
       </div>
       
       <div>

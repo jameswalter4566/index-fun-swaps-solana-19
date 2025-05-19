@@ -20,7 +20,7 @@ export function useSupabaseRealtime<T>(
           schema: 'public',
           table,
           ...(filter ? { filter } : {}),
-        } as any, // Type assertion needed due to TypeScript limitation
+        },
         (payload: RealtimePostgresChangesPayload<any>) => {
           onChange(payload.new as T);
         }
