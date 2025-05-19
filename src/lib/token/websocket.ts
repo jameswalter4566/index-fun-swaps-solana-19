@@ -196,6 +196,7 @@ class TokenWebSocketService {
     const existingTokenData = tokenStore.getTokenData(update.address);
     if (tokenUpdate.price !== undefined && existingTokenData?.totalSupply) {
       tokenUpdate.marketCap = tokenUpdate.price * existingTokenData.totalSupply;
+      console.log(`Updated market cap for ${update.address}: ${tokenUpdate.marketCap}`);
     }
     
     // Update the token store with new data

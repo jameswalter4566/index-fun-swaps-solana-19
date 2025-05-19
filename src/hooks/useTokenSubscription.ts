@@ -47,6 +47,7 @@ export function useTokenSubscription(tokenAddress: string): TokenData | null {
  * Hook for subscribing to multiple tokens at once
  */
 export function useMultiTokenSubscription(tokenAddresses: string[]): Record<string, TokenData> {
+  // Use the store directly to ensure we get real-time updates
   const tokens = useTokenStore(state => state.tokens);
   const previousAddressesRef = useRef<Set<string>>(new Set());
   const [subscribedTokens, setSubscribedTokens] = useState<Set<string>>(new Set());

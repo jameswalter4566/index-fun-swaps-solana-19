@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { TokenData, getTokenData, calculateIndexWeightedMarketCap, generateChartData } from '@/lib/token';
 import { Token } from '@/stores/useIndexStore';
@@ -43,7 +42,12 @@ export function useIndexCardData(tokens: Token[]) {
       }
     }
     
-    return validTokenCount > 0 ? totalMarketCap / validTokenCount : null;
+    // Only return a value if we have market cap data for at least one token
+    if (validTokenCount > 0) {
+      console.log(`Live calculated weighted market cap: ${totalMarketCap / validTokenCount}`);
+      return totalMarketCap / validTokenCount;
+    }
+    return null;
   }, [liveTokenData, tokenAddresses]);
   
   // Function to fetch market cap with retry capability
@@ -224,7 +228,13 @@ export function useIndexCardData(tokens: Token[]) {
     isLoadingDetails,
     weightedMarketCap: effectiveMarketCap,
     isLoadingMarketCap,
-    handleCopyAddress,
+    handleCopyAddress: (address: string) => {
+      navigator.clipboard.writeText(address);
+      toast({
+        title: "address copied",
+        description: "token address copied to clipboard",
+      });
+    },
     formatMarketCap,
     formatVolume,
     refreshMarketCap,
