@@ -3,74 +3,17 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  * {
-    text-transform: lowercase;
-  }
-
-  :root {
-    --background: 220 20% 14%;
-    --foreground: 0 0% 100%;
-
-    --card: 217 22% 18%;
-    --card-foreground: 0 0% 100%;
-
-    --popover: 217 22% 18%;
-    --popover-foreground: 0 0% 100%;
-
-    --primary: 216 100% 61%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 217 19% 27%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 217 15% 34%;
-    --muted-foreground: 217 10% 75%;
-
-    --accent: 216 100% 61%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 217 19% 27%;
-    --input: 217 19% 27%;
-    --ring: 216 100% 61%;
-
-    --radius: 1rem;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-}
-
-@layer base {
-  body {
-    @apply bg-stake-background text-foreground;
-    font-family: 'Inter', sans-serif;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight;
-  }
-}
-
-@layer components {
-  .btn-solana {
-    @apply bg-stake-accent hover:bg-stake-highlight text-white font-medium py-2 px-4 rounded-full transition-all;
+@layer utilities {
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
   
-  .btn-outline {
-    @apply border border-stake-accent text-stake-accent hover:bg-stake-accent hover:text-white font-medium py-2 px-4 rounded-full transition-all;
-  }
-  
-  .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  @keyframes pulse-subtle {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
   }
 }

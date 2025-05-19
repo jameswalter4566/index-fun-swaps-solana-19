@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import PercentageChanges from './PercentageChanges';
@@ -23,6 +24,7 @@ interface IndexSwapSheetProps {
   onCopyAddress: (address: string) => void;
   solanaAmount: string;
   onSolanaAmountChange: (amount: string) => void;
+  hasLiveData?: boolean;
 }
 
 const IndexSwapSheet: React.FC<IndexSwapSheetProps> = ({
@@ -40,7 +42,8 @@ const IndexSwapSheet: React.FC<IndexSwapSheetProps> = ({
   tokenDetails,
   onCopyAddress,
   solanaAmount,
-  onSolanaAmountChange
+  onSolanaAmountChange,
+  hasLiveData = false
 }) => {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -53,7 +56,9 @@ const IndexSwapSheet: React.FC<IndexSwapSheetProps> = ({
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <h3 className="text-sm font-medium text-stake-muted">total weighted market cap</h3>
-              <p className="text-xl font-bold text-stake-text">{formattedWeightedMarketCap}</p>
+              <p className={`text-xl font-bold text-stake-text ${hasLiveData ? 'animate-pulse-subtle' : ''}`}>
+                {formattedWeightedMarketCap}
+              </p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-stake-muted">total volume</h3>
@@ -66,6 +71,7 @@ const IndexSwapSheet: React.FC<IndexSwapSheetProps> = ({
             percentChange1h={percentChange1h}
             percentChange6h={percentChange6h}
             gainPercentage={gainPercentage}
+            isLive={hasLiveData}
           />
           
           <IndexChart data={chartData} />

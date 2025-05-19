@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import debounce from 'lodash/debounce';
 import { tokenWebSocketService } from '@/lib/token/websocket';
 import { tokenStore } from '@/lib/token/tokenStore';
@@ -10,7 +10,11 @@ import { TokenData } from '@/lib/token/types';
  * Hook for subscribing to token updates via WebSocket
  */
 export function useTokenSubscription(tokenAddress: string): TokenData | null {
+  // Get token data from the store
   const token = useTokenStore(state => state.tokens[tokenAddress]);
+  
+  // Track subscription status
+  const [isSubscribed, setIsSubscribed] = useState(false);
   
   // Subscribe to token updates when the component mounts
   useEffect(() => {
@@ -19,8 +23,9 @@ export function useTokenSubscription(tokenAddress: string): TokenData | null {
     // Mark the token as visible
     tokenStore.addVisibleToken(tokenAddress);
     
-    // Subscribe to updates
+    // Subscribe to updates and track status
     tokenWebSocketService.subscribe(tokenAddress);
+    setIsSubscribed(true);
     
     // Fetch initial data if not available
     if (!token) {
@@ -31,6 +36,7 @@ export function useTokenSubscription(tokenAddress: string): TokenData | null {
     return () => {
       tokenStore.removeVisibleToken(tokenAddress);
       tokenWebSocketService.unsubscribe(tokenAddress);
+      setIsSubscribed(false);
     };
   }, [tokenAddress]);
   
@@ -43,20 +49,41 @@ export function useTokenSubscription(tokenAddress: string): TokenData | null {
 export function useMultiTokenSubscription(tokenAddresses: string[]): Record<string, TokenData> {
   const tokens = useTokenStore(state => state.tokens);
   const previousAddressesRef = useRef<Set<string>>(new Set());
+  const [subscribedTokens, setSubscribedTokens] = useState<Set<string>>(new Set());
   
   const debouncedSubscriptionUpdate = useRef(
     debounce((toAdd: string[], toRemove: string[]) => {
       // Subscribe to new tokens
-      toAdd.forEach(address => {
-        if (!tokenWebSocketService.isSubscribed(address)) {
-          tokenWebSocketService.subscribe(address);
-        }
-      });
+      if (toAdd.length > 0) {
+        console.log(`Subscribing to ${toAdd.length} new tokens:`, toAdd);
+        toAdd.forEach(address => {
+          if (!tokenWebSocketService.isSubscribed(address)) {
+            tokenWebSocketService.subscribe(address);
+          }
+        });
+        
+        // Update the subscribed tokens set
+        setSubscribedTokens(prev => {
+          const newSet = new Set(prev);
+          toAdd.forEach(address => newSet.add(address));
+          return newSet;
+        });
+      }
       
       // Unsubscribe from removed tokens
-      toRemove.forEach(address => {
-        tokenWebSocketService.unsubscribe(address);
-      });
+      if (toRemove.length > 0) {
+        console.log(`Unsubscribing from ${toRemove.length} tokens:`, toRemove);
+        toRemove.forEach(address => {
+          tokenWebSocketService.unsubscribe(address);
+        });
+        
+        // Update the subscribed tokens set
+        setSubscribedTokens(prev => {
+          const newSet = new Set(prev);
+          toRemove.forEach(address => newSet.delete(address));
+          return newSet;
+        });
+      }
     }, 300)
   ).current;
   
@@ -78,11 +105,13 @@ export function useMultiTokenSubscription(tokenAddresses: string[]): Record<stri
       .filter(address => !currentAddresses.has(address));
     
     // Fetch initial data for any new tokens
-    toAdd.forEach(address => {
-      if (!tokens[address]) {
-        tokenStore.fetchTokenData(address);
-      }
-    });
+    if (toAdd.length > 0) {
+      toAdd.forEach(address => {
+        if (!tokens[address]) {
+          tokenStore.fetchTokenData(address);
+        }
+      });
+    }
     
     // Update visible tokens
     toRemove.forEach(address => {

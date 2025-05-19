@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Heart } from 'lucide-react';
 import { Token } from '@/stores/useIndexStore';
 import { useMultiTokenSubscription } from '@/hooks/useTokenSubscription';
@@ -33,33 +33,76 @@ const IndexCardContent: React.FC<IndexCardContentProps> = ({
   const tokenAddresses = tokens.map(token => token.address);
   const liveTokenData = useMultiTokenSubscription(tokenAddresses);
 
-  // Calculate the live 24h percentage change based on all tokens
-  const liveGainPercentage = tokenAddresses.length > 0 
-    ? tokenAddresses.reduce((sum, address) => {
-        const tokenData = liveTokenData[address];
-        if (tokenData?.change24h !== undefined) {
-          return sum + (tokenData.change24h || 0);
+  // Calculate live metrics based on WebSocket data
+  const liveMetrics = useMemo(() => {
+    if (Object.keys(liveTokenData).length === 0) return null;
+
+    // Calculate weighted averages from live data
+    let totalChange24h = 0;
+    let totalChange1h = 0;
+    let totalChange6h = 0;
+    let validTokenCount24h = 0;
+    let validTokenCount1h = 0;
+    let validTokenCount6h = 0;
+    let totalPrice = 0;
+    let validPriceCount = 0;
+    
+    for (const address of tokenAddresses) {
+      const token = liveTokenData[address];
+      if (token) {
+        if (token.change24h !== undefined) {
+          totalChange24h += token.change24h;
+          validTokenCount24h++;
         }
-        return sum;
-      }, 0) / tokenAddresses.length
-    : gainPercentage;
+        
+        if (token.change1h !== undefined) {
+          totalChange1h += token.change1h;
+          validTokenCount1h++;
+        }
+        
+        if (token.change6h !== undefined) {
+          totalChange6h += token.change6h;
+          validTokenCount6h++;
+        }
+        
+        if (token.price !== undefined) {
+          totalPrice += token.price;
+          validPriceCount++;
+        }
+      }
+    }
+    
+    // Calculate averages only if we have valid data
+    return {
+      change24h: validTokenCount24h > 0 ? totalChange24h / validTokenCount24h : null,
+      change1h: validTokenCount1h > 0 ? totalChange1h / validTokenCount1h : null,
+      change6h: validTokenCount6h > 0 ? totalChange6h / validTokenCount6h : null,
+      averagePrice: validPriceCount > 0 ? totalPrice / validPriceCount : null,
+      hasLiveData: validTokenCount24h > 0 || validTokenCount1h > 0 || validTokenCount6h > 0
+    };
+  }, [liveTokenData, tokenAddresses]);
 
   // Use live data if available, otherwise fall back to the provided value
-  const displayedGainPercentage = isNaN(liveGainPercentage) ? 
-    gainPercentage : 
-    liveGainPercentage;
+  const displayedGainPercentage = liveMetrics?.change24h !== null && liveMetrics?.change24h !== undefined 
+    ? liveMetrics.change24h 
+    : gainPercentage;
   
   // Calculate the color based on the displayed percentage
   const displayedGainColor = displayedGainPercentage >= 0 
     ? 'text-green-500' 
     : 'text-red-500';
 
+  // Determine if we have any live data
+  const hasLiveData = liveMetrics?.hasLiveData === true;
+
   return (
     <div className="space-y-4">
       {/* Display weighted market cap */}
       <div className="bg-stake-darkbg/50 p-2 rounded-md">
         <span className="text-xs text-stake-muted">total weighted market cap</span>
-        <p className="text-sm font-semibold text-stake-text">{formattedWeightedMarketCap}</p>
+        <p className={`text-sm font-semibold text-stake-text ${hasLiveData ? 'animate-pulse-subtle' : ''}`}>
+          {formattedWeightedMarketCap}
+        </p>
       </div>
       
       <div>
@@ -68,6 +111,7 @@ const IndexCardContent: React.FC<IndexCardContentProps> = ({
           {tokens.map((token) => {
             // Get live token data if available
             const liveToken = liveTokenData[token.address];
+            const hasLiveChange = liveToken?.change24h !== undefined;
             
             return (
               <span 
@@ -76,7 +120,7 @@ const IndexCardContent: React.FC<IndexCardContentProps> = ({
               >
                 {(liveToken?.symbol || token.symbol || token.name)}
                 
-                {liveToken?.change24h !== undefined && (
+                {hasLiveChange && (
                   <span className={liveToken.change24h >= 0 ? 'text-green-500' : 'text-red-500'}>
                     {liveToken.change24h >= 0 ? '+' : ''}{liveToken.change24h.toFixed(1)}%
                   </span>
