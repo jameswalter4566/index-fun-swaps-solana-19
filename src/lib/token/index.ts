@@ -6,5 +6,3 @@ export * from './api';
 export * from './metrics';
 export * from './mockData';
 export * from './service';
-export * from './websocket';
-
