@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { SupabaseIndex, SupabaseToken } from '@/lib/token/types';
 
 export interface Token {
@@ -196,21 +196,13 @@ export const useIndexStore = create<IndexState>()(
         set({ isLoading: true, error: null });
         
         try {
-          // Delete tokens first due to foreign key constraint
-          const { error: tokensError } = await supabase
-            .from('tokens')
-            .delete()
-            .eq('index_id', id);
-          
-          if (tokensError) throw new Error(tokensError.message);
-          
-          // Delete the index
-          const { error: indexError } = await supabase
+          // Delete the index from Supabase (this will cascade to tokens due to FK constraint)
+          const { error } = await supabase
             .from('indexes')
             .delete()
             .eq('id', id);
           
-          if (indexError) throw new Error(indexError.message);
+          if (error) throw new Error(error.message);
           
           // Update local state
           set((state) => {
