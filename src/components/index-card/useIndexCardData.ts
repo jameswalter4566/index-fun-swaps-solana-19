@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { TokenData, getTokenData, calculateIndexWeightedMarketCap, generateChartData } from '@/lib/token';
 import { Token } from '@/stores/useIndexStore';
 import { useToast } from '@/hooks/use-toast';
-import { useMultiTokenSubscription } from '@/hooks/useTokenSubscription';
 
 export function useIndexCardData(tokens: Token[]) {
   const [showSwapSheet, setShowSwapSheet] = useState(false);
@@ -12,60 +12,10 @@ export function useIndexCardData(tokens: Token[]) {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [loadedTokenAddresses, setLoadedTokenAddresses] = useState<string[]>([]);
   const [weightedMarketCap, setWeightedMarketCap] = useState<number | null>(null);
-  const [previousMarketCap, setPreviousMarketCap] = useState<number | null>(null);
   const [isLoadingMarketCap, setIsLoadingMarketCap] = useState(false);
   const [marketCapFetchAttempts, setMarketCapFetchAttempts] = useState(0);
-  const [marketCapHistory, setMarketCapHistory] = useState<number[]>([]);
   
   const { toast } = useToast();
-  
-  // Get live token data from WebSocket
-  const tokenAddresses = tokens.map(token => token.address);
-  const liveTokenData = useMultiTokenSubscription(tokenAddresses);
-  
-  // Calculate live weighted market cap based on real-time price updates
-  const liveWeightedMarketCap = useMemo(() => {
-    if (Object.keys(liveTokenData).length === 0) return null;
-
-    let totalMarketCap = 0;
-    let validTokenCount = 0;
-    
-    // Calculate weighted market cap from live data
-    for (const address of tokenAddresses) {
-      const token = liveTokenData[address];
-      
-      if (token?.price && token?.totalSupply) {
-        const marketCap = token.price * token.totalSupply;
-        totalMarketCap += marketCap;
-        validTokenCount++;
-      } else if (token?.marketCap) {
-        totalMarketCap += token.marketCap;
-        validTokenCount++;
-      }
-    }
-    
-    // Only return a value if we have market cap data for at least one token
-    if (validTokenCount > 0) {
-      const calculatedMarketCap = totalMarketCap / validTokenCount;
-      
-      // Track market cap history for change detection
-      if (calculatedMarketCap !== weightedMarketCap) {
-        if (weightedMarketCap !== null) {
-          setPreviousMarketCap(weightedMarketCap);
-        }
-        
-        // Add to market cap history (keep max 10 entries)
-        setMarketCapHistory(prev => {
-          const newHistory = [...prev, calculatedMarketCap].slice(-10);
-          return newHistory;
-        });
-      }
-      
-      return calculatedMarketCap;
-    }
-    
-    return null;
-  }, [liveTokenData, tokenAddresses, weightedMarketCap]);
   
   // Function to fetch market cap with retry capability
   const fetchWeightedMarketCap = useCallback(async () => {
@@ -87,21 +37,10 @@ export function useIndexCardData(tokens: Token[]) {
       
       if (weightedMC !== null) {
         console.log(`Successfully calculated weighted market cap: ${weightedMC}`);
-        
-        // Store previous value for change detection
-        if (weightedMarketCap !== null && weightedMarketCap !== weightedMC) {
-          setPreviousMarketCap(weightedMarketCap);
-        }
-        
         setWeightedMarketCap(weightedMC);
-        
-        // Add to history (keep max 10 entries)
-        setMarketCapHistory(prev => {
-          const newHistory = [...prev, weightedMC].slice(-10);
-          return newHistory;
-        });
       } else {
         console.log("Failed to calculate weighted market cap - no valid market cap data available");
+        // We don't set to null here in case we already have a value from a previous successful fetch
       }
     } catch (error) {
       console.error("Error calculating weighted market cap:", error);
@@ -109,29 +48,25 @@ export function useIndexCardData(tokens: Token[]) {
       setIsLoadingMarketCap(false);
       setMarketCapFetchAttempts(prev => prev + 1);
     }
-  }, [tokens, marketCapFetchAttempts, weightedMarketCap]);
+  }, [tokens, marketCapFetchAttempts]);
   
-  // Update weighted market cap from live data
+  // Calculate weighted market cap when component mounts or tokens change
   useEffect(() => {
-    if (liveWeightedMarketCap !== null) {
-      setWeightedMarketCap(liveWeightedMarketCap);
-    }
-  }, [liveWeightedMarketCap]);
-  
-  // Set up a periodic refresh for the weighted market cap (every 3 seconds)
-  useEffect(() => {
-    // Initial fetch
+    console.log("Tokens changed or component mounted, fetching market cap data");
     fetchWeightedMarketCap();
     
-    // Set up refresh interval (every 3 seconds)
-    const refreshInterval = setInterval(() => {
-      console.log("Triggering 3-second refresh for weighted market cap");
-      fetchWeightedMarketCap();
-    }, 3000);
-    
-    // Clean up interval on unmount
-    return () => clearInterval(refreshInterval);
-  }, [fetchWeightedMarketCap]);
+    // Set up a retry if the first attempt fails
+    if (marketCapFetchAttempts === 0) {
+      const retryTimer = setTimeout(() => {
+        if (weightedMarketCap === null) {
+          console.log("Initial market cap fetch didn't succeed, retrying...");
+          fetchWeightedMarketCap();
+        }
+      }, 5000); // Retry after 5 seconds
+      
+      return () => clearTimeout(retryTimer);
+    }
+  }, [tokens, fetchWeightedMarketCap, marketCapFetchAttempts, weightedMarketCap]);
   
   // Generate chart data when component mounts
   useEffect(() => {
@@ -152,13 +87,6 @@ export function useIndexCardData(tokens: Token[]) {
               // Skip tokens we've already loaded
               if (tokenDetails[token.address]) {
                 details[token.address] = tokenDetails[token.address];
-                return;
-              }
-              
-              // Check if we already have live data from WebSocket
-              if (liveTokenData[token.address]) {
-                details[token.address] = liveTokenData[token.address];
-                newlyLoadedAddresses.push(token.address);
                 return;
               }
               
@@ -205,7 +133,7 @@ export function useIndexCardData(tokens: Token[]) {
       
       fetchTokenDetails();
     }
-  }, [showSwapSheet, tokens, tokenDetails, toast, fetchWeightedMarketCap, weightedMarketCap, liveTokenData]);
+  }, [showSwapSheet, tokens, tokenDetails, toast, fetchWeightedMarketCap, weightedMarketCap]);
 
   const handleCopyAddress = (address: string) => {
     navigator.clipboard.writeText(address);
@@ -214,9 +142,6 @@ export function useIndexCardData(tokens: Token[]) {
       description: "token address copied to clipboard",
     });
   };
-  
-  // If we have live market cap data, use it instead of the static one
-  const effectiveMarketCap = liveWeightedMarketCap !== null ? liveWeightedMarketCap : weightedMarketCap;
   
   // Format market cap value to human-readable string with appropriate suffix
   const formatMarketCap = (marketCap?: number | null) => {
@@ -259,16 +184,9 @@ export function useIndexCardData(tokens: Token[]) {
     chartData,
     tokenDetails,
     isLoadingDetails,
-    weightedMarketCap: effectiveMarketCap,
-    previousMarketCap,
+    weightedMarketCap,
     isLoadingMarketCap,
-    handleCopyAddress: (address: string) => {
-      navigator.clipboard.writeText(address);
-      toast({
-        title: "address copied",
-        description: "token address copied to clipboard",
-      });
-    },
+    handleCopyAddress,
     formatMarketCap,
     formatVolume,
     refreshMarketCap,

@@ -1,10 +1,8 @@
-
 import React from 'react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { TokenData } from '@/lib/token';
-import { useTokenSubscription } from '@/hooks/useTokenSubscription';
 
 interface TokenItemProps {
   token: {
@@ -18,16 +16,8 @@ interface TokenItemProps {
 }
 
 const TokenItem: React.FC<TokenItemProps> = ({ token, tokenDetail, onCopyAddress }) => {
-  // Subscribe to real-time updates for this token
-  const liveTokenData = useTokenSubscription(token.address);
-  
-  // Combine provided token details with live data, prioritizing live data
-  const combinedTokenData = liveTokenData
-    ? { ...tokenDetail, ...liveTokenData }
-    : tokenDetail;
-  
-  const marketCap = combinedTokenData?.marketCap;
-  const change24h = combinedTokenData?.change24h || 0;
+  const marketCap = tokenDetail?.marketCap;
+  const change24h = tokenDetail?.change24h || 0;
   const changeColor = change24h >= 0 ? 'text-green-500' : 'text-red-500';
 
   const formatMarketCap = (marketCap?: number) => {
@@ -49,19 +39,19 @@ const TokenItem: React.FC<TokenItemProps> = ({ token, tokenDetail, onCopyAddress
       <div className="flex items-center gap-2">
         <Avatar className="h-8 w-8">
           <AvatarImage 
-            src={combinedTokenData?.imageUrl || token.imageUrl} 
-            alt={combinedTokenData?.name || token.name} 
+            src={tokenDetail?.imageUrl || token.imageUrl} 
+            alt={tokenDetail?.name || token.name} 
           />
           <AvatarFallback className="bg-stake-darkbg text-xs">
             {token.symbol ? token.symbol.substring(0, 2) : 
-             (combinedTokenData?.symbol ? combinedTokenData.symbol.substring(0, 2) : 
+             (tokenDetail?.symbol ? tokenDetail.symbol.substring(0, 2) : 
              token.name.substring(0, 2).toUpperCase())}
           </AvatarFallback>
         </Avatar>
         <div>
           <span className="font-medium text-stake-text">
-            {combinedTokenData?.name || token.name}
-            {combinedTokenData?.symbol && <span className="ml-1 text-stake-muted text-xs">({combinedTokenData.symbol})</span>}
+            {tokenDetail?.name || token.name}
+            {tokenDetail?.symbol && <span className="ml-1 text-stake-muted text-xs">({tokenDetail.symbol})</span>}
           </span>
           <div className="flex items-center gap-2">
             <span className="text-xs text-stake-muted">
@@ -69,7 +59,7 @@ const TokenItem: React.FC<TokenItemProps> = ({ token, tokenDetail, onCopyAddress
             </span>
             {change24h !== undefined && (
               <span className={`text-xs ${changeColor}`}>
-                {change24h >= 0 ? '+' : ''}{change24h.toFixed(2)}%
+                {change24h >= 0 ? '+' : ''}{change24h}%
               </span>
             )}
           </div>

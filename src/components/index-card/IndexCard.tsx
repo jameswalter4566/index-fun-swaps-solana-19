@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
@@ -8,7 +8,6 @@ import { useIndexStore, IndexData } from '@/stores/useIndexStore';
 import { useIndexCardData } from './useIndexCardData';
 import IndexCardContent from './IndexCardContent';
 import IndexSwapSheet from './IndexSwapSheet';
-import { useMultiTokenSubscription } from '@/hooks/useTokenSubscription';
 
 interface IndexCardProps {
   index: IndexData;
@@ -52,51 +51,6 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
     formatVolume,
     getPercentageColor
   } = useIndexCardData(tokens);
-
-  // Subscribe to all tokens in this index for real-time updates
-  const tokenAddresses = tokens.map(token => token.address);
-  const liveTokenData = useMultiTokenSubscription(tokenAddresses);
-
-  // Calculate live metrics based on WebSocket data
-  const liveMetrics = useMemo(() => {
-    if (Object.keys(liveTokenData).length === 0) return null;
-
-    // Calculate weighted averages from live data
-    let totalChange24h = 0;
-    let totalChange1h = 0;
-    let totalChange6h = 0;
-    let validTokenCount24h = 0;
-    let validTokenCount1h = 0;
-    let validTokenCount6h = 0;
-    
-    for (const address of tokenAddresses) {
-      const token = liveTokenData[address];
-      if (token) {
-        if (token.change24h !== undefined) {
-          totalChange24h += token.change24h;
-          validTokenCount24h++;
-        }
-        
-        if (token.change1h !== undefined) {
-          totalChange1h += token.change1h;
-          validTokenCount1h++;
-        }
-        
-        if (token.change6h !== undefined) {
-          totalChange6h += token.change6h;
-          validTokenCount6h++;
-        }
-      }
-    }
-    
-    // Calculate averages only if we have valid data
-    return {
-      change24h: validTokenCount24h > 0 ? totalChange24h / validTokenCount24h : null,
-      change1h: validTokenCount1h > 0 ? totalChange1h / validTokenCount1h : null,
-      change6h: validTokenCount6h > 0 ? totalChange6h / validTokenCount6h : null,
-      hasLiveData: validTokenCount24h > 0 || validTokenCount1h > 0 || validTokenCount6h > 0
-    };
-  }, [liveTokenData, tokenAddresses]);
   
   const handleUpvote = () => {
     if (!connected || !publicKey) {
@@ -132,27 +86,11 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
     setShowSwapSheet(true);
   };
   
-  // Use live data if available, otherwise fall back to static values
-  const displayedGainPercentage = liveMetrics?.change24h !== null && liveMetrics?.change24h !== undefined 
-    ? liveMetrics.change24h 
-    : gainPercentage;
-    
-  const displayedChange1h = liveMetrics?.change1h !== null && liveMetrics?.change1h !== undefined
-    ? liveMetrics.change1h
-    : percentChange1h;
-    
-  const displayedChange6h = liveMetrics?.change6h !== null && liveMetrics?.change6h !== undefined
-    ? liveMetrics.change6h
-    : percentChange6h;
-  
-  const gainColor = getPercentageColor(displayedGainPercentage);
+  const gainColor = getPercentageColor(gainPercentage);
   const formattedWeightedMarketCap = isLoadingMarketCap
     ? 'Calculating...'
     : formatMarketCap(weightedMarketCap);
   const formattedVolume = formatVolume(totalVolume);
-  
-  // Determine if we have any live data
-  const hasLiveData = liveMetrics?.hasLiveData === true;
   
   return (
     <>
@@ -160,8 +98,8 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
         <CardHeader className="p-4 bg-stake-darkbg border-b border-stake-background">
           <div className="flex justify-between items-center">
             <CardTitle className="text-lg font-bold text-stake-text">{name}</CardTitle>
-            <span className={`font-bold ${gainColor} ${hasLiveData ? 'animate-pulse-subtle' : ''}`}>
-              {displayedGainPercentage >= 0 ? '+' : ''}{displayedGainPercentage.toFixed(2)}%
+            <span className={`font-bold ${gainColor}`}>
+              {gainPercentage >= 0 ? '+' : ''}{gainPercentage}%
             </span>
           </div>
         </CardHeader>
@@ -171,7 +109,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
             tokens={tokens}
             formattedWeightedMarketCap={formattedWeightedMarketCap}
             formattedVolume={formattedVolume}
-            gainPercentage={displayedGainPercentage}
+            gainPercentage={gainPercentage}
             gainColor={gainColor}
             upvotes={upvotes}
             isUpvoted={!!isUpvoted}
@@ -188,16 +126,15 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
         tokens={tokens}
         formattedWeightedMarketCap={formattedWeightedMarketCap}
         formattedVolume={formattedVolume}
-        percentChange1h={displayedChange1h}
-        percentChange6h={displayedChange6h}
-        gainPercentage={displayedGainPercentage}
+        percentChange1h={percentChange1h}
+        percentChange6h={percentChange6h}
+        gainPercentage={gainPercentage}
         chartData={chartData}
         isLoadingDetails={isLoadingDetails}
         tokenDetails={tokenDetails}
         onCopyAddress={handleCopyAddress}
         solanaAmount={solanaAmount}
         onSolanaAmountChange={setSolanaAmount}
-        hasLiveData={hasLiveData}
       />
     </>
   );
