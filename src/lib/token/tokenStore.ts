@@ -37,18 +37,19 @@ export const useTokenStore = create<TokenState>((set, get) => ({
   // Update token data in the store
   updateToken: (address: string, data: Partial<TokenData>) => {
     set((state) => {
-      const existingToken = state.tokens[address] || { address };
+      // Ensure we have a proper TokenData object with an address
+      const existingToken = state.tokens[address] || { address } as TokenData;
       
       // Track previous market cap for change detection
       if (data.marketCap !== undefined && existingToken.marketCap !== undefined && 
-          data.marketCap !== existingToken.marketCap && data.previousMarketCap === undefined) {
+          data.marketCap !== existingToken.marketCap) {
         data.previousMarketCap = existingToken.marketCap;
       }
       
       const updatedToken: TokenData = {
         ...existingToken,
         ...data,
-      } as TokenData;
+      };
       
       return {
         tokens: {

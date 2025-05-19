@@ -6,7 +6,9 @@ export interface TokenData {
   imageUrl?: string;
   decimals?: number;
   price?: number;
+  previousPrice?: number;  // Added for price change tracking
   marketCap?: number;
+  previousMarketCap?: number;  // Added for market cap change tracking
   change1h?: number;
   change6h?: number;
   change24h?: number;

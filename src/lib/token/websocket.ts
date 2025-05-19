@@ -1,4 +1,3 @@
-
 import { TokenData, TokenUpdateMessage, WebSocketMessage, WebSocketReadyState } from './types';
 import { tokenStore } from './tokenStore';
 import { isValidSolanaAddress } from './utils';
@@ -91,7 +90,7 @@ class TokenWebSocketService {
   }
   
   /**
-   * Calculate and update market cap for a token
+   * Update token market cap based on available data
    */
   private updateTokenMarketCap(token: TokenData) {
     if (!token || !token.address) return;
@@ -110,11 +109,10 @@ class TokenWebSocketService {
         // Store the last value for comparison
         this.lastMarketCapValues[token.address] = token.marketCap || 0;
         
-        // Update token with new market cap
+        // Update token with new market cap and track previous for animations
         tokenStore.updateToken(token.address, {
-          ...token,
           marketCap: newMarketCap,
-          previousMarketCap: token.marketCap, // Track previous value for UI animations
+          previousMarketCap: token.marketCap
         });
       }
     }
@@ -253,7 +251,8 @@ class TokenWebSocketService {
     
     // Store previous values for change detection
     if (existingTokenData) {
-      if (existingTokenData.price !== undefined) {
+      if (existingTokenData.price !== undefined && update.price !== undefined && 
+          existingTokenData.price !== update.price) {
         tokenUpdate.previousPrice = existingTokenData.price;
       }
       
