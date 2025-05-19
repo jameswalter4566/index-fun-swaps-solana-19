@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface PercentageChangesProps {
   percentChange1h: number;
@@ -8,6 +8,7 @@ interface PercentageChangesProps {
   marketCap?: number | null;
   formattedMarketCap?: string;
   isLive?: boolean;
+  previousMarketCap?: number | null;
 }
 
 const PercentageChanges: React.FC<PercentageChangesProps> = ({ 
@@ -16,8 +17,29 @@ const PercentageChanges: React.FC<PercentageChangesProps> = ({
   gainPercentage,
   marketCap,
   formattedMarketCap,
-  isLive = false
+  isLive = false,
+  previousMarketCap
 }) => {
+  const [direction, setDirection] = useState<'up' | 'down' | null>(null);
+  
+  // Track market cap changes for directional indicators
+  useEffect(() => {
+    if (previousMarketCap !== undefined && marketCap !== undefined && 
+        previousMarketCap !== null && marketCap !== null) {
+      if (marketCap > previousMarketCap) {
+        setDirection('up');
+        // Reset after animation completes
+        const timer = setTimeout(() => setDirection(null), 2000);
+        return () => clearTimeout(timer);
+      } else if (marketCap < previousMarketCap) {
+        setDirection('down');
+        // Reset after animation completes
+        const timer = setTimeout(() => setDirection(null), 2000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [marketCap, previousMarketCap]);
+
   const getPercentageColor = (value: number): string => {
     return value >= 0 ? 'text-green-500' : 'text-red-500';
   };
@@ -28,14 +50,27 @@ const PercentageChanges: React.FC<PercentageChangesProps> = ({
     return `${sign}${value.toFixed(2)}%`;
   };
 
+  // Determine market cap direction indicator and class
+  const marketCapIndicator = direction === 'up' ? '↑' : direction === 'down' ? '↓' : '';
+  const marketCapClass = direction === 'up' 
+    ? 'text-green-500 animate-pulse-subtle' 
+    : direction === 'down' 
+      ? 'text-red-500 animate-pulse-subtle' 
+      : isLive ? 'animate-pulse-subtle' : '';
+
   return (
     <div className="space-y-3">
       {/* Market Cap Display (if provided) */}
       {formattedMarketCap && (
         <div className="bg-stake-darkbg/50 p-2 rounded-md">
           <span className="text-xs text-stake-muted">total weighted market cap</span>
-          <p className={`text-sm font-semibold text-stake-text ${isLive ? 'animate-pulse-subtle' : ''}`}>
+          <p className={`text-sm font-semibold text-stake-text flex items-center ${marketCapClass}`}>
             {formattedMarketCap}
+            {marketCapIndicator && (
+              <span className={`ml-1 ${direction === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+                {marketCapIndicator}
+              </span>
+            )}
           </p>
         </div>
       )}

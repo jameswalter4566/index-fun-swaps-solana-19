@@ -12,8 +12,10 @@ export function useIndexCardData(tokens: Token[]) {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [loadedTokenAddresses, setLoadedTokenAddresses] = useState<string[]>([]);
   const [weightedMarketCap, setWeightedMarketCap] = useState<number | null>(null);
+  const [previousMarketCap, setPreviousMarketCap] = useState<number | null>(null);
   const [isLoadingMarketCap, setIsLoadingMarketCap] = useState(false);
   const [marketCapFetchAttempts, setMarketCapFetchAttempts] = useState(0);
+  const [marketCapHistory, setMarketCapHistory] = useState<number[]>([]);
   
   const { toast } = useToast();
   
@@ -44,11 +46,26 @@ export function useIndexCardData(tokens: Token[]) {
     
     // Only return a value if we have market cap data for at least one token
     if (validTokenCount > 0) {
-      console.log(`Live calculated weighted market cap: ${totalMarketCap / validTokenCount}`);
-      return totalMarketCap / validTokenCount;
+      const calculatedMarketCap = totalMarketCap / validTokenCount;
+      
+      // Track market cap history for change detection
+      if (calculatedMarketCap !== weightedMarketCap) {
+        if (weightedMarketCap !== null) {
+          setPreviousMarketCap(weightedMarketCap);
+        }
+        
+        // Add to market cap history (keep max 10 entries)
+        setMarketCapHistory(prev => {
+          const newHistory = [...prev, calculatedMarketCap].slice(-10);
+          return newHistory;
+        });
+      }
+      
+      return calculatedMarketCap;
     }
+    
     return null;
-  }, [liveTokenData, tokenAddresses]);
+  }, [liveTokenData, tokenAddresses, weightedMarketCap]);
   
   // Function to fetch market cap with retry capability
   const fetchWeightedMarketCap = useCallback(async () => {
@@ -70,7 +87,19 @@ export function useIndexCardData(tokens: Token[]) {
       
       if (weightedMC !== null) {
         console.log(`Successfully calculated weighted market cap: ${weightedMC}`);
+        
+        // Store previous value for change detection
+        if (weightedMarketCap !== null && weightedMarketCap !== weightedMC) {
+          setPreviousMarketCap(weightedMarketCap);
+        }
+        
         setWeightedMarketCap(weightedMC);
+        
+        // Add to history (keep max 10 entries)
+        setMarketCapHistory(prev => {
+          const newHistory = [...prev, weightedMC].slice(-10);
+          return newHistory;
+        });
       } else {
         console.log("Failed to calculate weighted market cap - no valid market cap data available");
       }
@@ -80,7 +109,14 @@ export function useIndexCardData(tokens: Token[]) {
       setIsLoadingMarketCap(false);
       setMarketCapFetchAttempts(prev => prev + 1);
     }
-  }, [tokens, marketCapFetchAttempts]);
+  }, [tokens, marketCapFetchAttempts, weightedMarketCap]);
+  
+  // Update weighted market cap from live data
+  useEffect(() => {
+    if (liveWeightedMarketCap !== null) {
+      setWeightedMarketCap(liveWeightedMarketCap);
+    }
+  }, [liveWeightedMarketCap]);
   
   // Calculate weighted market cap when component mounts or tokens change
   useEffect(() => {
@@ -227,6 +263,7 @@ export function useIndexCardData(tokens: Token[]) {
     tokenDetails,
     isLoadingDetails,
     weightedMarketCap: effectiveMarketCap,
+    previousMarketCap,
     isLoadingMarketCap,
     handleCopyAddress: (address: string) => {
       navigator.clipboard.writeText(address);

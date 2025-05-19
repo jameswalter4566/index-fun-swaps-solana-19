@@ -12,6 +12,9 @@ const RECONNECT_INTERVAL = 5000;
 // How long to wait before considering a connection failed (ms)
 const CONNECTION_TIMEOUT = 10000;
 
+// How often to trigger a market cap refresh even without price updates (ms)
+const REFRESH_INTERVAL = 15000;
+
 class TokenWebSocketService {
   private socket: WebSocket | null = null;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -22,6 +25,8 @@ class TokenWebSocketService {
   private isInitialized = false;
   private connectPromise: Promise<boolean> | null = null;
   private connectResolve: ((value: boolean) => void) | null = null;
+  private refreshInterval: ReturnType<typeof setInterval> | null = null;
+  private lastMarketCapValues: Record<string, number> = {};
 
   /**
    * Initialize and connect the WebSocket
@@ -52,7 +57,67 @@ class TokenWebSocketService {
       }, CONNECTION_TIMEOUT);
     });
 
+    // Set up regular market cap refresh
+    this.setupMarketCapRefresh();
+    
     return this.connectPromise;
+  }
+  
+  /**
+   * Set up periodic market cap refresh to ensure UI updates
+   * even when no price changes are coming from WebSocket
+   */
+  private setupMarketCapRefresh() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
+    
+    this.refreshInterval = setInterval(() => {
+      // Trigger a refresh for all visible tokens
+      const visibleTokens = tokenStore.getAllVisibleTokens();
+      
+      if (visibleTokens.length > 0) {
+        console.log(`Periodic market cap refresh for ${visibleTokens.length} tokens`);
+        
+        // For each visible token, recalculate market cap if we have the necessary data
+        visibleTokens.forEach(address => {
+          const token = tokenStore.getTokenData(address);
+          if (token) {
+            this.updateTokenMarketCap(token);
+          }
+        });
+      }
+    }, REFRESH_INTERVAL);
+  }
+  
+  /**
+   * Calculate and update market cap for a token
+   */
+  private updateTokenMarketCap(token: TokenData) {
+    if (!token || !token.address) return;
+    
+    // Store previous market cap for change detection
+    const prevMarketCap = this.lastMarketCapValues[token.address] || token.marketCap;
+    
+    // Only calculate if we have both price and total supply
+    if (token.price !== undefined && token.totalSupply) {
+      const newMarketCap = token.price * token.totalSupply;
+      
+      // Check if market cap has changed
+      if (token.marketCap !== newMarketCap) {
+        console.log(`Updated market cap for ${token.address}: ${newMarketCap} (previous: ${token.marketCap})`);
+        
+        // Store the last value for comparison
+        this.lastMarketCapValues[token.address] = token.marketCap || 0;
+        
+        // Update token with new market cap
+        tokenStore.updateToken(token.address, {
+          ...token,
+          marketCap: newMarketCap,
+          previousMarketCap: token.marketCap, // Track previous value for UI animations
+        });
+      }
+    }
   }
 
   /**
@@ -179,9 +244,23 @@ class TokenWebSocketService {
       return;
     }
     
+    // Get existing token data to use for market cap calculations
+    const existingTokenData = tokenStore.getTokenData(update.address);
+    
     const tokenUpdate: Partial<TokenData> = {
       address: update.address
     };
+    
+    // Store previous values for change detection
+    if (existingTokenData) {
+      if (existingTokenData.price !== undefined) {
+        tokenUpdate.previousPrice = existingTokenData.price;
+      }
+      
+      if (existingTokenData.marketCap !== undefined) {
+        tokenUpdate.previousMarketCap = existingTokenData.marketCap;
+      }
+    }
     
     // Copy over price data if available
     if (update.price !== undefined) tokenUpdate.price = update.price;
@@ -193,10 +272,18 @@ class TokenWebSocketService {
     tokenUpdate.lastUpdated = Date.now();
     
     // Calculate marketCap if we have price and totalSupply
-    const existingTokenData = tokenStore.getTokenData(update.address);
     if (tokenUpdate.price !== undefined && existingTokenData?.totalSupply) {
       tokenUpdate.marketCap = tokenUpdate.price * existingTokenData.totalSupply;
-      console.log(`Updated market cap for ${update.address}: ${tokenUpdate.marketCap}`);
+      
+      // Log market cap changes
+      if (existingTokenData.marketCap !== undefined && tokenUpdate.marketCap !== existingTokenData.marketCap) {
+        const diff = tokenUpdate.marketCap - existingTokenData.marketCap;
+        const direction = diff > 0 ? '↑' : '↓';
+        console.log(`Market cap changed for ${update.address}: ${existingTokenData.marketCap} -> ${tokenUpdate.marketCap} (${direction}${Math.abs(diff).toFixed(2)})`);
+        
+        // Store the last value for comparison
+        this.lastMarketCapValues[update.address] = existingTokenData.marketCap;
+      }
     }
     
     // Update the token store with new data
@@ -375,10 +462,16 @@ class TokenWebSocketService {
       this.connectionTimeout = null;
     }
     
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
+    }
+    
     this.isInitialized = false;
     this.subscribedTokens.clear();
     this.pendingSubscriptions.clear();
     this.pendingUnsubscriptions.clear();
+    this.lastMarketCapValues = {};
     
     if (this.connectResolve) {
       this.connectResolve(false);
