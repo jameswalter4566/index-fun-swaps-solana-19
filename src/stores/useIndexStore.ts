@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
@@ -89,6 +88,19 @@ export const useIndexStore = create<IndexState>()(
         set({ isLoading: true, error: null });
         
         try {
+          // Check if there are existing tables first
+          const { error: tablesCheckError } = await supabase
+            .from('indexes')
+            .select('id')
+            .limit(1);
+          
+          // If there's an error (likely table doesn't exist yet), just set empty indexes and return
+          if (tablesCheckError) {
+            console.warn('Tables may not exist yet:', tablesCheckError.message);
+            set({ indexes: {}, isLoading: false });
+            return;
+          }
+          
           // Fetch all indexes
           const { data: indexesData, error: indexesError } = await supabase
             .from('indexes')
@@ -106,7 +118,12 @@ export const useIndexStore = create<IndexState>()(
                 .select('*')
                 .eq('index_id', indexData.id);
                 
-              if (tokensError) throw new Error(tokensError.message);
+              if (tokensError) {
+                console.error(`Error fetching tokens for index ${indexData.id}:`, tokensError);
+                // Continue with empty tokens array instead of throwing
+                indexes[indexData.id] = convertSupabaseData(indexData, []);
+                return;
+              }
               
               // Convert data to our format
               indexes[indexData.id] = convertSupabaseData(indexData, tokensData);
@@ -301,12 +318,16 @@ export const useIndexStore = create<IndexState>()(
       },
       
       updateIndexGains: async (id, gainPercentage, marketCap, percentChange1h, percentChange6h) => {
-        set({ isLoading: true, error: null });
+        // Don't set loading state to avoid UI flicker during updates
+        set((state) => ({
+          error: null,
+          // Keep existing isLoading state to prevent UI interference
+        }));
         
         try {
           const index = get().indexes[id];
           if (!index) {
-            set({ isLoading: false });
+            console.log(`Index ${id} not found, skipping update`);
             return;
           }
           
@@ -324,9 +345,12 @@ export const useIndexStore = create<IndexState>()(
             })
             .eq('id', id);
           
-          if (error) throw new Error(error.message);
+          if (error) {
+            console.error(`Error updating index ${id} gains:`, error);
+            return; // Don't throw, just log and continue
+          }
           
-          // Update local state
+          // Update local state silently (no loading indicators)
           set((state) => ({
             indexes: {
               ...state.indexes,
@@ -339,23 +363,20 @@ export const useIndexStore = create<IndexState>()(
                 lastPriceUpdate
               },
             },
-            isLoading: false
           }));
           
         } catch (error) {
           console.error('Error updating index gains:', error);
-          set({ error: error instanceof Error ? error.message : 'An unknown error occurred', isLoading: false });
-          throw error;
+          // Don't set error state to prevent UI issues
         }
       },
       
       updateIndexVolume: async (id, volume) => {
-        set({ isLoading: true, error: null });
-        
+        // Don't set loading state to avoid UI flicker during updates
         try {
           const index = get().indexes[id];
           if (!index) {
-            set({ isLoading: false });
+            console.log(`Index ${id} not found, skipping volume update`);
             return;
           }
           
@@ -365,9 +386,12 @@ export const useIndexStore = create<IndexState>()(
             .update({ total_volume: volume })
             .eq('id', id);
           
-          if (error) throw new Error(error.message);
+          if (error) {
+            console.error(`Error updating index ${id} volume:`, error);
+            return; // Don't throw, just log and continue
+          }
           
-          // Update local state
+          // Update local state silently (no loading indicators)
           set((state) => ({
             indexes: {
               ...state.indexes,
@@ -376,13 +400,11 @@ export const useIndexStore = create<IndexState>()(
                 totalVolume: volume,
               },
             },
-            isLoading: false
           }));
           
         } catch (error) {
           console.error('Error updating index volume:', error);
-          set({ error: error instanceof Error ? error.message : 'An unknown error occurred', isLoading: false });
-          throw error;
+          // Don't set error state to prevent UI issues
         }
       },
       

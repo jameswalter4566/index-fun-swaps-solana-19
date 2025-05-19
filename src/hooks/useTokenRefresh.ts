@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   calculateIndexGainPercentage, 
   calculate1HourGainPercentage,
@@ -16,10 +16,15 @@ export function useTokenRefresh() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const { getAllIndexes, updateIndexGains, updateIndexVolume } = useIndexStore();
+  const refreshInProgressRef = useRef(false);
   
   const refreshTokenData = useCallback(async () => {
-    if (isRefreshing) return;
+    if (refreshInProgressRef.current) {
+      console.log("Token refresh already in progress, skipping");
+      return;
+    }
     
+    refreshInProgressRef.current = true;
     setIsRefreshing(true);
     console.log("Starting token data refresh");
     
@@ -27,9 +32,9 @@ export function useTokenRefresh() {
       const indexes = getAllIndexes();
       console.log(`Refreshing data for ${indexes.length} indexes`);
       
-      // Update each index with latest data
-      await Promise.all(
-        indexes.map(async (index) => {
+      // Update each index with latest data, but don't wait for all to complete
+      indexes.forEach(async (index) => {
+        try {
           // Extract token addresses
           const tokenAddresses = index.tokens.map(token => token.address);
           
@@ -53,13 +58,16 @@ export function useTokenRefresh() {
           const marketCapToUse = weightedMarketCap !== null ? weightedMarketCap : index.marketCap || 0;
           
           // Update the index gains in the store
-          updateIndexGains(index.id, gainPercentage, marketCapToUse, change1h, change6h);
+          await updateIndexGains(index.id, gainPercentage, marketCapToUse, change1h, change6h);
           
           // Generate mock volume data based on existing volume (if any)
           const newVolume = generateMockVolume(index.totalVolume);
-          updateIndexVolume(index.id, newVolume);
-        })
-      );
+          await updateIndexVolume(index.id, newVolume);
+        } catch (err) {
+          console.error(`Error refreshing index ${index.id}:`, err);
+          // Continue with other indexes
+        }
+      });
       
       setLastRefreshed(new Date());
       console.log("Token data refresh completed");
@@ -67,11 +75,19 @@ export function useTokenRefresh() {
       console.error("Error refreshing token data:", error);
     } finally {
       setIsRefreshing(false);
+      // Allow a small delay before another refresh can start
+      setTimeout(() => {
+        refreshInProgressRef.current = false;
+      }, 5000);
     }
-  }, [getAllIndexes, updateIndexGains, updateIndexVolume, isRefreshing]);
+  }, [getAllIndexes, updateIndexGains, updateIndexVolume]);
   
   // Retry function specifically for market cap data when not initially available
   const retryMarketCapFetch = useCallback(async () => {
+    if (refreshInProgressRef.current) {
+      return; // Don't retry if refresh is already in progress
+    }
+    
     console.log("Retrying market cap fetch for all indexes");
     
     try {
@@ -87,15 +103,16 @@ export function useTokenRefresh() {
       
       console.log(`Retrying market cap fetch for ${indexesNeedingMarketCap.length} indexes`);
       
-      await Promise.all(
-        indexesNeedingMarketCap.map(async (index) => {
+      // Process sequentially to avoid overwhelming the API
+      for (const index of indexesNeedingMarketCap) {
+        try {
           const tokenAddresses = index.tokens.map(token => token.address);
           const weightedMarketCap = await calculateIndexWeightedMarketCap(tokenAddresses);
           
           if (weightedMarketCap !== null) {
             console.log(`Successfully fetched market cap for index ${index.id}: ${weightedMarketCap}`);
             // Only update the market cap, keep other values the same
-            updateIndexGains(
+            await updateIndexGains(
               index.id, 
               index.gainPercentage || 0, 
               weightedMarketCap,
@@ -105,8 +122,10 @@ export function useTokenRefresh() {
           } else {
             console.log(`Failed to fetch market cap for index ${index.id} on retry attempt`);
           }
-        })
-      );
+        } catch (err) {
+          console.error(`Error retrying market cap for index ${index.id}:`, err);
+        }
+      }
     } catch (error) {
       console.error("Error in market cap retry:", error);
     }
@@ -114,17 +133,20 @@ export function useTokenRefresh() {
 
   // Set up periodic refresh
   useEffect(() => {
-    // Initial refresh
-    refreshTokenData();
+    // Initial refresh with a slight delay to avoid conflicting with real-time updates
+    const initialRefreshTimeout = setTimeout(() => {
+      refreshTokenData();
+    }, 2000);
     
     // Set up interval for regular refreshing
     const intervalId = setInterval(refreshTokenData, REFRESH_INTERVAL);
     
-    // Set up retry interval for market cap data
+    // Set up retry interval for market cap data, with a delay to start
     const marketCapRetryId = setInterval(retryMarketCapFetch, MARKET_CAP_RETRY_INTERVAL);
     
     // Clean up
     return () => {
+      clearTimeout(initialRefreshTimeout);
       clearInterval(intervalId);
       clearInterval(marketCapRetryId);
     };
