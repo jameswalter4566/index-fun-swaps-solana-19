@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Heart, CircleDot } from 'lucide-react';
@@ -126,16 +125,14 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
     }
   };
   
-  // Format volume number with appropriate suffix
+  // Format volume number with appropriate suffix (now in SOL)
   const formatVolume = (volume: number): string => {
-    if (volume >= 1000000000) {
-      return `$${(volume / 1000000000).toFixed(2)}B`;
-    } else if (volume >= 1000000) {
-      return `$${(volume / 1000000).toFixed(2)}M`;
+    if (volume >= 1000000) {
+      return `${(volume / 1000000).toFixed(2)}M SOL`;
     } else if (volume >= 1000) {
-      return `$${(volume / 1000).toFixed(2)}K`;
+      return `${(volume / 1000).toFixed(2)}K SOL`;
     } else {
-      return `$${volume.toFixed(2)}`;
+      return `${volume.toFixed(2)} SOL`;
     }
   };
   

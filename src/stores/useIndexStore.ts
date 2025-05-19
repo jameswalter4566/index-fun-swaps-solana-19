@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -20,7 +21,7 @@ export interface IndexData {
   gainPercentage?: number;
   marketCap?: number;
   lastPriceUpdate?: string;
-  totalVolume: number;
+  totalVolume: number; // Total volume in SOL
   percentChange1h: number;
   percentChange6h: number;
 }
@@ -50,7 +51,7 @@ export const useIndexStore = create<IndexState>()(
           createdAt: new Date().toISOString(),
           upvotes: 0,
           upvotedBy: [],
-          totalVolume: Math.floor(Math.random() * 1000000), // Mock initial volume
+          totalVolume: Math.floor(Math.random() * 1000), // Mock initial volume in SOL
           percentChange1h: parseFloat((Math.random() * 10 - 5).toFixed(2)), // Mock 1h change
           percentChange6h: parseFloat((Math.random() * 20 - 10).toFixed(2)), // Mock 6h change
         };

@@ -1,4 +1,3 @@
-
 import { PublicKey } from '@solana/web3.js';
 
 export interface TokenData {
@@ -125,7 +124,7 @@ export const calculate6HourGainPercentage = (tokens: string[]): Promise<number> 
 };
 
 /**
- * Generate mock volume data for an index
+ * Generate mock volume data for an index in SOL
  */
 export const generateMockVolume = (baseVolume?: number): number => {
   // If a base volume is provided, vary it slightly to simulate changes
@@ -134,18 +133,18 @@ export const generateMockVolume = (baseVolume?: number): number => {
     return Math.max(0, Math.round(baseVolume + change));
   }
   
-  // Generate a new random volume (more realistic distribution)
+  // Generate a new random volume in SOL (more realistic distribution)
   const randomFactor = Math.random();
   
   if (randomFactor > 0.95) {
     // Top 5% of indices have very high volume
-    return Math.floor(5000000 + Math.random() * 20000000);
+    return Math.floor(5000 + Math.random() * 20000);
   } else if (randomFactor > 0.7) {
     // Next 25% have moderate volume
-    return Math.floor(500000 + Math.random() * 4500000);
+    return Math.floor(500 + Math.random() * 4500);
   } else {
     // Remaining 70% have lower volume
-    return Math.floor(1000 + Math.random() * 499000);
+    return Math.floor(10 + Math.random() * 490);
   }
 };
 
