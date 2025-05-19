@@ -6,16 +6,19 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { supabase } from '@/utils/supabaseClient';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/components/ui/sonner';
 
 const CreateSwapForm: React.FC = () => {
-  const { toast } = useToast();
+  const { toast: useToastFn } = useToast();
+  const { isAuthenticated, userData } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     token1: '',
     token2: '',
     token3: '',
     token4: '',
-    // We could potentially add token image URLs here as well
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,10 +32,20 @@ const CreateSwapForm: React.FC = () => {
     
     // Validate form
     if (!formData.name || !formData.token1 || !formData.token2) {
-      toast({
+      useToastFn({
         title: "form validation error",
         description: "index name and at least 2 tokens are required.",
         variant: "destructive",
+      });
+      return;
+    }
+
+    // Check authentication
+    if (!isAuthenticated || !userData) {
+      toast("Authentication required", {
+        description: "Please connect your wallet to create an index",
+        variant: "destructive",
+        position: "bottom-center",
       });
       return;
     }
@@ -40,16 +53,78 @@ const CreateSwapForm: React.FC = () => {
     try {
       setIsSubmitting(true);
       
-      // Mock submission - in a real app this would interact with Solana
-      console.log("Creating INDEX:", formData);
+      // Create the index in Supabase
+      const { data: indexData, error: indexError } = await supabase
+        .from('indexes')
+        .insert({
+          name: formData.name,
+          creator_id: userData.id,
+        })
+        .select()
+        .single();
+        
+      if (indexError) {
+        throw new Error(indexError.message);
+      }
       
-      // Show success message
-      toast({
+      // Create tokens and associate them with the index
+      const tokens = [
+        formData.token1,
+        formData.token2,
+        formData.token3,
+        formData.token4,
+      ].filter(Boolean);
+      
+      // Insert tokens one by one and create index_tokens associations
+      for (const tokenAddress of tokens) {
+        // Check if token exists
+        let { data: existingToken } = await supabase
+          .from('tokens')
+          .select('*')
+          .eq('address', tokenAddress)
+          .single();
+          
+        let tokenId;
+        
+        if (!existingToken) {
+          // Token doesn't exist, create it
+          const { data: newToken, error: tokenError } = await supabase
+            .from('tokens')
+            .insert({
+              name: tokenAddress.substring(0, 6), // Placeholder name, would be replaced with real token data
+              address: tokenAddress,
+            })
+            .select()
+            .single();
+            
+          if (tokenError) {
+            throw new Error(tokenError.message);
+          }
+          
+          tokenId = newToken.id;
+        } else {
+          tokenId = existingToken.id;
+        }
+        
+        // Add token to index
+        const { error: indexTokenError } = await supabase
+          .from('index_tokens')
+          .insert({
+            index_id: indexData.id,
+            token_id: tokenId,
+          });
+          
+        if (indexTokenError) {
+          throw new Error(indexTokenError.message);
+        }
+      }
+      
+      useToastFn({
         title: "index created!",
         description: `your ${formData.name} index has been created successfully.`,
       });
       
-      // Clear form and close drawer (relies on parent component)
+      // Clear form and close drawer
       setFormData({
         name: '',
         token1: '',
@@ -63,11 +138,11 @@ const CreateSwapForm: React.FC = () => {
       if (drawerCloseButton) {
         setTimeout(() => drawerCloseButton.click(), 1500);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating INDEX:", error);
-      toast({
+      useToastFn({
         title: "error creating index",
-        description: "there was an error creating your index. please try again.",
+        description: error.message || "there was an error creating your index. please try again.",
         variant: "destructive",
       });
     } finally {
@@ -179,9 +254,9 @@ const CreateSwapForm: React.FC = () => {
           <Button 
             type="submit" 
             className="w-full btn-solana"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isAuthenticated}
           >
-            {isSubmitting ? 'creating...' : 'create index'}
+            {isSubmitting ? 'creating...' : isAuthenticated ? 'create index' : 'connect wallet to create'}
           </Button>
         </form>
       </CardContent>

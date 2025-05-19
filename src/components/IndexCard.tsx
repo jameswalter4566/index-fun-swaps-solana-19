@@ -9,12 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/utils/supabaseClient';
+import { toast } from '@/components/ui/sonner';
 
 interface Token {
+  id: string;
   name: string;
   address: string;
-  // Adding optional image URL for token
-  imageUrl?: string;
+  image_url?: string;
 }
 
 interface IndexCardProps {
@@ -23,6 +26,7 @@ interface IndexCardProps {
   tokens: Token[];
   gainPercentage: number;
   upvotes: number;
+  creatorUsername?: string;
 }
 
 // Mock chart data
@@ -37,22 +41,70 @@ const generateChartData = () => {
   return data;
 };
 
-const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage, upvotes }) => {
+const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage, upvotes, creatorUsername }) => {
   const [upvoted, setUpvoted] = useState(false);
   const [currentUpvotes, setCurrentUpvotes] = useState(upvotes);
   const [showSwapSheet, setShowSwapSheet] = useState(false);
   const [solanaAmount, setSolanaAmount] = useState('1');
+  const { isAuthenticated } = useAuth();
   
   const chartData = generateChartData();
   const totalMarketCap = 12500000; // Mock total weighted market cap
   
-  const handleUpvote = () => {
+  const handleUpvote = async () => {
+    if (!isAuthenticated) {
+      toast("Authentication required", {
+        description: "Please connect your wallet to upvote",
+        variant: "destructive",
+        position: "bottom-center",
+      });
+      return;
+    }
+
     if (!upvoted) {
-      setCurrentUpvotes(currentUpvotes + 1);
-      setUpvoted(true);
+      try {
+        // Update upvotes in Supabase
+        const { error } = await supabase
+          .from('indexes')
+          .update({ upvotes: currentUpvotes + 1 })
+          .eq('id', id);
+          
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        setCurrentUpvotes(currentUpvotes + 1);
+        setUpvoted(true);
+      } catch (error: any) {
+        console.error("Error upvoting index:", error);
+        toast("Failed to upvote", {
+          description: error.message || "An error occurred while upvoting",
+          variant: "destructive",
+          position: "bottom-center",
+        });
+      }
     } else {
-      setCurrentUpvotes(currentUpvotes - 1);
-      setUpvoted(false);
+      try {
+        // Remove upvote in Supabase
+        const { error } = await supabase
+          .from('indexes')
+          .update({ upvotes: currentUpvotes - 1 })
+          .eq('id', id);
+          
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        setCurrentUpvotes(currentUpvotes - 1);
+        setUpvoted(false);
+      } catch (error: any) {
+        console.error("Error removing upvote:", error);
+        toast("Failed to remove upvote", {
+          description: error.message || "An error occurred while removing upvote",
+          variant: "destructive",
+          position: "bottom-center",
+        });
+      }
     }
   };
 
@@ -60,7 +112,10 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
   
   const handleCopyAddress = (address: string) => {
     navigator.clipboard.writeText(address);
-    // You could add a toast notification here
+    toast("Address copied", {
+      description: "Token address copied to clipboard",
+      position: "bottom-center",
+    });
   };
   
   return (
@@ -68,7 +123,12 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
       <Card className="overflow-hidden card-hover border border-stake-card bg-stake-card">
         <CardHeader className="p-4 bg-stake-darkbg border-b border-stake-background">
           <div className="flex justify-between items-center">
-            <CardTitle className="text-lg font-bold text-stake-text">{name}</CardTitle>
+            <div className="flex flex-col">
+              <CardTitle className="text-lg font-bold text-stake-text">{name}</CardTitle>
+              {creatorUsername && (
+                <p className="text-xs text-stake-muted mt-1">by @{creatorUsername}</p>
+              )}
+            </div>
             <span className={`font-bold ${gainColor}`}>
               {gainPercentage >= 0 ? '+' : ''}{gainPercentage}%
             </span>
@@ -81,7 +141,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
               <div className="flex flex-wrap gap-2">
                 {tokens.map((token) => (
                   <span 
-                    key={token.address} 
+                    key={token.id || token.address} 
                     className="inline-block bg-stake-darkbg rounded-full px-3 py-1 text-xs text-stake-text"
                   >
                     {token.name}
@@ -94,6 +154,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
               <button 
                 onClick={handleUpvote} 
                 className={`flex items-center gap-1 text-sm ${upvoted ? 'text-stake-accent' : 'text-stake-muted'} hover:text-stake-accent transition-colors`}
+                disabled={!isAuthenticated}
               >
                 <Heart size={16} className={upvoted ? 'fill-stake-accent' : ''} />
                 <span>{currentUpvotes}</span>
@@ -150,12 +211,12 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
               <div className="space-y-3">
                 {tokens.map((token) => (
                   <div 
-                    key={token.address} 
+                    key={token.id || token.address} 
                     className="flex justify-between items-center bg-stake-card p-3 rounded-lg"
                   >
                     <div className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={token.imageUrl} alt={token.name} />
+                        <AvatarImage src={token.image_url} alt={token.name} />
                         <AvatarFallback className="bg-stake-darkbg text-xs">
                           {token.name.substring(0, 2).toUpperCase()}
                         </AvatarFallback>
@@ -203,8 +264,9 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
               </div>
               <Button 
                 className="w-full bg-green-500 hover:bg-green-600 text-white rounded-full py-2"
+                disabled={!isAuthenticated}
               >
-                Swap {solanaAmount} SOL for {name}
+                {isAuthenticated ? `Swap ${solanaAmount} SOL for ${name}` : 'Connect wallet to swap'}
               </Button>
             </div>
           </div>

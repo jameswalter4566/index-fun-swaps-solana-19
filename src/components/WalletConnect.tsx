@@ -1,48 +1,44 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import UsernameModal from './UsernameModal';
 
 const WalletConnect: React.FC = () => {
-  const [connected, setConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const { walletAddress, username, isAuthenticated, connectWallet, disconnectWallet, isLoading } = useAuth();
+  const [showUsernameModal, setShowUsernameModal] = useState(false);
 
-  const connectWallet = async () => {
-    // In a real application, this would use Solana wallet adapter
-    // For now, we'll just mock the connection
-    try {
-      console.log("Connecting to Phantom wallet...");
-      // Mock connection
-      setConnected(true);
-      setWalletAddress("ABCD...XYZ");
-    } catch (error) {
-      console.error("Error connecting to wallet:", error);
+  // Show username modal if wallet is connected but no username yet
+  useEffect(() => {
+    if (isAuthenticated && !username && !isLoading) {
+      setShowUsernameModal(true);
     }
-  };
-
-  const disconnectWallet = () => {
-    // In a real application, this would disconnect from the wallet
-    setConnected(false);
-    setWalletAddress(null);
-  };
+  }, [isAuthenticated, username, isLoading]);
 
   return (
-    <div>
-      {connected ? (
+    <>
+      {isAuthenticated ? (
         <Button
           onClick={disconnectWallet}
           className="bg-stake-card border border-stake-accent text-stake-text hover:bg-stake-darkbg rounded-md"
         >
-          {walletAddress}
+          {username ? `@${username}` : walletAddress?.substring(0, 4) + '...' + walletAddress?.substring(walletAddress.length - 4)}
         </Button>
       ) : (
         <Button 
           onClick={connectWallet}
           className="bg-stake-highlight hover:opacity-90 text-white rounded-md"
+          disabled={isLoading}
         >
-          connect wallet
+          {isLoading ? 'Connecting...' : 'connect wallet'}
         </Button>
       )}
-    </div>
+      
+      <UsernameModal 
+        isOpen={showUsernameModal} 
+        onClose={() => setShowUsernameModal(false)} 
+      />
+    </>
   );
 };
 
