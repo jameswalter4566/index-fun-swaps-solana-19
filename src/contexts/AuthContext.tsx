@@ -129,7 +129,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
       toast("Connection failed", {
         description: "Failed to connect to Phantom wallet",
-        variant: "destructive",
         position: "bottom-center",
       });
     }
@@ -155,7 +154,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error disconnecting wallet:", error);
       toast("Disconnection failed", {
         description: "Failed to disconnect from Phantom wallet",
-        variant: "destructive",
         position: "bottom-center",
       });
     }
@@ -166,7 +164,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!walletAddress) {
       toast("Wallet not connected", {
         description: "Please connect your wallet first",
-        variant: "destructive",
         position: "bottom-center",
       });
       return false;
@@ -185,7 +182,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (existingUser) {
         toast("Username taken", {
           description: "This username is already taken",
-          variant: "destructive",
           position: "bottom-center",
         });
         setIsLoading(false);
@@ -207,7 +203,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error("Error setting username:", error);
         toast("Failed to set username", {
           description: error.message,
-          variant: "destructive",
           position: "bottom-center",
         });
         setIsLoading(false);
@@ -228,7 +223,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error setting username:", error);
       toast("Failed to set username", {
         description: error.message || "An unknown error occurred",
-        variant: "destructive",
         position: "bottom-center",
       });
       setIsLoading(false);

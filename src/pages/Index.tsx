@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import IndexCard from '@/components/IndexCard';
@@ -87,7 +86,6 @@ const Index: React.FC = () => {
         console.error("Error fetching indexes:", error);
         toast("Error loading indexes", {
           description: error.message || "Failed to load indexes",
-          variant: "destructive",
           position: "bottom-center",
         });
       } finally {

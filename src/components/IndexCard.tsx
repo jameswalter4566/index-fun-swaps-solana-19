@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Heart, CircleDot } from 'lucide-react';
@@ -55,7 +54,6 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
     if (!isAuthenticated) {
       toast("Authentication required", {
         description: "Please connect your wallet to upvote",
-        variant: "destructive",
         position: "bottom-center",
       });
       return;
@@ -79,7 +77,6 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
         console.error("Error upvoting index:", error);
         toast("Failed to upvote", {
           description: error.message || "An error occurred while upvoting",
-          variant: "destructive",
           position: "bottom-center",
         });
       }
@@ -101,7 +98,6 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
         console.error("Error removing upvote:", error);
         toast("Failed to remove upvote", {
           description: error.message || "An error occurred while removing upvote",
-          variant: "destructive",
           position: "bottom-center",
         });
       }

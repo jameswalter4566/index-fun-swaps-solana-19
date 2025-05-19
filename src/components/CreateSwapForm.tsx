@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -44,7 +43,6 @@ const CreateSwapForm: React.FC = () => {
     if (!isAuthenticated || !userData) {
       toast("Authentication required", {
         description: "Please connect your wallet to create an index",
-        variant: "destructive",
         position: "bottom-center",
       });
       return;
