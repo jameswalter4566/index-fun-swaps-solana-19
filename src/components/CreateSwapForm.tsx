@@ -9,7 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { useIndexStore, Token } from '@/stores/useIndexStore';
-import { fetchTokenData, isValidSolanaAddress } from '@/lib/tokenService';
+import { getTokenData, isValidSolanaAddress } from '@/lib/token';
 import { Loader } from 'lucide-react';
 
 interface TokenInput {

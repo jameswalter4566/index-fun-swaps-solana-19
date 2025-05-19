@@ -18,7 +18,7 @@ import {
   TokenData, 
   calculateIndexWeightedMarketCap, 
   formatMarketCap 
-} from '@/lib/tokenService';
+} from '@/lib/token';
 
 interface IndexCardProps {
   index: IndexData;
