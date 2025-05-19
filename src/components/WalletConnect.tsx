@@ -8,12 +8,15 @@ import { useToast } from '@/hooks/use-toast';
 import { Wallet } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import UserProfile from './UserProfile';
+import { syncWalletWithAuth } from '@/lib/wallet-auth';
+import { supabase } from '@/lib/supabase';
 
 const WalletConnect: React.FC = () => {
-  const { connected, publicKey, disconnect } = useWallet();
+  const { connected, publicKey, disconnect, signMessage } = useWallet();
   const { setVisible } = useWalletModal();
   const { toast } = useToast();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   
   const { 
     walletAddress, 
@@ -21,17 +24,43 @@ const WalletConnect: React.FC = () => {
     setWalletAddress 
   } = useWalletStore();
 
+  // Handle wallet connection and sync with Supabase
   useEffect(() => {
-    // Update our store when wallet state changes
-    setConnected(connected);
-    if (publicKey) {
-      const address = publicKey.toString();
-      setWalletAddress(address);
-      console.log("Connected to wallet:", address);
-    } else {
-      setWalletAddress(null);
-    }
-  }, [connected, publicKey, setConnected, setWalletAddress]);
+    const syncAuth = async () => {
+      // Update our store when wallet state changes
+      setConnected(connected);
+      
+      if (publicKey) {
+        const address = publicKey.toString();
+        setWalletAddress(address);
+        console.log("Connected to wallet:", address);
+        
+        // Sync with Supabase auth
+        if (connected && signMessage) {
+          setIsAuthenticating(true);
+          try {
+            await syncWalletWithAuth(address, signMessage);
+            console.log("Wallet synced with Supabase auth");
+          } catch (error) {
+            console.error("Error syncing wallet with auth:", error);
+          } finally {
+            setIsAuthenticating(false);
+          }
+        }
+      } else {
+        setWalletAddress(null);
+        
+        // Sign out of Supabase when wallet disconnects
+        try {
+          await supabase.auth.signOut();
+        } catch (error) {
+          console.error("Error signing out:", error);
+        }
+      }
+    };
+    
+    syncAuth();
+  }, [connected, publicKey, setConnected, setWalletAddress, signMessage]);
 
   const connectWallet = () => {
     try {
@@ -49,6 +78,7 @@ const WalletConnect: React.FC = () => {
   const disconnectWallet = async () => {
     try {
       await disconnect();
+      await supabase.auth.signOut();
       setIsProfileOpen(false);
       toast({
         title: "wallet disconnected",
@@ -73,6 +103,7 @@ const WalletConnect: React.FC = () => {
             >
               <Wallet className="mr-2 h-4 w-4" />
               {walletAddress ? formatWalletAddress(walletAddress) : "connected"}
+              {isAuthenticating && <span className="ml-2 inline-block h-3 w-3 animate-pulse rounded-full bg-yellow-400"></span>}
             </Button>
           </SheetTrigger>
           <SheetContent side="right" className="w-full sm:max-w-md p-0">
