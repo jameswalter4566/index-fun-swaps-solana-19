@@ -9,6 +9,7 @@ export function useSupabaseRealtime<T>(
   filter?: string,
 ) {
   useEffect(() => {
+    // Create a channel for receiving real-time updates
     const channel = supabase
       .channel('schema-db-changes')
       .on(
@@ -25,8 +26,9 @@ export function useSupabaseRealtime<T>(
       )
       .subscribe();
 
+    // Cleanup: remove channel when component unmounts
     return () => {
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
   }, [table, onChange, event, filter]);
 }
