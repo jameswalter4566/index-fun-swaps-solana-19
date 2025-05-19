@@ -1,3 +1,4 @@
+
 import { TokenData } from './types';
 import { isValidSolanaAddress } from './utils';
 
@@ -69,7 +70,7 @@ export const fetchTokenFromSolanaTracker = async (address: string): Promise<Toke
 
 /**
  * Fetches multiple tokens at once from Solana Tracker API
- * Improved with better error handling
+ * Improved with better error handling and proper response structure handling
  */
 export const fetchMultipleTokensFromSolanaTracker = async (addresses: string[]): Promise<Record<string, TokenData>> => {
   if (!addresses.length) return {};
@@ -86,6 +87,8 @@ export const fetchMultipleTokensFromSolanaTracker = async (addresses: string[]):
     await Promise.all(
       chunks.map(async (chunk) => {
         try {
+          console.log("Fetching token data for chunk:", chunk);
+          
           const response = await fetch(`${SOLANA_TRACKER_API_BASE}/tokens/multi`, {
             method: 'POST',
             headers: {
@@ -100,32 +103,84 @@ export const fetchMultipleTokensFromSolanaTracker = async (addresses: string[]):
             return;
           }
           
-          const dataArray = await response.json();
+          const data = await response.json();
           
-          // Make sure we have an array to work with - handle API inconsistencies
-          if (!Array.isArray(dataArray)) {
-            console.error("Expected array response from token multi API", dataArray);
-            return;
-          }
-          
-          // Process each token in the response
-          dataArray.forEach((data: any) => {
-            if (!data.token) return;
+          // The API returns an object with token addresses as keys, not an array
+          if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+            console.log("Received object-based response from token multi API");
             
-            const address = data.token.address;
-            results[address] = {
-              address,
-              name: data.token?.name || `Token ${address.substring(0, 4)}...${address.substring(address.length - 4)}`,
-              symbol: data.token?.symbol || "???",
-              imageUrl: data.token?.image || undefined,
-              decimals: data.token?.decimals,
-              price: data.pools?.[0]?.price?.usd || undefined,
-              marketCap: data.pools?.[0]?.marketCap?.usd || undefined,
-              change1h: data.events?.["1h"]?.priceChangePercentage || 0,
-              change6h: data.events?.["6h"]?.priceChangePercentage || 0,
-              change24h: data.events?.["24h"]?.priceChangePercentage || 0
-            };
-          });
+            // Process each token in the response (object format)
+            Object.entries(data.tokens || data).forEach(([tokenAddress, tokenData]: [string, any]) => {
+              if (!tokenData || !tokenData.token) return;
+              
+              const token = tokenData.token;
+              const pools = tokenData.pools || [];
+              const events = tokenData.events || {};
+              
+              // Find the first pool with market cap data
+              const poolWithMarketCap = pools.find((pool: any) => 
+                pool && pool.marketCap && (pool.marketCap.usd !== undefined || pool.marketCap.quote !== undefined)
+              );
+              
+              const marketCap = poolWithMarketCap?.marketCap?.usd || undefined;
+              
+              if (marketCap) {
+                console.log(`Found market cap for ${tokenAddress}: ${marketCap}`);
+              }
+              
+              results[tokenAddress] = {
+                address: tokenAddress,
+                name: token.name || `Token ${tokenAddress.substring(0, 4)}...${tokenAddress.substring(tokenAddress.length - 4)}`,
+                symbol: token.symbol || "???",
+                imageUrl: token.image || undefined,
+                decimals: token.decimals,
+                price: poolWithMarketCap?.price?.usd || undefined,
+                marketCap: marketCap,
+                change1h: events?.["1h"]?.priceChangePercentage || 0,
+                change6h: events?.["6h"]?.priceChangePercentage || 0,
+                change24h: events?.["24h"]?.priceChangePercentage || 0
+              };
+            });
+          } else if (Array.isArray(data)) {
+            // Handle array response format (previous API version)
+            console.log("Received array-based response from token multi API");
+            
+            data.forEach((item: any) => {
+              if (!item || !item.token) return;
+              
+              const address = item.token.address || item.token.mint;
+              if (!address) return;
+              
+              const pools = item.pools || [];
+              const events = item.events || {};
+              
+              // Find the first pool with market cap data
+              const poolWithMarketCap = pools.find((pool: any) => 
+                pool && pool.marketCap && (pool.marketCap.usd !== undefined || pool.marketCap.quote !== undefined)
+              );
+              
+              const marketCap = poolWithMarketCap?.marketCap?.usd || undefined;
+              
+              if (marketCap) {
+                console.log(`Found market cap for ${address}: ${marketCap}`);
+              }
+              
+              results[address] = {
+                address,
+                name: item.token?.name || `Token ${address.substring(0, 4)}...${address.substring(address.length - 4)}`,
+                symbol: item.token?.symbol || "???",
+                imageUrl: item.token?.image || undefined,
+                decimals: item.token?.decimals,
+                price: poolWithMarketCap?.price?.usd || undefined,
+                marketCap: marketCap,
+                change1h: events?.["1h"]?.priceChangePercentage || 0,
+                change6h: events?.["6h"]?.priceChangePercentage || 0,
+                change24h: events?.["24h"]?.priceChangePercentage || 0
+              };
+            });
+          } else {
+            console.error("Unexpected response format from token multi API:", data);
+          }
         } catch (error) {
           console.error("Error processing chunk in fetchMultipleTokensFromSolanaTracker:", error);
         }

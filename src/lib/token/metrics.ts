@@ -6,11 +6,17 @@ import { fetchMultipleTokensFromSolanaTracker } from './api';
  * Uses average of all available token market caps
  */
 export const calculateIndexWeightedMarketCap = async (tokens: string[]): Promise<number | null> => {
-  if (!tokens || tokens.length === 0) return null;
+  if (!tokens || tokens.length === 0) {
+    console.log("No tokens provided to calculateIndexWeightedMarketCap");
+    return null;
+  }
 
+  console.log(`Calculating weighted market cap for ${tokens.length} tokens`);
+  
   try {
     // Get actual token data from Solana Tracker API
     const tokenData = await fetchMultipleTokensFromSolanaTracker(tokens);
+    console.log("Fetched token data for market cap calculation:", Object.keys(tokenData).length);
     
     // Sum up market caps and count valid tokens
     let totalMarketCap = 0;
@@ -18,18 +24,32 @@ export const calculateIndexWeightedMarketCap = async (tokens: string[]): Promise
     
     for (const address of tokens) {
       const data = tokenData[address];
+      if (data) {
+        console.log(`Token ${address} data:`, 
+          data.name, 
+          data.symbol, 
+          data.marketCap ? `Market cap: ${data.marketCap}` : "No market cap"
+        );
+      }
+      
       if (data && data.marketCap) {
+        console.log(`Adding market cap for ${data.name || address}: ${data.marketCap}`);
         totalMarketCap += data.marketCap;
         validTokenCount++;
+      } else {
+        console.log(`No market cap data available for token ${address}`);
       }
     }
     
     // Calculate weighted (average) market cap if we have valid data
     if (validTokenCount > 0) {
-      return totalMarketCap / validTokenCount;
+      const weightedMarketCap = totalMarketCap / validTokenCount;
+      console.log(`Weighted market cap calculated: ${weightedMarketCap} from ${validTokenCount} tokens`);
+      return weightedMarketCap;
     }
     
-    // Return null if no valid data available
+    // If no valid data, log the issue
+    console.log("No valid market cap data available for any tokens");
     return null;
   } catch (error) {
     console.error("Error calculating index weighted market cap:", error);
