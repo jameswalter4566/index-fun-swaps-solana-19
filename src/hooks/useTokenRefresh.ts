@@ -53,11 +53,11 @@ export function useTokenRefresh() {
           const marketCapToUse = weightedMarketCap !== null ? weightedMarketCap : index.marketCap || 0;
           
           // Update the index gains in the store
-          updateIndexGains(index.id, gainPercentage, marketCapToUse, change1h, change6h);
+          await updateIndexGains(index.id, gainPercentage, marketCapToUse, change1h, change6h);
           
           // Generate mock volume data based on existing volume (if any)
           const newVolume = generateMockVolume(index.totalVolume);
-          updateIndexVolume(index.id, newVolume);
+          await updateIndexVolume(index.id, newVolume);
         })
       );
       
@@ -95,7 +95,7 @@ export function useTokenRefresh() {
           if (weightedMarketCap !== null) {
             console.log(`Successfully fetched market cap for index ${index.id}: ${weightedMarketCap}`);
             // Only update the market cap, keep other values the same
-            updateIndexGains(
+            await updateIndexGains(
               index.id, 
               index.gainPercentage || 0, 
               weightedMarketCap,

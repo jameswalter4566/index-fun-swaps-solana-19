@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -156,7 +155,7 @@ const CreateSwapForm: React.FC = () => {
       }));
       
       // Add to store
-      addIndex({
+      const indexId = await addIndex({
         name,
         tokens: tokensList,
         creatorAddress: publicKey.toString(),
@@ -193,7 +192,7 @@ const CreateSwapForm: React.FC = () => {
     }
   };
 
-  const renderTokenInput = (index: number, tokenInput: TokenInput) => {
+  function renderTokenInput(index: number, tokenInput: TokenInput) {
     const { address, data, isLoading, isValid } = tokenInput;
     const isRequired = index < 2;
     
