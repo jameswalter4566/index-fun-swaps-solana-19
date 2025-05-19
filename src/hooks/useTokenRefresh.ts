@@ -6,8 +6,8 @@ import {
   calculate6HourGainPercentage,
   generateMockVolume,
   calculateIndexWeightedMarketCap
-} from '@/lib/tokenService';
-import { useIndexStore, IndexData } from '@/stores/useIndexStore';
+} from '@/lib/token';
+import { useIndexStore } from '@/stores/useIndexStore';
 
 // How often to refresh token data (ms)
 const REFRESH_INTERVAL = 60000; // 1 minute

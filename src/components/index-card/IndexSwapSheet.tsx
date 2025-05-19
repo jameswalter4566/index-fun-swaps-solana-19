@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import PercentageChanges from './PercentageChanges';
@@ -6,7 +5,7 @@ import IndexChart from './IndexChart';
 import TokenList from './TokenList';
 import SwapForm from './SwapForm';
 import { Token } from '@/stores/useIndexStore';
-import { TokenData } from '@/lib/tokenService';
+import { TokenData } from '@/lib/token';
 
 interface IndexSwapSheetProps {
   open: boolean;

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { TokenData, getTokenData, calculateIndexWeightedMarketCap, generateChartData } from '@/lib/tokenService';
+import { TokenData, getTokenData, calculateIndexWeightedMarketCap, generateChartData } from '@/lib/token';
 import { Token } from '@/stores/useIndexStore';
 import { useToast } from '@/hooks/use-toast';
 

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import TokenItem from './TokenItem';
-import { TokenData } from '@/lib/tokenService';
+import { TokenData } from '@/lib/token';
 import { Token } from '@/stores/useIndexStore';
 
 interface TokenListProps {

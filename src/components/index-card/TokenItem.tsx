@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { TokenData } from '@/lib/tokenService';
+import { TokenData } from '@/lib/token';
 
 interface TokenItemProps {
   token: {
