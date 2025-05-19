@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Heart, CircleDot } from 'lucide-react';
@@ -37,6 +36,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
   const [chartData, setChartData] = useState<any[]>([]);
   const [tokenDetails, setTokenDetails] = useState<Record<string, TokenData>>({});
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [loadedTokenAddresses, setLoadedTokenAddresses] = useState<string[]>([]);
   
   const { connected, publicKey } = useWallet();
   const { setVisible } = useWalletModal();
@@ -53,24 +53,51 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
 
   // Fetch token details when the swap sheet is opened
   useEffect(() => {
-    if (showSwapSheet && tokens.length > 0 && Object.keys(tokenDetails).length === 0) {
+    if (showSwapSheet && tokens.length > 0) {
       const fetchTokenDetails = async () => {
         setIsLoadingDetails(true);
         try {
           const details: Record<string, TokenData> = {};
+          const newlyLoadedAddresses: string[] = [];
           
           await Promise.all(
             tokens.map(async (token) => {
-              const tokenData = await getTokenData(token.address);
-              if (tokenData) {
-                details[token.address] = tokenData;
+              // Skip tokens we've already loaded
+              if (tokenDetails[token.address]) {
+                details[token.address] = tokenDetails[token.address];
+                return;
+              }
+              
+              try {
+                const tokenData = await getTokenData(token.address);
+                if (tokenData) {
+                  details[token.address] = tokenData;
+                  newlyLoadedAddresses.push(token.address);
+                }
+              } catch (error) {
+                console.error(`Error fetching details for token ${token.address}:`, error);
+                // Create fallback entry for failed tokens
+                details[token.address] = {
+                  address: token.address,
+                  name: token.name || `Unknown Token`,
+                  symbol: token.symbol || "???",
+                  imageUrl: token.imageUrl,
+                  change24h: 0
+                };
               }
             })
           );
           
-          setTokenDetails(details);
+          // Update token details and track which ones we've loaded
+          setTokenDetails(prevDetails => ({...prevDetails, ...details}));
+          setLoadedTokenAddresses(prev => [...prev, ...newlyLoadedAddresses]);
         } catch (error) {
           console.error("Error fetching token details:", error);
+          toast({
+            title: "Error loading tokens",
+            description: "Some token data couldn't be loaded",
+            variant: "destructive",
+          });
         } finally {
           setIsLoadingDetails(false);
         }
@@ -78,7 +105,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
       
       fetchTokenDetails();
     }
-  }, [showSwapSheet, tokens, tokenDetails]);
+  }, [showSwapSheet, tokens]);
   
   const handleUpvote = () => {
     if (!connected || !publicKey) {
@@ -311,7 +338,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
                             </span>
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-stake-muted">
-                                {formatMarketCap(marketCap)}
+                                {marketCap ? formatMarketCap(marketCap) : 'n/a'}
                               </span>
                               {change24h !== undefined && (
                                 <span className={`text-xs ${changeColor}`}>
