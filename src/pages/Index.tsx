@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import IndexCard from '@/components/index-card/IndexCard';
+import IndexCard from '@/components/IndexCard';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search } from 'lucide-react';
@@ -16,8 +15,6 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from '@/components/ui/pagination';
-import { useRealtimeIndexes } from '@/hooks/useRealtimeIndexes';
-import { Skeleton } from '@/components/ui/skeleton';
 
 const INDEXES_PER_PAGE = 25;
 
@@ -25,12 +22,9 @@ const Index: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("top-index");
   const [currentPage, setCurrentPage] = useState(1);
-  const { getAllIndexes, isLoading, error } = useIndexStore();
+  const { getAllIndexes } = useIndexStore();
   const { publicKey } = useWallet();
   const { isRefreshing, lastRefreshed, refreshData } = useTokenRefresh();
-  
-  // Initialize real-time updates
-  useRealtimeIndexes();
   
   // Get indexes
   const indexes = getAllIndexes();
@@ -86,15 +80,10 @@ const Index: React.FC = () => {
     setCurrentPage(1);
   }, [activeTab, searchQuery]);
   
-  // Render loading skeletons
-  const renderSkeletons = () => {
-    return Array.from({ length: 6 }).map((_, index) => (
-      <div key={index} className="space-y-4">
-        <Skeleton className="h-12 w-full rounded-md" />
-        <Skeleton className="h-32 w-full rounded-md" />
-      </div>
-    ));
-  };
+  // Initial data loading effect
+  useEffect(() => {
+    refreshData();
+  }, []);
   
   return (
     <Layout>
@@ -125,84 +114,71 @@ const Index: React.FC = () => {
           <TabsTrigger value="mine" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">mine</TabsTrigger>
         </TabsList>
         
-        {isLoading ? (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {renderSkeletons()}
+        <TabsContent value="top-index" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedIndexes.length > 0 ? (
+              paginatedIndexes.map(index => <IndexCard key={index.id} index={index} />)
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <p className="text-stake-muted">no indexes found matching your search.</p>
+              </div>
+            )}
           </div>
-        ) : error ? (
-          <div className="mt-6 text-center py-10">
-            <p className="text-red-500 mb-2">Failed to load indexes</p>
-            <p className="text-stake-muted">{error}</p>
+        </TabsContent>
+        
+        <TabsContent value="top-rated" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedIndexes.length > 0 ? (
+              paginatedIndexes.map(index => <IndexCard key={index.id} index={index} />)
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <p className="text-stake-muted">no top-rated indexes found.</p>
+              </div>
+            )}
           </div>
-        ) : (
-          <>
-            <TabsContent value="top-index" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {paginatedIndexes.length > 0 ? (
-                  paginatedIndexes.map(index => <IndexCard key={index.id} index={index} />)
-                ) : (
-                  <div className="col-span-full text-center py-8">
-                    <p className="text-stake-muted">no indexes found matching your search.</p>
-                  </div>
-                )}
+        </TabsContent>
+        
+        <TabsContent value="gainers" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedIndexes.length > 0 ? (
+              paginatedIndexes.map(index => <IndexCard key={index.id} index={index} />)
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <p className="text-stake-muted">no gaining indexes found.</p>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="top-rated" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {paginatedIndexes.length > 0 ? (
-                  paginatedIndexes.map(index => <IndexCard key={index.id} index={index} />)
-                ) : (
-                  <div className="col-span-full text-center py-8">
-                    <p className="text-stake-muted">no top-rated indexes found.</p>
-                  </div>
-                )}
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="recent" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedIndexes.length > 0 ? (
+              paginatedIndexes.map(index => <IndexCard key={index.id} index={index} />)
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <p className="text-stake-muted">no recent indexes found.</p>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="gainers" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {paginatedIndexes.length > 0 ? (
-                  paginatedIndexes.map(index => <IndexCard key={index.id} index={index} />)
-                ) : (
-                  <div className="col-span-full text-center py-8">
-                    <p className="text-stake-muted">no gaining indexes found.</p>
-                  </div>
-                )}
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="mine" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedIndexes.length > 0 ? (
+              paginatedIndexes.map(index => <IndexCard key={index.id} index={index} />)
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <p className="text-stake-muted">
+                  {publicKey ? "you haven't created any indexes yet." : "connect your wallet to see your indexes."}
+                </p>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="recent" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {paginatedIndexes.length > 0 ? (
-                  paginatedIndexes.map(index => <IndexCard key={index.id} index={index} />)
-                ) : (
-                  <div className="col-span-full text-center py-8">
-                    <p className="text-stake-muted">no recent indexes found.</p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="mine" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {paginatedIndexes.length > 0 ? (
-                  paginatedIndexes.map(index => <IndexCard key={index.id} index={index} />)
-                ) : (
-                  <div className="col-span-full text-center py-8">
-                    <p className="text-stake-muted">
-                      {publicKey ? "you haven't created any indexes yet." : "connect your wallet to see your indexes."}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-          </>
-        )}
+            )}
+          </div>
+        </TabsContent>
       </Tabs>
       
       {/* Pagination */}
-      {!isLoading && totalPages > 1 && (
+      {totalPages > 1 && (
         <Pagination className="mb-8">
           <PaginationContent>
             <PaginationItem>
