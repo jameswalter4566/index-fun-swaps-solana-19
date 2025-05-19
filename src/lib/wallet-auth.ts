@@ -8,7 +8,7 @@ import nacl from 'tweetnacl';
 export async function signInWithSolanaWallet(publicKey: string, signMessage: (message: Uint8Array) => Promise<Uint8Array>) {
   try {
     // 1. Get a nonce from Supabase
-    const { data: { nonce }, error: nonceError } = await supabase.auth.signUp({
+    const { data, error: nonceError } = await supabase.auth.signUp({
       email: `${publicKey}@solana-wallet.local`, // Use a placeholder email
       password: crypto.randomUUID(), // Use a random password (never used)
       options: {
@@ -22,6 +22,9 @@ export async function signInWithSolanaWallet(publicKey: string, signMessage: (me
       console.error("Error getting nonce:", nonceError);
       throw nonceError;
     }
+    
+    // Create a unique message for signing based on the user's ID
+    const nonce = data?.user?.id || crypto.randomUUID();
 
     // 2. Create a message for the user to sign
     const message = new TextEncoder().encode(`Authenticate with your wallet: ${nonce}`);
@@ -30,7 +33,7 @@ export async function signInWithSolanaWallet(publicKey: string, signMessage: (me
     const signature = await signMessage(message);
     
     // 4. Verify the signature and sign in
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({
       email: `${publicKey}@solana-wallet.local`,
       password: bs58.encode(signature),
     });
@@ -40,7 +43,7 @@ export async function signInWithSolanaWallet(publicKey: string, signMessage: (me
       throw error;
     }
     
-    return data;
+    return signInData;
   } catch (error) {
     console.error("Authentication error:", error);
     toast.error("Failed to authenticate with wallet", {
