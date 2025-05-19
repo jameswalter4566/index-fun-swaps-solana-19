@@ -9,7 +9,89 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      indexes: {
+        Row: {
+          created_at: string
+          creator_address: string
+          gain_percentage: number | null
+          id: string
+          last_price_update: string | null
+          market_cap: number | null
+          name: string
+          percent_change_1h: number
+          percent_change_6h: number
+          total_volume: number
+          upvoted_by: string[]
+          upvotes: number
+        }
+        Insert: {
+          created_at?: string
+          creator_address: string
+          gain_percentage?: number | null
+          id: string
+          last_price_update?: string | null
+          market_cap?: number | null
+          name: string
+          percent_change_1h?: number
+          percent_change_6h?: number
+          total_volume?: number
+          upvoted_by?: string[]
+          upvotes?: number
+        }
+        Update: {
+          created_at?: string
+          creator_address?: string
+          gain_percentage?: number | null
+          id?: string
+          last_price_update?: string | null
+          market_cap?: number | null
+          name?: string
+          percent_change_1h?: number
+          percent_change_6h?: number
+          total_volume?: number
+          upvoted_by?: string[]
+          upvotes?: number
+        }
+        Relationships: []
+      }
+      tokens: {
+        Row: {
+          address: string
+          decimals: number | null
+          id: string
+          image_url: string | null
+          index_id: string
+          name: string
+          symbol: string | null
+        }
+        Insert: {
+          address: string
+          decimals?: number | null
+          id?: string
+          image_url?: string | null
+          index_id: string
+          name: string
+          symbol?: string | null
+        }
+        Update: {
+          address?: string
+          decimals?: number | null
+          id?: string
+          image_url?: string | null
+          index_id?: string
+          name?: string
+          symbol?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tokens_index_id_fkey"
+            columns: ["index_id"]
+            isOneToOne: false
+            referencedRelation: "indexes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

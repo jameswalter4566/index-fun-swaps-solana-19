@@ -155,8 +155,8 @@ const CreateSwapForm: React.FC = () => {
         decimals: t.data?.decimals,
       }));
       
-      // Add to store
-      addIndex({
+      // Add to store and Supabase database
+      await addIndex({
         name,
         tokens: tokensList,
         creatorAddress: publicKey.toString(),
@@ -164,7 +164,7 @@ const CreateSwapForm: React.FC = () => {
       
       toast({
         title: "index created!",
-        description: `your ${name} index has been created successfully.`,
+        description: `your ${name} index has been created successfully and is now visible to everyone.`,
       });
       
       // Reset form

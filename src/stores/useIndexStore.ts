@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
@@ -88,25 +89,15 @@ export const useIndexStore = create<IndexState>()(
         set({ isLoading: true, error: null });
         
         try {
-          // Check if there are existing tables first
-          const { error: tablesCheckError } = await supabase
-            .from('indexes')
-            .select('id')
-            .limit(1);
-          
-          // If there's an error (likely table doesn't exist yet), just set empty indexes and return
-          if (tablesCheckError) {
-            console.warn('Tables may not exist yet:', tablesCheckError.message);
-            set({ indexes: {}, isLoading: false });
-            return;
-          }
-          
           // Fetch all indexes
           const { data: indexesData, error: indexesError } = await supabase
             .from('indexes')
             .select('*');
           
-          if (indexesError) throw new Error(indexesError.message);
+          if (indexesError) {
+            console.error('Error fetching indexes:', indexesError);
+            throw new Error(indexesError.message);
+          }
           
           const indexes: Record<string, IndexData> = {};
           
@@ -319,11 +310,6 @@ export const useIndexStore = create<IndexState>()(
       
       updateIndexGains: async (id, gainPercentage, marketCap, percentChange1h, percentChange6h) => {
         // Don't set loading state to avoid UI flicker during updates
-        set((state) => ({
-          error: null,
-          // Keep existing isLoading state to prevent UI interference
-        }));
-        
         try {
           const index = get().indexes[id];
           if (!index) {
