@@ -118,23 +118,20 @@ export function useIndexCardData(tokens: Token[]) {
     }
   }, [liveWeightedMarketCap]);
   
-  // Calculate weighted market cap when component mounts or tokens change
+  // Set up a periodic refresh for the weighted market cap (every 3 seconds)
   useEffect(() => {
-    console.log("Tokens changed or component mounted, fetching market cap data");
+    // Initial fetch
     fetchWeightedMarketCap();
     
-    // Set up a retry if the first attempt fails
-    if (marketCapFetchAttempts === 0) {
-      const retryTimer = setTimeout(() => {
-        if (weightedMarketCap === null) {
-          console.log("Initial market cap fetch didn't succeed, retrying...");
-          fetchWeightedMarketCap();
-        }
-      }, 5000); // Retry after 5 seconds
-      
-      return () => clearTimeout(retryTimer);
-    }
-  }, [tokens, fetchWeightedMarketCap, marketCapFetchAttempts, weightedMarketCap]);
+    // Set up refresh interval (every 3 seconds)
+    const refreshInterval = setInterval(() => {
+      console.log("Triggering 3-second refresh for weighted market cap");
+      fetchWeightedMarketCap();
+    }, 3000);
+    
+    // Clean up interval on unmount
+    return () => clearInterval(refreshInterval);
+  }, [fetchWeightedMarketCap]);
   
   // Generate chart data when component mounts
   useEffect(() => {

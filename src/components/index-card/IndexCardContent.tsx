@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
 import { Token } from '@/stores/useIndexStore';
 import { useMultiTokenSubscription } from '@/hooks/useTokenSubscription';
@@ -29,10 +29,37 @@ const IndexCardContent: React.FC<IndexCardContentProps> = ({
   onUpvote,
   onSwap
 }) => {
+  const [prevMarketCap, setPrevMarketCap] = useState(formattedWeightedMarketCap);
+  const [isMarketCapChanged, setIsMarketCapChanged] = useState(false);
+  const [marketCapDirection, setMarketCapDirection] = useState<'up' | 'down' | null>(null);
+  
   // Subscribe to all tokens in this index for real-time updates
   const tokenAddresses = tokens.map(token => token.address);
   const liveTokenData = useMultiTokenSubscription(tokenAddresses);
 
+  // Detect when market cap changes to trigger animation
+  useEffect(() => {
+    if (prevMarketCap !== formattedWeightedMarketCap && prevMarketCap !== 'Loading...') {
+      setIsMarketCapChanged(true);
+      
+      // Determine if market cap went up or down (basic string comparison)
+      // This works because the format is consistent ($X.XM, $X.XK, etc.)
+      if (prevMarketCap < formattedWeightedMarketCap) {
+        setMarketCapDirection('up');
+      } else if (prevMarketCap > formattedWeightedMarketCap) {
+        setMarketCapDirection('down');
+      }
+      
+      // Reset the animation after 1 second
+      const timer = setTimeout(() => {
+        setIsMarketCapChanged(false);
+        setPrevMarketCap(formattedWeightedMarketCap);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [formattedWeightedMarketCap, prevMarketCap]);
+  
   // Calculate live metrics based on WebSocket data
   const liveMetrics = useMemo(() => {
     if (Object.keys(liveTokenData).length === 0) return null;
@@ -95,13 +122,29 @@ const IndexCardContent: React.FC<IndexCardContentProps> = ({
   // Determine if we have any live data
   const hasLiveData = liveMetrics?.hasLiveData === true;
 
+  // Market cap animation and directional indicator classes
+  const marketCapClass = isMarketCapChanged
+    ? marketCapDirection === 'up'
+      ? 'text-green-500 animate-pulse-subtle'
+      : marketCapDirection === 'down'
+        ? 'text-red-500 animate-pulse-subtle'
+        : 'animate-pulse-subtle'
+    : hasLiveData ? 'animate-pulse-subtle' : '';
+    
+  const marketCapIndicator = marketCapDirection === 'up' ? '↑' : marketCapDirection === 'down' ? '↓' : '';
+
   return (
     <div className="space-y-4">
       {/* Display weighted market cap */}
       <div className="bg-stake-darkbg/50 p-2 rounded-md">
         <span className="text-xs text-stake-muted">total weighted market cap</span>
-        <p className={`text-sm font-semibold text-stake-text ${hasLiveData ? 'animate-pulse-subtle' : ''}`}>
+        <p className={`text-sm font-semibold text-stake-text flex items-center ${marketCapClass}`}>
           {formattedWeightedMarketCap}
+          {marketCapIndicator && (
+            <span className={`ml-1 ${marketCapDirection === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+              {marketCapIndicator}
+            </span>
+          )}
         </p>
       </div>
       
