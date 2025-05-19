@@ -1,26 +1,21 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 
 const CreateSwapForm: React.FC = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const { connected } = useWallet();
-  const { setVisible } = useWalletModal();
-  
   const [formData, setFormData] = useState({
     name: '',
     token1: '',
     token2: '',
     token3: '',
     token4: '',
-    // We could potentially add token image URLs here as well
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,22 +27,11 @@ const CreateSwapForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if wallet is connected
-    if (!connected) {
-      toast({
-        title: "wallet not connected",
-        description: "please connect your wallet to create an index",
-        variant: "destructive",
-      });
-      setVisible(true);
-      return;
-    }
-    
     // Validate form
     if (!formData.name || !formData.token1 || !formData.token2) {
       toast({
-        title: "form validation error",
-        description: "index name and at least 2 tokens are required.",
+        title: "Form Validation Error",
+        description: "INDEX name and at least 2 tokens are required.",
         variant: "destructive",
       });
       return;
@@ -61,29 +45,17 @@ const CreateSwapForm: React.FC = () => {
       
       // Show success message
       toast({
-        title: "index created!",
-        description: `your ${formData.name} index has been created successfully.`,
+        title: "INDEX Created!",
+        description: `Your ${formData.name} INDEX has been created successfully.`,
       });
       
-      // Clear form and close drawer (relies on parent component)
-      setFormData({
-        name: '',
-        token1: '',
-        token2: '',
-        token3: '',
-        token4: '',
-      });
-      
-      // The drawer will close after successful create
-      const drawerCloseButton = document.querySelector('[data-drawer-close="true"]') as HTMLButtonElement;
-      if (drawerCloseButton) {
-        setTimeout(() => drawerCloseButton.click(), 1500);
-      }
+      // Navigate back to home page
+      setTimeout(() => navigate('/'), 2000);
     } catch (error) {
       console.error("Error creating INDEX:", error);
       toast({
-        title: "error creating index",
-        description: "there was an error creating your index. please try again.",
+        title: "Error Creating INDEX",
+        description: "There was an error creating your INDEX. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -91,30 +63,22 @@ const CreateSwapForm: React.FC = () => {
     }
   };
 
-  // Add placeholder tokens for preview
-  const previewTokens = [
-    { name: 'token 1', address: formData.token1 || '0x...', imageUrl: '' },
-    { name: 'token 2', address: formData.token2 || '0x...', imageUrl: '' }
-  ];
-
-  if (formData.token3) {
-    previewTokens.push({ name: 'token 3', address: formData.token3, imageUrl: '' });
-  }
-
-  if (formData.token4) {
-    previewTokens.push({ name: 'token 4', address: formData.token4, imageUrl: '' });
-  }
-
   return (
-    <Card className="mt-2">
-      <CardContent className="pt-6">
+    <Card className="max-w-lg mx-auto">
+      <CardHeader>
+        <CardTitle className="text-2xl font-bold text-center">Create a New INDEX</CardTitle>
+        <CardDescription className="text-center">
+          Create a bundle of tokens that people can swap into with a single transaction
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="name">index name</Label>
+            <Label htmlFor="name">INDEX Name</Label>
             <Input
               id="name"
               name="name"
-              placeholder="e.g. fucking mooners"
+              placeholder="e.g., Meme Heroes"
               value={formData.name}
               onChange={handleChange}
               className="rounded-lg"
@@ -123,73 +87,53 @@ const CreateSwapForm: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token1">token 1 (required)</Label>
-            <div className="flex gap-2 items-center">
-              <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback className="bg-stake-darkbg text-xs">t1</AvatarFallback>
-              </Avatar>
-              <Input
-                id="token1"
-                name="token1"
-                placeholder="token address"
-                value={formData.token1}
-                onChange={handleChange}
-                className="rounded-lg flex-grow"
-                required
-              />
-            </div>
+            <Label htmlFor="token1">Token 1 (Required)</Label>
+            <Input
+              id="token1"
+              name="token1"
+              placeholder="Token address or select from dropdown"
+              value={formData.token1}
+              onChange={handleChange}
+              className="rounded-lg"
+              required
+            />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token2">token 2 (required)</Label>
-            <div className="flex gap-2 items-center">
-              <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback className="bg-stake-darkbg text-xs">t2</AvatarFallback>
-              </Avatar>
-              <Input
-                id="token2"
-                name="token2"
-                placeholder="token address"
-                value={formData.token2}
-                onChange={handleChange}
-                className="rounded-lg flex-grow"
-                required
-              />
-            </div>
+            <Label htmlFor="token2">Token 2 (Required)</Label>
+            <Input
+              id="token2"
+              name="token2"
+              placeholder="Token address or select from dropdown"
+              value={formData.token2}
+              onChange={handleChange}
+              className="rounded-lg"
+              required
+            />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token3">token 3 (optional)</Label>
-            <div className="flex gap-2 items-center">
-              <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback className="bg-stake-darkbg text-xs">t3</AvatarFallback>
-              </Avatar>
-              <Input
-                id="token3"
-                name="token3"
-                placeholder="token address"
-                value={formData.token3}
-                onChange={handleChange}
-                className="rounded-lg flex-grow"
-              />
-            </div>
+            <Label htmlFor="token3">Token 3 (Optional)</Label>
+            <Input
+              id="token3"
+              name="token3"
+              placeholder="Token address or select from dropdown"
+              value={formData.token3}
+              onChange={handleChange}
+              className="rounded-lg"
+            />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token4">token 4 (optional)</Label>
-            <div className="flex gap-2 items-center">
-              <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback className="bg-stake-darkbg text-xs">t4</AvatarFallback>
-              </Avatar>
-              <Input
-                id="token4"
-                name="token4"
-                placeholder="token address"
-                value={formData.token4}
-                onChange={handleChange}
-                className="rounded-lg flex-grow"
-              />
-            </div>
+            <Label htmlFor="token4">Token 4 (Optional)</Label>
+            <Input
+              id="token4"
+              name="token4"
+              placeholder="Token address or select from dropdown"
+              value={formData.token4}
+              onChange={handleChange}
+              className="rounded-lg"
+            />
           </div>
           
           <Button 
@@ -197,7 +141,7 @@ const CreateSwapForm: React.FC = () => {
             className="w-full btn-solana"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'creating...' : 'create index'}
+            {isSubmitting ? 'Creating...' : 'Create INDEX'}
           </Button>
         </form>
       </CardContent>
