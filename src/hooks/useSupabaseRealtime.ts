@@ -1,6 +1,7 @@
 
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase-client';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export function useSupabaseRealtime<T>(
   table: 'indexes' | 'tokens',
@@ -19,10 +20,10 @@ export function useSupabaseRealtime<T>(
           schema: 'public',
           table,
           ...(filter ? { filter } : {}),
-        },
-        (payload) => {
+        } as any, // Type assertion needed due to TypeScript limitation
+        (payload: RealtimePostgresChangesPayload<any>) => {
           onChange(payload.new as T);
-        },
+        }
       )
       .subscribe();
 

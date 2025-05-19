@@ -15,7 +15,11 @@ const MARKET_CAP_RETRY_INTERVAL = 10000; // 10 seconds
 export function useTokenRefresh() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
-  const { getAllIndexes, updateIndexGains, updateIndexVolume } = useIndexStore();
+  const { 
+    getAllIndexes, 
+    updateLocalIndexGains, 
+    updateLocalIndexVolume 
+  } = useIndexStore();
   
   const refreshTokenData = useCallback(async () => {
     if (isRefreshing) return;
@@ -52,12 +56,12 @@ export function useTokenRefresh() {
           // If weightedMarketCap is null, we keep the previous value (don't override with null)
           const marketCapToUse = weightedMarketCap !== null ? weightedMarketCap : index.marketCap || 0;
           
-          // Update the index gains in the store
-          await updateIndexGains(index.id, gainPercentage, marketCapToUse, change1h, change6h);
+          // Update the index gains locally in the store without writing to Supabase
+          updateLocalIndexGains(index.id, gainPercentage, marketCapToUse, change1h, change6h);
           
           // Generate mock volume data based on existing volume (if any)
           const newVolume = generateMockVolume(index.totalVolume);
-          await updateIndexVolume(index.id, newVolume);
+          updateLocalIndexVolume(index.id, newVolume);
         })
       );
       
@@ -68,7 +72,7 @@ export function useTokenRefresh() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [getAllIndexes, updateIndexGains, updateIndexVolume, isRefreshing]);
+  }, [getAllIndexes, updateLocalIndexGains, updateLocalIndexVolume, isRefreshing]);
   
   // Retry function specifically for market cap data when not initially available
   const retryMarketCapFetch = useCallback(async () => {
@@ -94,8 +98,8 @@ export function useTokenRefresh() {
           
           if (weightedMarketCap !== null) {
             console.log(`Successfully fetched market cap for index ${index.id}: ${weightedMarketCap}`);
-            // Only update the market cap, keep other values the same
-            await updateIndexGains(
+            // Only update the market cap locally, keep other values the same
+            updateLocalIndexGains(
               index.id, 
               index.gainPercentage || 0, 
               weightedMarketCap,
@@ -110,7 +114,7 @@ export function useTokenRefresh() {
     } catch (error) {
       console.error("Error in market cap retry:", error);
     }
-  }, [getAllIndexes, updateIndexGains]);
+  }, [getAllIndexes, updateLocalIndexGains]);
 
   // Set up periodic refresh
   useEffect(() => {

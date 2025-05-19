@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase-client';
 import { TokenData } from '@/lib/token/types';
@@ -39,9 +38,13 @@ interface IndexState {
   downvoteIndex: (id: string, walletAddress: string) => Promise<void>;
   updateIndexGains: (id: string, gainPercentage: number, marketCap: number, percentChange1h: number, percentChange6h: number) => Promise<void>;
   updateIndexVolume: (id: string, volume: number) => Promise<void>;
+  updateLocalIndexGains: (id: string, gainPercentage: number, marketCap: number, percentChange1h: number, percentChange6h: number) => void;
+  updateLocalIndexVolume: (id: string, volume: number) => void;
   getIndexesByCreator: (creatorAddress: string) => IndexData[];
   getAllIndexes: () => IndexData[];
   fetchIndexes: () => Promise<void>;
+  updateIndexInStore: (indexRecord: Database['public']['Tables']['indexes']['Row']) => void;
+  updateTokensInStore: (tokenRecord: Database['public']['Tables']['tokens']['Row']) => void;
 }
 
 // Helper function to convert between Supabase record and app model
@@ -282,6 +285,99 @@ export const useIndexStore = create<IndexState>()((set, get) => ({
       console.error('Error updating index volume:', error);
       throw error;
     }
+  },
+  
+  updateLocalIndexGains: (id, gainPercentage, marketCap, percentChange1h, percentChange6h) => {
+    set((state) => {
+      // Only update if the index exists
+      if (!state.indexes[id]) return state;
+      
+      const updatedIndexes = { ...state.indexes };
+      updatedIndexes[id] = { 
+        ...updatedIndexes[id], 
+        gainPercentage, 
+        marketCap, 
+        percentChange1h,
+        percentChange6h,
+        lastPriceUpdate: new Date().toISOString() 
+      };
+      
+      return { indexes: updatedIndexes };
+    });
+  },
+  
+  updateLocalIndexVolume: (id, volume) => {
+    set((state) => {
+      // Only update if the index exists
+      if (!state.indexes[id]) return state;
+      
+      const updatedIndexes = { ...state.indexes };
+      updatedIndexes[id] = { 
+        ...updatedIndexes[id], 
+        totalVolume: volume 
+      };
+      
+      return { indexes: updatedIndexes };
+    });
+  },
+  
+  updateIndexInStore: (indexRecord) => {
+    set((state) => {
+      // If we don't have this index yet, skip the update (will be handled by fetchIndexes)
+      if (!state.indexes[indexRecord.id]) return state;
+      
+      // Keep the existing tokens for this index
+      const existingTokens = state.indexes[indexRecord.id].tokens;
+      
+      const updatedIndexes = { ...state.indexes };
+      updatedIndexes[indexRecord.id] = mapRecordToIndexData(indexRecord, existingTokens.map(token => ({
+        address: token.address,
+        name: token.name,
+        symbol: token.symbol || null,
+        image_url: token.imageUrl || null,
+        decimals: token.decimals || null,
+      })));
+      
+      return { indexes: updatedIndexes };
+    });
+  },
+  
+  updateTokensInStore: (tokenRecord) => {
+    set((state) => {
+      const indexId = tokenRecord.index_id;
+      
+      // If we don't have this index yet, skip the update (will be handled by fetchIndexes)
+      if (!state.indexes[indexId]) return state;
+      
+      const updatedIndexes = { ...state.indexes };
+      const currentTokens = [...updatedIndexes[indexId].tokens];
+      
+      // Find if this token already exists in the index
+      const tokenIndex = currentTokens.findIndex(t => t.address === tokenRecord.address);
+      
+      // Create the updated token object
+      const updatedToken: Token = {
+        address: tokenRecord.address,
+        name: tokenRecord.name,
+        symbol: tokenRecord.symbol || '???',
+        imageUrl: tokenRecord.image_url ?? undefined,
+        decimals: tokenRecord.decimals ?? undefined,
+      };
+      
+      // Update or add the token
+      if (tokenIndex >= 0) {
+        currentTokens[tokenIndex] = updatedToken;
+      } else {
+        currentTokens.push(updatedToken);
+      }
+      
+      updatedIndexes[indexId] = {
+        ...updatedIndexes[indexId],
+        tokens: currentTokens
+      };
+      
+      return { indexes: updatedIndexes };
+    });
   },
   
   getIndexesByCreator: (creatorAddress) => {

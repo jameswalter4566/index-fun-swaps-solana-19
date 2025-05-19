@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import IndexCard from '@/components/index-card/IndexCard';
@@ -28,8 +27,7 @@ const Index: React.FC = () => {
   const { isRefreshing, lastRefreshed, refreshData } = useTokenRefresh();
   
   // Get indexes from realtime hook
-  const { indexes: indexesMap, loading, error, initialized } = useRealtimeIndexes();
-  const indexes = Object.values(indexesMap);
+  const { indexes, loading, error, initialized } = useRealtimeIndexes();
   
   // Filter indexes based on search query and active tab
   const filteredIndexes = indexes.filter(index => {

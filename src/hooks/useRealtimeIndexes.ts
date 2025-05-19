@@ -1,5 +1,6 @@
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useSupabaseRealtime } from './useSupabaseRealtime';
 import { supabase } from '@/lib/supabase-client';
 import { useIndexStore } from '@/stores/useIndexStore';
 import { Database } from '@/types/database';
@@ -8,50 +9,68 @@ type IndexRecord = Database['public']['Tables']['indexes']['Row'];
 type TokenRecord = Database['public']['Tables']['tokens']['Row'];
 
 export function useRealtimeIndexes() {
-  const { indexes, fetchIndexes } = useIndexStore();
+  const { 
+    indexes, 
+    fetchIndexes, 
+    updateIndexInStore, 
+    updateTokensInStore 
+  } = useIndexStore();
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   // Initial fetch on component mount
   useEffect(() => {
-    fetchIndexes();
+    const loadInitialData = async () => {
+      await fetchIndexes();
+      setIsInitialLoad(false);
+    };
+    
+    loadInitialData();
   }, [fetchIndexes]);
   
-  // Set up real-time listeners for indexes and tokens
-  useEffect(() => {
-    const indexesChannel = supabase
-      .channel('public:indexes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'indexes' 
-      }, async (payload) => {
-        console.log('Indexes change:', payload);
-        // Refetch all indexes when any change occurs
-        // This is a simple approach that ensures we have all related data
-        await fetchIndexes();
-      })
-      .subscribe();
+  // Handle index changes (structural changes that require refetching)
+  useSupabaseRealtime<IndexRecord>(
+    'indexes',
+    (updatedIndex) => {
+      // For INSERT and DELETE events, we want to refetch all data to ensure consistency
+      if (isInitialLoad) return; // Skip during initial load to prevent duplicate fetches
       
-    const tokensChannel = supabase
-      .channel('public:tokens')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'tokens' 
-      }, async (payload) => {
-        console.log('Tokens change:', payload);
-        // Refetch all indexes when tokens change too
-        await fetchIndexes();
-      })
-      .subscribe();
+      // For UPDATE events that only update metrics (gain, market cap, etc.),
+      // we update just that specific index in the store
+      if (updatedIndex) {
+        // Check if only metrics were updated, not structural changes
+        const currentIndex = Object.values(indexes).find(idx => idx.id === updatedIndex.id);
+        
+        if (currentIndex) {
+          // Just update the specific index with new metrics
+          updateIndexInStore(updatedIndex);
+        } else {
+          // For structural changes or new indexes, refetch everything
+          fetchIndexes();
+        }
+      }
+    },
+    '*' // Listen to all event types
+  );
+  
+  // Handle token changes
+  useSupabaseRealtime<TokenRecord>(
+    'tokens',
+    (updatedToken) => {
+      if (isInitialLoad) return; // Skip during initial load
       
-    return () => {
-      supabase.removeChannel(indexesChannel);
-      supabase.removeChannel(tokensChannel);
-    };
-  }, [fetchIndexes]);
+      // Update the specific token in the store
+      if (updatedToken) {
+        updateTokensInStore(updatedToken);
+      } else {
+        // If token was deleted or we can't determine what changed, refetch everything
+        fetchIndexes();
+      }
+    },
+    '*' // Listen to all event types
+  );
   
   return {
-    indexes,
+    indexes: Object.values(indexes), // Convert from Record to array for easier use
     loading: useIndexStore((state) => state.isLoading),
     error: useIndexStore((state) => state.error),
     initialized: useIndexStore((state) => state.initialized),
