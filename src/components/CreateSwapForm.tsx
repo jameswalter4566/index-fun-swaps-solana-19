@@ -69,7 +69,7 @@ const CreateSwapForm: React.FC = () => {
     
     if (isValid) {
       try {
-        const tokenData = await fetchTokenData(address);
+        const tokenData = await getTokenData(address);
         
         setTokens(prev => {
           const newTokens = [...prev];
