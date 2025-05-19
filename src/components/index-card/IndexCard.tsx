@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
@@ -30,7 +30,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
   const { connected, publicKey } = useWallet();
   const { setVisible } = useWalletModal();
   const { toast } = useToast();
-  const { upvoteIndex, downvoteIndex } = useIndexStore();
+  const { upvoteIndex, downvoteIndex, updateIndexGains } = useIndexStore();
   
   // Check if the current user has upvoted this index
   const isUpvoted = publicKey && upvotedBy.includes(publicKey.toString());
@@ -49,8 +49,35 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
     handleCopyAddress,
     formatMarketCap,
     formatVolume,
-    getPercentageColor
+    getPercentageColor,
+    gainPercentages,
+    isSubscribed
   } = useIndexCardData(tokens);
+  
+  // Update the index store with live data when it changes
+  useEffect(() => {
+    if (isSubscribed && weightedMarketCap !== null) {
+      const change24h = gainPercentages.change24h !== undefined ? 
+        gainPercentages.change24h : gainPercentage;
+      
+      updateIndexGains(
+        id,
+        change24h,
+        weightedMarketCap,
+        gainPercentages.change1h || percentChange1h,
+        gainPercentages.change6h || percentChange6h
+      );
+    }
+  }, [
+    id, 
+    weightedMarketCap, 
+    gainPercentages, 
+    updateIndexGains, 
+    isSubscribed, 
+    gainPercentage, 
+    percentChange1h, 
+    percentChange6h
+  ]);
   
   const handleUpvote = () => {
     if (!connected || !publicKey) {
@@ -86,10 +113,23 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
     setShowSwapSheet(true);
   };
   
-  const gainColor = getPercentageColor(gainPercentage);
+  // Use real-time data if available, otherwise fall back to stored data
+  const displayGainPercentage = gainPercentages.change24h !== undefined && isSubscribed ? 
+    gainPercentages.change24h : gainPercentage;
+  
+  const displayMarketCap = weightedMarketCap !== null && isSubscribed ?
+    weightedMarketCap : marketCap;
+    
+  const displayPercentChange1h = gainPercentages.change1h !== undefined && isSubscribed ?
+    gainPercentages.change1h : percentChange1h;
+    
+  const displayPercentChange6h = gainPercentages.change6h !== undefined && isSubscribed ?
+    gainPercentages.change6h : percentChange6h;
+  
+  const gainColor = getPercentageColor(displayGainPercentage);
   const formattedWeightedMarketCap = isLoadingMarketCap
     ? 'Calculating...'
-    : formatMarketCap(weightedMarketCap);
+    : formatMarketCap(displayMarketCap);
   const formattedVolume = formatVolume(totalVolume);
   
   return (
@@ -99,7 +139,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
           <div className="flex justify-between items-center">
             <CardTitle className="text-lg font-bold text-stake-text">{name}</CardTitle>
             <span className={`font-bold ${gainColor}`}>
-              {gainPercentage >= 0 ? '+' : ''}{gainPercentage}%
+              {displayGainPercentage >= 0 ? '+' : ''}{displayGainPercentage}%
             </span>
           </div>
         </CardHeader>
@@ -109,7 +149,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
             tokens={tokens}
             formattedWeightedMarketCap={formattedWeightedMarketCap}
             formattedVolume={formattedVolume}
-            gainPercentage={gainPercentage}
+            gainPercentage={displayGainPercentage}
             gainColor={gainColor}
             upvotes={upvotes}
             isUpvoted={!!isUpvoted}
@@ -126,9 +166,9 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
         tokens={tokens}
         formattedWeightedMarketCap={formattedWeightedMarketCap}
         formattedVolume={formattedVolume}
-        percentChange1h={percentChange1h}
-        percentChange6h={percentChange6h}
-        gainPercentage={gainPercentage}
+        percentChange1h={displayPercentChange1h}
+        percentChange6h={displayPercentChange6h}
+        gainPercentage={displayGainPercentage}
         chartData={chartData}
         isLoadingDetails={isLoadingDetails}
         tokenDetails={tokenDetails}
