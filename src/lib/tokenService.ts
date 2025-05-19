@@ -1,4 +1,6 @@
+
 import { PublicKey } from '@solana/web3.js';
+import { Token } from '@/stores/useIndexStore';
 
 export interface TokenData {
   address: string;
@@ -8,6 +10,8 @@ export interface TokenData {
   decimals?: number;
   price?: number;
   marketCap?: number;
+  change1h?: number;
+  change6h?: number;
   change24h?: number;
 }
 
@@ -15,6 +19,8 @@ export interface TokenData {
 // For demonstration purposes we're keeping it in the code
 const JUPITER_API_BASE = 'https://quote-api.jup.ag/v4';
 const TOKEN_LIST_URL = 'https://token.jup.ag/all';
+const SOLANA_TRACKER_API_BASE = 'https://data.solanatracker.io';
+const SOLANA_TRACKER_API_KEY = '76a0b17d-089f-4069-973b-51b9ba1571a3';
 
 /**
  * Validates if a string is a valid Solana address
@@ -51,6 +57,101 @@ export const fetchTokenList = async (): Promise<Record<string, any>> => {
 };
 
 /**
+ * Fetches token data from Solana Tracker API
+ */
+export const fetchTokenFromSolanaTracker = async (address: string): Promise<TokenData | null> => {
+  try {
+    const response = await fetch(`${SOLANA_TRACKER_API_BASE}/tokens/${address}`, {
+      headers: { 'x-api-key': SOLANA_TRACKER_API_KEY }
+    });
+    
+    if (!response.ok) {
+      console.error(`Failed to fetch token data for ${address}: ${response.status}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    return {
+      address,
+      name: data.token?.name || `Token ${address.substring(0, 4)}...${address.substring(address.length - 4)}`,
+      symbol: data.token?.symbol || "???",
+      imageUrl: data.token?.image || undefined,
+      decimals: data.token?.decimals,
+      price: data.pools?.[0]?.price?.usd || undefined,
+      marketCap: data.pools?.[0]?.marketCap?.usd || undefined,
+      change1h: data.events?.["1h"]?.priceChangePercentage || 0,
+      change6h: data.events?.["6h"]?.priceChangePercentage || 0,
+      change24h: data.events?.["24h"]?.priceChangePercentage || 0
+    };
+  } catch (error) {
+    console.error("Error fetching token from Solana Tracker:", error);
+    return null;
+  }
+};
+
+/**
+ * Fetches multiple tokens at once from Solana Tracker API
+ */
+export const fetchMultipleTokensFromSolanaTracker = async (addresses: string[]): Promise<Record<string, TokenData>> => {
+  if (!addresses.length) return {};
+  
+  try {
+    // If we have more than 20 tokens, we need to split into multiple requests
+    const chunks = [];
+    for (let i = 0; i < addresses.length; i += 20) {
+      chunks.push(addresses.slice(i, i + 20));
+    }
+    
+    const results: Record<string, TokenData> = {};
+    
+    await Promise.all(
+      chunks.map(async (chunk) => {
+        const response = await fetch(`${SOLANA_TRACKER_API_BASE}/tokens/multi`, {
+          method: 'POST',
+          headers: {
+            'x-api-key': SOLANA_TRACKER_API_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ tokens: chunk })
+        });
+        
+        if (!response.ok) {
+          console.error(`Failed to fetch batch token data: ${response.status}`);
+          return;
+        }
+        
+        const dataArray = await response.json();
+        
+        // Process each token in the response
+        dataArray.forEach((data: any) => {
+          if (!data.token) return;
+          
+          const address = data.token.address;
+          results[address] = {
+            address,
+            name: data.token?.name || `Token ${address.substring(0, 4)}...${address.substring(address.length - 4)}`,
+            symbol: data.token?.symbol || "???",
+            imageUrl: data.token?.image || undefined,
+            decimals: data.token?.decimals,
+            price: data.pools?.[0]?.price?.usd || undefined,
+            marketCap: data.pools?.[0]?.marketCap?.usd || undefined,
+            change1h: data.events?.["1h"]?.priceChangePercentage || 0,
+            change6h: data.events?.["6h"]?.priceChangePercentage || 0,
+            change24h: data.events?.["24h"]?.priceChangePercentage || 0
+          };
+        });
+      })
+    );
+    
+    return results;
+  } catch (error) {
+    console.error("Error fetching multiple tokens from Solana Tracker:", error);
+    return {};
+  }
+};
+
+/**
  * Fetches token data for a specific address
  */
 export const fetchTokenData = async (address: string): Promise<TokenData | null> => {
@@ -59,7 +160,13 @@ export const fetchTokenData = async (address: string): Promise<TokenData | null>
   }
 
   try {
-    // Get the token list data
+    // First try to get the token from Solana Tracker API
+    const solanaTrackerData = await fetchTokenFromSolanaTracker(address);
+    if (solanaTrackerData) {
+      return solanaTrackerData;
+    }
+    
+    // Fallback to Jupiter token list if Solana Tracker fails
     const tokenMap = await fetchTokenList();
     
     // Check if token exists in the list
@@ -75,7 +182,7 @@ export const fetchTokenData = async (address: string): Promise<TokenData | null>
       };
     }
     
-    // Fallback if token isn't in the list - create basic info
+    // Fallback if token isn't in any list - create basic info
     return {
       address,
       name: `Token ${address.substring(0, 4)}...${address.substring(address.length - 4)}`,
@@ -90,37 +197,123 @@ export const fetchTokenData = async (address: string): Promise<TokenData | null>
 /**
  * Calculate weighted market cap for an index based on its tokens
  */
-export const calculateIndexMarketCap = (tokens: string[]): Promise<number> => {
-  // In a real implementation, we would:
-  // 1. Get market cap for each token
-  // 2. Sum them with appropriate weighting
-  // For demo purposes, we'll return a reasonable mock value
-  return Promise.resolve(Math.round(10000 + Math.random() * 25000000));
+export const calculateIndexMarketCap = async (tokens: string[]): Promise<number> => {
+  try {
+    // Get actual token data from Solana Tracker API
+    const tokenData = await fetchMultipleTokensFromSolanaTracker(tokens);
+    
+    // Sum up market caps
+    let totalMarketCap = 0;
+    let validTokenCount = 0;
+    
+    for (const address of tokens) {
+      const data = tokenData[address];
+      if (data && data.marketCap) {
+        totalMarketCap += data.marketCap;
+        validTokenCount++;
+      }
+    }
+    
+    // Return actual market cap if available, otherwise fallback to mock data
+    return validTokenCount > 0 ? totalMarketCap : Math.round(10000 + Math.random() * 25000000);
+  } catch (error) {
+    console.error("Error calculating index market cap:", error);
+    // Fallback to mock data if API fails
+    return Math.round(10000 + Math.random() * 25000000);
+  }
 };
 
 /**
  * Calculate gain percentage for an index based on token performance
  */
-export const calculateIndexGainPercentage = (tokens: string[]): Promise<number> => {
-  // In a real implementation, this would calculate the actual gain percentage
-  // For demo purposes, we'll return a random value between -30% and +50%
-  return Promise.resolve(parseFloat((Math.random() * 80 - 30).toFixed(2)));
+export const calculateIndexGainPercentage = async (tokens: string[]): Promise<number> => {
+  try {
+    // Get actual token data from Solana Tracker API
+    const tokenData = await fetchMultipleTokensFromSolanaTracker(tokens);
+    
+    // Calculate weighted average of 24h changes
+    let totalChange = 0;
+    let validTokenCount = 0;
+    
+    for (const address of tokens) {
+      const data = tokenData[address];
+      if (data && data.change24h !== undefined) {
+        totalChange += data.change24h;
+        validTokenCount++;
+      }
+    }
+    
+    // Return average change if available, otherwise fallback to mock data
+    return validTokenCount > 0 
+      ? parseFloat((totalChange / validTokenCount).toFixed(2)) 
+      : parseFloat((Math.random() * 80 - 30).toFixed(2));
+  } catch (error) {
+    console.error("Error calculating index gain percentage:", error);
+    // Fallback to mock data if API fails
+    return parseFloat((Math.random() * 80 - 30).toFixed(2));
+  }
 };
 
 /**
  * Calculate 1-hour gain percentage for an index
  */
-export const calculate1HourGainPercentage = (tokens: string[]): Promise<number> => {
-  // Mock 1-hour gain percentage (-10% to +10%)
-  return Promise.resolve(parseFloat((Math.random() * 20 - 10).toFixed(2)));
+export const calculate1HourGainPercentage = async (tokens: string[]): Promise<number> => {
+  try {
+    // Get actual token data from Solana Tracker API
+    const tokenData = await fetchMultipleTokensFromSolanaTracker(tokens);
+    
+    // Calculate average of 1h changes
+    let totalChange = 0;
+    let validTokenCount = 0;
+    
+    for (const address of tokens) {
+      const data = tokenData[address];
+      if (data && data.change1h !== undefined) {
+        totalChange += data.change1h;
+        validTokenCount++;
+      }
+    }
+    
+    // Return average change if available, otherwise fallback to mock data
+    return validTokenCount > 0 
+      ? parseFloat((totalChange / validTokenCount).toFixed(2)) 
+      : parseFloat((Math.random() * 20 - 10).toFixed(2));
+  } catch (error) {
+    console.error("Error calculating 1-hour gain percentage:", error);
+    // Fallback to mock data if API fails
+    return parseFloat((Math.random() * 20 - 10).toFixed(2));
+  }
 };
 
 /**
  * Calculate 6-hour gain percentage for an index
  */
-export const calculate6HourGainPercentage = (tokens: string[]): Promise<number> => {
-  // Mock 6-hour gain percentage (-15% to +15%)
-  return Promise.resolve(parseFloat((Math.random() * 30 - 15).toFixed(2)));
+export const calculate6HourGainPercentage = async (tokens: string[]): Promise<number> => {
+  try {
+    // Get actual token data from Solana Tracker API
+    const tokenData = await fetchMultipleTokensFromSolanaTracker(tokens);
+    
+    // Calculate average of 6h changes
+    let totalChange = 0;
+    let validTokenCount = 0;
+    
+    for (const address of tokens) {
+      const data = tokenData[address];
+      if (data && data.change6h !== undefined) {
+        totalChange += data.change6h;
+        validTokenCount++;
+      }
+    }
+    
+    // Return average change if available, otherwise fallback to mock data
+    return validTokenCount > 0 
+      ? parseFloat((totalChange / validTokenCount).toFixed(2)) 
+      : parseFloat((Math.random() * 30 - 15).toFixed(2));
+  } catch (error) {
+    console.error("Error calculating 6-hour gain percentage:", error);
+    // Fallback to mock data if API fails
+    return parseFloat((Math.random() * 30 - 15).toFixed(2));
+  }
 };
 
 /**
@@ -173,28 +366,42 @@ let tokenListSingleton: Record<string, any> | null = null;
  * Get token data with caching for efficiency
  */
 export const getTokenData = async (address: string): Promise<TokenData | null> => {
-  if (!tokenListSingleton) {
-    tokenListSingleton = await fetchTokenList();
-  }
-  
   if (!isValidSolanaAddress(address)) {
     return null;
   }
   
-  const token = tokenListSingleton[address];
-  if (token) {
-    return {
-      address,
-      name: token.name || 'Unknown Token',
-      symbol: token.symbol || '???',
-      imageUrl: token.logoURI || undefined,
-      decimals: token.decimals,
-      // We would get these from a price API in a real implementation
-      price: parseFloat((Math.random() * 100).toFixed(4)),
-      marketCap: Math.round(Math.random() * 10000000),
-      change24h: parseFloat((Math.random() * 40 - 20).toFixed(2)),
-    };
+  try {
+    // Try to get token from Solana Tracker API
+    const tokenData = await fetchTokenFromSolanaTracker(address);
+    if (tokenData) {
+      return tokenData;
+    }
+    
+    // Fall back to Jupiter token list for basic info if API fails
+    if (!tokenListSingleton) {
+      tokenListSingleton = await fetchTokenList();
+    }
+    
+    const token = tokenListSingleton[address];
+    if (token) {
+      return {
+        address,
+        name: token.name || 'Unknown Token',
+        symbol: token.symbol || '???',
+        imageUrl: token.logoURI || undefined,
+        decimals: token.decimals,
+        // We add mock data for fields that aren't available in the Jupiter list
+        price: parseFloat((Math.random() * 100).toFixed(4)),
+        marketCap: Math.round(Math.random() * 10000000),
+        change1h: parseFloat((Math.random() * 20 - 10).toFixed(2)),
+        change6h: parseFloat((Math.random() * 30 - 15).toFixed(2)),
+        change24h: parseFloat((Math.random() * 40 - 20).toFixed(2)),
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error in getTokenData:", error);
+    return null;
   }
-  
-  return null;
 };

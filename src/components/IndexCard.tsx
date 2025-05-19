@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Heart, CircleDot } from 'lucide-react';
@@ -12,7 +13,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { useToast } from '@/hooks/use-toast';
 import { useIndexStore, IndexData, Token } from '@/stores/useIndexStore';
-import { generateChartData, getTokenData } from '@/lib/tokenService';
+import { generateChartData, getTokenData, TokenData } from '@/lib/tokenService';
 
 interface IndexCardProps {
   index: IndexData;
@@ -34,7 +35,8 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
   const [showSwapSheet, setShowSwapSheet] = useState(false);
   const [solanaAmount, setSolanaAmount] = useState('1');
   const [chartData, setChartData] = useState<any[]>([]);
-  const [tokenDetails, setTokenDetails] = useState<Record<string, { marketCap?: number }>>({});
+  const [tokenDetails, setTokenDetails] = useState<Record<string, TokenData>>({});
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   
   const { connected, publicKey } = useWallet();
   const { setVisible } = useWalletModal();
@@ -47,27 +49,36 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
   useEffect(() => {
     // Generate chart data when component mounts
     setChartData(generateChartData());
-    
-    // Fetch additional token details including market cap
-    const fetchTokenDetails = async () => {
-      const details: Record<string, { marketCap?: number }> = {};
+  }, [id]);
+
+  // Fetch token details when the swap sheet is opened
+  useEffect(() => {
+    if (showSwapSheet && tokens.length > 0 && Object.keys(tokenDetails).length === 0) {
+      const fetchTokenDetails = async () => {
+        setIsLoadingDetails(true);
+        try {
+          const details: Record<string, TokenData> = {};
+          
+          await Promise.all(
+            tokens.map(async (token) => {
+              const tokenData = await getTokenData(token.address);
+              if (tokenData) {
+                details[token.address] = tokenData;
+              }
+            })
+          );
+          
+          setTokenDetails(details);
+        } catch (error) {
+          console.error("Error fetching token details:", error);
+        } finally {
+          setIsLoadingDetails(false);
+        }
+      };
       
-      await Promise.all(
-        tokens.map(async (token) => {
-          const tokenData = await getTokenData(token.address);
-          if (tokenData) {
-            details[token.address] = {
-              marketCap: tokenData.marketCap
-            };
-          }
-        })
-      );
-      
-      setTokenDetails(details);
-    };
-    
-    fetchTokenDetails();
-  }, [id, tokens]);
+      fetchTokenDetails();
+    }
+  }, [showSwapSheet, tokens, tokenDetails]);
   
   const handleUpvote = () => {
     if (!connected || !publicKey) {
@@ -125,7 +136,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
     }
   };
   
-  // Format volume number with appropriate suffix (now in SOL)
+  // Format volume number with appropriate suffix (in SOL)
   const formatVolume = (volume: number): string => {
     if (volume >= 1000000) {
       return `${(volume / 1000000).toFixed(2)}M SOL`;
@@ -165,12 +176,8 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
                   <span 
                     key={token.address} 
                     className="inline-flex items-center gap-1 bg-stake-darkbg rounded-full px-3 py-1 text-xs text-stake-text"
-                    title={`Market Cap: ${formatMarketCap(tokenDetails[token.address]?.marketCap)}`}
                   >
                     {token.symbol || token.name}
-                    <span className="text-xs text-stake-muted ml-1">
-                      {formatMarketCap(tokenDetails[token.address]?.marketCap)}
-                    </span>
                   </span>
                 ))}
               </div>
@@ -267,49 +274,78 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
             
             <div className="mb-6">
               <h3 className="text-lg font-bold text-stake-text mb-3">tokens</h3>
-              <div className="space-y-3">
-                {tokens.map((token) => (
-                  <div 
-                    key={token.address} 
-                    className="flex justify-between items-center bg-stake-card p-3 rounded-lg"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={token.imageUrl} alt={token.name} />
-                        <AvatarFallback className="bg-stake-darkbg text-xs">
-                          {token.symbol ? token.symbol.substring(0, 2) : token.name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <span className="font-medium text-stake-text">{token.name}</span>
-                        <div className="text-xs text-stake-muted">
-                          Market Cap: {formatMarketCap(tokenDetails[token.address]?.marketCap)}
+              
+              {isLoadingDetails ? (
+                <div className="text-center py-4 text-stake-muted">
+                  loading token details...
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {tokens.map((token) => {
+                    const tokenDetail = tokenDetails[token.address];
+                    const marketCap = tokenDetail?.marketCap;
+                    const change24h = tokenDetail?.change24h || 0;
+                    const changeColor = getPercentageColor(change24h);
+                    
+                    return (
+                      <div 
+                        key={token.address} 
+                        className="flex justify-between items-center bg-stake-card p-3 rounded-lg"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage 
+                              src={tokenDetail?.imageUrl || token.imageUrl} 
+                              alt={tokenDetail?.name || token.name} 
+                            />
+                            <AvatarFallback className="bg-stake-darkbg text-xs">
+                              {token.symbol ? token.symbol.substring(0, 2) : 
+                               (tokenDetail?.symbol ? tokenDetail.symbol.substring(0, 2) : 
+                               token.name.substring(0, 2).toUpperCase())}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <span className="font-medium text-stake-text">
+                              {tokenDetail?.name || token.name}
+                              {tokenDetail?.symbol && <span className="ml-1 text-stake-muted text-xs">({tokenDetail.symbol})</span>}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-stake-muted">
+                                {formatMarketCap(marketCap)}
+                              </span>
+                              {change24h !== undefined && (
+                                <span className={`text-xs ${changeColor}`}>
+                                  {change24h >= 0 ? '+' : ''}{change24h}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <span className="text-xs text-stake-muted mr-2 truncate max-w-[120px]">
+                            {`${token.address.substring(0, 6)}...${token.address.substring(token.address.length - 4)}`}
+                          </span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => handleCopyAddress(token.address)}
+                              >
+                                copy
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-2 text-xs">
+                              address copied!
+                            </PopoverContent>
+                          </Popover>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="text-xs text-stake-muted mr-2 truncate max-w-[120px]">
-                        {`${token.address.substring(0, 6)}...${token.address.substring(token.address.length - 4)}`}
-                      </span>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="h-7 px-2 text-xs"
-                            onClick={() => handleCopyAddress(token.address)}
-                          >
-                            copy
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-2 text-xs">
-                          address copied!
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             
             <div className="bg-stake-card p-4 rounded-lg">

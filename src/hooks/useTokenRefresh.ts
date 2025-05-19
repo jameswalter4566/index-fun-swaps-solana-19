@@ -30,7 +30,7 @@ export function useTokenRefresh() {
           // Extract token addresses
           const tokenAddresses = index.tokens.map(token => token.address);
           
-          // Get updated market cap, gain percentages, and volume
+          // Get updated market cap and gain percentages using real data when possible
           const [marketCap, gainPercentage, change1h, change6h] = await Promise.all([
             calculateIndexMarketCap(tokenAddresses),
             calculateIndexGainPercentage(tokenAddresses),
