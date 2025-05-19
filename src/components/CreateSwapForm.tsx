@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -5,19 +6,21 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { supabase } from '@/utils/supabaseClient';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/components/ui/sonner';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 
 const CreateSwapForm: React.FC = () => {
-  const { toast: useToastFn } = useToast();
-  const { isAuthenticated, userData } = useAuth();
+  const { toast } = useToast();
+  const { connected } = useWallet();
+  const { setVisible } = useWalletModal();
+  
   const [formData, setFormData] = useState({
     name: '',
     token1: '',
     token2: '',
     token3: '',
     token4: '',
+    // We could potentially add token image URLs here as well
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,21 +32,23 @@ const CreateSwapForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Check if wallet is connected
+    if (!connected) {
+      toast({
+        title: "wallet not connected",
+        description: "please connect your wallet to create an index",
+        variant: "destructive",
+      });
+      setVisible(true);
+      return;
+    }
+    
     // Validate form
     if (!formData.name || !formData.token1 || !formData.token2) {
-      useToastFn({
+      toast({
         title: "form validation error",
         description: "index name and at least 2 tokens are required.",
         variant: "destructive",
-      });
-      return;
-    }
-
-    // Check authentication
-    if (!isAuthenticated || !userData) {
-      toast("Authentication required", {
-        description: "Please connect your wallet to create an index",
-        position: "bottom-center",
       });
       return;
     }
@@ -51,78 +56,16 @@ const CreateSwapForm: React.FC = () => {
     try {
       setIsSubmitting(true);
       
-      // Create the index in Supabase
-      const { data: indexData, error: indexError } = await supabase
-        .from('indexes')
-        .insert({
-          name: formData.name,
-          creator_id: userData.id,
-        })
-        .select()
-        .single();
-        
-      if (indexError) {
-        throw new Error(indexError.message);
-      }
+      // Mock submission - in a real app this would interact with Solana
+      console.log("Creating INDEX:", formData);
       
-      // Create tokens and associate them with the index
-      const tokens = [
-        formData.token1,
-        formData.token2,
-        formData.token3,
-        formData.token4,
-      ].filter(Boolean);
-      
-      // Insert tokens one by one and create index_tokens associations
-      for (const tokenAddress of tokens) {
-        // Check if token exists
-        let { data: existingToken } = await supabase
-          .from('tokens')
-          .select('*')
-          .eq('address', tokenAddress)
-          .single();
-          
-        let tokenId;
-        
-        if (!existingToken) {
-          // Token doesn't exist, create it
-          const { data: newToken, error: tokenError } = await supabase
-            .from('tokens')
-            .insert({
-              name: tokenAddress.substring(0, 6), // Placeholder name, would be replaced with real token data
-              address: tokenAddress,
-            })
-            .select()
-            .single();
-            
-          if (tokenError) {
-            throw new Error(tokenError.message);
-          }
-          
-          tokenId = newToken.id;
-        } else {
-          tokenId = existingToken.id;
-        }
-        
-        // Add token to index
-        const { error: indexTokenError } = await supabase
-          .from('index_tokens')
-          .insert({
-            index_id: indexData.id,
-            token_id: tokenId,
-          });
-          
-        if (indexTokenError) {
-          throw new Error(indexTokenError.message);
-        }
-      }
-      
-      useToastFn({
+      // Show success message
+      toast({
         title: "index created!",
         description: `your ${formData.name} index has been created successfully.`,
       });
       
-      // Clear form and close drawer
+      // Clear form and close drawer (relies on parent component)
       setFormData({
         name: '',
         token1: '',
@@ -136,11 +79,11 @@ const CreateSwapForm: React.FC = () => {
       if (drawerCloseButton) {
         setTimeout(() => drawerCloseButton.click(), 1500);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error creating INDEX:", error);
-      useToastFn({
+      toast({
         title: "error creating index",
-        description: error.message || "there was an error creating your index. please try again.",
+        description: "there was an error creating your index. please try again.",
         variant: "destructive",
       });
     } finally {
@@ -150,16 +93,16 @@ const CreateSwapForm: React.FC = () => {
 
   // Add placeholder tokens for preview
   const previewTokens = [
-    { name: 'Token 1', address: formData.token1 || '0x...', imageUrl: '' },
-    { name: 'Token 2', address: formData.token2 || '0x...', imageUrl: '' }
+    { name: 'token 1', address: formData.token1 || '0x...', imageUrl: '' },
+    { name: 'token 2', address: formData.token2 || '0x...', imageUrl: '' }
   ];
 
   if (formData.token3) {
-    previewTokens.push({ name: 'Token 3', address: formData.token3, imageUrl: '' });
+    previewTokens.push({ name: 'token 3', address: formData.token3, imageUrl: '' });
   }
 
   if (formData.token4) {
-    previewTokens.push({ name: 'Token 4', address: formData.token4, imageUrl: '' });
+    previewTokens.push({ name: 'token 4', address: formData.token4, imageUrl: '' });
   }
 
   return (
@@ -252,9 +195,9 @@ const CreateSwapForm: React.FC = () => {
           <Button 
             type="submit" 
             className="w-full btn-solana"
-            disabled={isSubmitting || !isAuthenticated}
+            disabled={isSubmitting}
           >
-            {isSubmitting ? 'creating...' : isAuthenticated ? 'create index' : 'connect wallet to create'}
+            {isSubmitting ? 'creating...' : 'create index'}
           </Button>
         </form>
       </CardContent>
