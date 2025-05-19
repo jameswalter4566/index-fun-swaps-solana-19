@@ -5,7 +5,8 @@ import {
   calculateIndexGainPercentage, 
   calculate1HourGainPercentage,
   calculate6HourGainPercentage,
-  generateMockVolume
+  generateMockVolume,
+  calculateIndexWeightedMarketCap
 } from '@/lib/tokenService';
 import { useIndexStore, IndexData } from '@/stores/useIndexStore';
 
@@ -31,15 +32,18 @@ export function useTokenRefresh() {
           const tokenAddresses = index.tokens.map(token => token.address);
           
           // Get updated market cap and gain percentages using real data when possible
-          const [marketCap, gainPercentage, change1h, change6h] = await Promise.all([
-            calculateIndexMarketCap(tokenAddresses),
+          const [weightedMarketCap, gainPercentage, change1h, change6h] = await Promise.all([
+            calculateIndexWeightedMarketCap(tokenAddresses),
             calculateIndexGainPercentage(tokenAddresses),
             calculate1HourGainPercentage(tokenAddresses),
             calculate6HourGainPercentage(tokenAddresses)
           ]);
           
+          // Use the weighted market cap for updating the index
+          const marketCapToUse = weightedMarketCap || 0;
+          
           // Update the index gains in the store
-          updateIndexGains(index.id, gainPercentage, marketCap, change1h, change6h);
+          updateIndexGains(index.id, gainPercentage, marketCapToUse, change1h, change6h);
           
           // Generate mock volume data based on existing volume (if any)
           const newVolume = generateMockVolume(index.totalVolume);

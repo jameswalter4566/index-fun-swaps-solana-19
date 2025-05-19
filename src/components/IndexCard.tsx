@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Heart, CircleDot } from 'lucide-react';
@@ -12,7 +13,13 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { useToast } from '@/hooks/use-toast';
 import { useIndexStore, IndexData, Token } from '@/stores/useIndexStore';
-import { generateChartData, getTokenData, TokenData } from '@/lib/tokenService';
+import { 
+  generateChartData, 
+  getTokenData, 
+  TokenData, 
+  calculateIndexWeightedMarketCap, 
+  formatMarketCap 
+} from '@/lib/tokenService';
 
 interface IndexCardProps {
   index: IndexData;
@@ -37,6 +44,8 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
   const [tokenDetails, setTokenDetails] = useState<Record<string, TokenData>>({});
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [loadedTokenAddresses, setLoadedTokenAddresses] = useState<string[]>([]);
+  const [weightedMarketCap, setWeightedMarketCap] = useState<number | null>(null);
+  const [isLoadingMarketCap, setIsLoadingMarketCap] = useState(false);
   
   const { connected, publicKey } = useWallet();
   const { setVisible } = useWalletModal();
@@ -45,6 +54,28 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
   
   // Check if the current user has upvoted this index
   const isUpvoted = publicKey && index.upvotedBy.includes(publicKey.toString());
+  
+  // Calculate weighted market cap when component mounts or tokens change
+  useEffect(() => {
+    const fetchWeightedMarketCap = async () => {
+      setIsLoadingMarketCap(true);
+      try {
+        // Extract token addresses
+        const tokenAddresses = tokens.map(token => token.address);
+        
+        // Calculate weighted market cap
+        const weightedMC = await calculateIndexWeightedMarketCap(tokenAddresses);
+        setWeightedMarketCap(weightedMC);
+      } catch (error) {
+        console.error("Error calculating weighted market cap:", error);
+        setWeightedMarketCap(null);
+      } finally {
+        setIsLoadingMarketCap(false);
+      }
+    };
+    
+    fetchWeightedMarketCap();
+  }, [tokens]);
   
   useEffect(() => {
     // Generate chart data when component mounts
@@ -180,7 +211,9 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
   };
   
   const gainColor = getPercentageColor(gainPercentage);
-  const formattedMarketCap = marketCap ? formatMarketCap(marketCap) : 'Calculating...';
+  const formattedWeightedMarketCap = isLoadingMarketCap
+    ? 'Calculating...'
+    : formatMarketCap(weightedMarketCap);
   const formattedVolume = formatVolume(totalVolume);
   
   return (
@@ -196,6 +229,12 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
         </CardHeader>
         <CardContent className="p-4">
           <div className="space-y-4">
+            {/* Display weighted market cap */}
+            <div className="bg-stake-darkbg/50 p-2 rounded-md">
+              <span className="text-xs text-stake-muted">total market cap</span>
+              <p className="text-sm font-semibold text-stake-text">{formattedWeightedMarketCap}</p>
+            </div>
+            
             <div>
               <h4 className="text-sm font-medium text-stake-muted mb-2">tokens</h4>
               <div className="flex flex-wrap gap-2">
@@ -246,7 +285,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <h3 className="text-sm font-medium text-stake-muted">total market cap</h3>
-                <p className="text-xl font-bold text-stake-text">{formattedMarketCap}</p>
+                <p className="text-xl font-bold text-stake-text">{formattedWeightedMarketCap}</p>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-stake-muted">total volume</h3>

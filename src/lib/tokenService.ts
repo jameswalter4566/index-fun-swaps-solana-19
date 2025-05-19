@@ -1,4 +1,3 @@
-
 import { PublicKey } from '@solana/web3.js';
 import { Token } from '@/stores/useIndexStore';
 
@@ -207,13 +206,16 @@ export const fetchTokenData = async (address: string): Promise<TokenData | null>
 
 /**
  * Calculate weighted market cap for an index based on its tokens
+ * Uses average of all available token market caps
  */
-export const calculateIndexMarketCap = async (tokens: string[]): Promise<number> => {
+export const calculateIndexWeightedMarketCap = async (tokens: string[]): Promise<number | null> => {
+  if (!tokens || tokens.length === 0) return null;
+
   try {
     // Get actual token data from Solana Tracker API
     const tokenData = await fetchMultipleTokensFromSolanaTracker(tokens);
     
-    // Sum up market caps
+    // Sum up market caps and count valid tokens
     let totalMarketCap = 0;
     let validTokenCount = 0;
     
@@ -225,12 +227,16 @@ export const calculateIndexMarketCap = async (tokens: string[]): Promise<number>
       }
     }
     
-    // Return actual market cap if available, otherwise fallback to mock data
-    return validTokenCount > 0 ? totalMarketCap : Math.round(10000 + Math.random() * 25000000);
+    // Calculate weighted (average) market cap if we have valid data
+    if (validTokenCount > 0) {
+      return totalMarketCap / validTokenCount;
+    }
+    
+    // Return null if no valid data available
+    return null;
   } catch (error) {
-    console.error("Error calculating index market cap:", error);
-    // Fallback to mock data if API fails
-    return Math.round(10000 + Math.random() * 25000000);
+    console.error("Error calculating index weighted market cap:", error);
+    return null;
   }
 };
 
@@ -426,5 +432,24 @@ export const getTokenData = async (address: string): Promise<TokenData | null> =
   } catch (error) {
     console.error("Error in getTokenData:", error);
     return null;
+  }
+};
+
+/**
+ * Format market cap value to human-readable string with appropriate suffix
+ * @param marketCap The market cap value in USD
+ * @returns Formatted market cap string (e.g. $1.2B, $500M, etc.)
+ */
+export const formatMarketCap = (marketCap?: number | null): string => {
+  if (marketCap === undefined || marketCap === null) return 'N/A';
+  
+  if (marketCap >= 1000000000) {
+    return `$${(marketCap / 1000000000).toFixed(1)}B`;
+  } else if (marketCap >= 1000000) {
+    return `$${(marketCap / 1000000).toFixed(1)}M`;
+  } else if (marketCap >= 1000) {
+    return `$${(marketCap / 1000).toFixed(1)}K`;
+  } else {
+    return `$${marketCap}`;
   }
 };
