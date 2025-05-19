@@ -51,7 +51,7 @@ export const useIndexStore = create<IndexState>()(
           createdAt: new Date().toISOString(),
           upvotes: 0,
           upvotedBy: [],
-          totalVolume: Math.floor(Math.random() * 1000), // Mock initial volume in SOL
+          totalVolume: 0.1 + Math.random() * 14.9, // Mock initial volume between 0.1 and 15 SOL
           percentChange1h: parseFloat((Math.random() * 10 - 5).toFixed(2)), // Mock 1h change
           percentChange6h: parseFloat((Math.random() * 20 - 10).toFixed(2)), // Mock 6h change
         };

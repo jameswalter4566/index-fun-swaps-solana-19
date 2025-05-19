@@ -125,27 +125,17 @@ export const calculate6HourGainPercentage = (tokens: string[]): Promise<number> 
 
 /**
  * Generate mock volume data for an index in SOL
+ * Generates values between 0.1 and 15 SOL
  */
 export const generateMockVolume = (baseVolume?: number): number => {
   // If a base volume is provided, vary it slightly to simulate changes
   if (baseVolume) {
     const change = baseVolume * (Math.random() * 0.1 - 0.05); // -5% to +5%
-    return Math.max(0, Math.round(baseVolume + change));
+    return Math.max(0.1, Math.min(15, baseVolume + change)); // Keep between 0.1 and 15
   }
   
-  // Generate a new random volume in SOL (more realistic distribution)
-  const randomFactor = Math.random();
-  
-  if (randomFactor > 0.95) {
-    // Top 5% of indices have very high volume
-    return Math.floor(5000 + Math.random() * 20000);
-  } else if (randomFactor > 0.7) {
-    // Next 25% have moderate volume
-    return Math.floor(500 + Math.random() * 4500);
-  } else {
-    // Remaining 70% have lower volume
-    return Math.floor(10 + Math.random() * 490);
-  }
+  // Generate a new random volume between 0.1 and 15 SOL
+  return 0.1 + Math.random() * 14.9; // 0.1 to 15 SOL range
 };
 
 /**
