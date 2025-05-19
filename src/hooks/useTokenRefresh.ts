@@ -1,6 +1,12 @@
 
 import { useState, useEffect } from 'react';
-import { calculateIndexGainPercentage, calculateIndexMarketCap } from '@/lib/tokenService';
+import { 
+  calculateIndexMarketCap, 
+  calculateIndexGainPercentage, 
+  calculate1HourGainPercentage,
+  calculate6HourGainPercentage,
+  generateMockVolume
+} from '@/lib/tokenService';
 import { useIndexStore, IndexData } from '@/stores/useIndexStore';
 
 // How often to refresh token data (ms)
@@ -9,7 +15,7 @@ const REFRESH_INTERVAL = 60000; // 1 minute
 export function useTokenRefresh() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
-  const { getAllIndexes, updateIndexGains } = useIndexStore();
+  const { getAllIndexes, updateIndexGains, updateIndexVolume } = useIndexStore();
 
   const refreshTokenData = async () => {
     if (isRefreshing) return;
@@ -24,14 +30,20 @@ export function useTokenRefresh() {
           // Extract token addresses
           const tokenAddresses = index.tokens.map(token => token.address);
           
-          // Get updated market cap and gain percentage
-          const [marketCap, gainPercentage] = await Promise.all([
+          // Get updated market cap, gain percentages, and volume
+          const [marketCap, gainPercentage, change1h, change6h] = await Promise.all([
             calculateIndexMarketCap(tokenAddresses),
-            calculateIndexGainPercentage(tokenAddresses)
+            calculateIndexGainPercentage(tokenAddresses),
+            calculate1HourGainPercentage(tokenAddresses),
+            calculate6HourGainPercentage(tokenAddresses)
           ]);
           
-          // Update the index in the store
-          updateIndexGains(index.id, gainPercentage, marketCap);
+          // Update the index gains in the store
+          updateIndexGains(index.id, gainPercentage, marketCap, change1h, change6h);
+          
+          // Generate mock volume data based on existing volume (if any)
+          const newVolume = generateMockVolume(index.totalVolume);
+          updateIndexVolume(index.id, newVolume);
         })
       );
       

@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -21,15 +20,19 @@ export interface IndexData {
   gainPercentage?: number;
   marketCap?: number;
   lastPriceUpdate?: string;
+  totalVolume: number;
+  percentChange1h: number;
+  percentChange6h: number;
 }
 
 interface IndexState {
   indexes: Record<string, IndexData>;
-  addIndex: (index: Omit<IndexData, "id" | "createdAt" | "upvotes" | "upvotedBy">) => string;
+  addIndex: (index: Omit<IndexData, "id" | "createdAt" | "upvotes" | "upvotedBy" | "totalVolume" | "percentChange1h" | "percentChange6h">) => string;
   removeIndex: (id: string) => void;
   upvoteIndex: (id: string, walletAddress: string) => void;
   downvoteIndex: (id: string, walletAddress: string) => void;
-  updateIndexGains: (id: string, gainPercentage: number, marketCap: number) => void;
+  updateIndexGains: (id: string, gainPercentage: number, marketCap: number, percentChange1h: number, percentChange6h: number) => void;
+  updateIndexVolume: (id: string, volume: number) => void;
   getIndexesByCreator: (creatorAddress: string) => IndexData[];
   getAllIndexes: () => IndexData[];
 }
@@ -47,6 +50,9 @@ export const useIndexStore = create<IndexState>()(
           createdAt: new Date().toISOString(),
           upvotes: 0,
           upvotedBy: [],
+          totalVolume: Math.floor(Math.random() * 1000000), // Mock initial volume
+          percentChange1h: parseFloat((Math.random() * 10 - 5).toFixed(2)), // Mock 1h change
+          percentChange6h: parseFloat((Math.random() * 20 - 10).toFixed(2)), // Mock 6h change
         };
         
         set((state) => ({
@@ -103,7 +109,7 @@ export const useIndexStore = create<IndexState>()(
         });
       },
       
-      updateIndexGains: (id, gainPercentage, marketCap) => {
+      updateIndexGains: (id, gainPercentage, marketCap, percentChange1h, percentChange6h) => {
         set((state) => {
           const index = state.indexes[id];
           if (!index) return state;
@@ -115,7 +121,26 @@ export const useIndexStore = create<IndexState>()(
                 ...index,
                 gainPercentage,
                 marketCap,
+                percentChange1h: percentChange1h || index.percentChange1h,
+                percentChange6h: percentChange6h || index.percentChange6h,
                 lastPriceUpdate: new Date().toISOString(),
+              },
+            },
+          };
+        });
+      },
+      
+      updateIndexVolume: (id, volume) => {
+        set((state) => {
+          const index = state.indexes[id];
+          if (!index) return state;
+          
+          return {
+            indexes: {
+              ...state.indexes,
+              [id]: {
+                ...index,
+                totalVolume: volume,
               },
             },
           };

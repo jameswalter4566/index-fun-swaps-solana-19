@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Heart, CircleDot } from 'lucide-react';
@@ -19,7 +20,17 @@ interface IndexCardProps {
 }
 
 const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
-  const { id, name, tokens, upvotes, gainPercentage = 0, marketCap = 0 } = index;
+  const { 
+    id, 
+    name, 
+    tokens, 
+    upvotes, 
+    gainPercentage = 0, 
+    marketCap = 0,
+    totalVolume = 0,
+    percentChange1h = 0,
+    percentChange6h = 0
+  } = index;
   
   const [showSwapSheet, setShowSwapSheet] = useState(false);
   const [solanaAmount, setSolanaAmount] = useState('1');
@@ -115,8 +126,27 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
     }
   };
   
-  const gainColor = gainPercentage >= 0 ? 'text-green-500' : 'text-red-500';
-  const formattedMarketCap = marketCap ? `$${marketCap.toLocaleString()}` : 'Calculating...';
+  // Format volume number with appropriate suffix
+  const formatVolume = (volume: number): string => {
+    if (volume >= 1000000000) {
+      return `$${(volume / 1000000000).toFixed(2)}B`;
+    } else if (volume >= 1000000) {
+      return `$${(volume / 1000000).toFixed(2)}M`;
+    } else if (volume >= 1000) {
+      return `$${(volume / 1000).toFixed(2)}K`;
+    } else {
+      return `$${volume.toFixed(2)}`;
+    }
+  };
+  
+  // Helper function for percentage color
+  const getPercentageColor = (value: number): string => {
+    return value >= 0 ? 'text-green-500' : 'text-red-500';
+  };
+  
+  const gainColor = getPercentageColor(gainPercentage);
+  const formattedMarketCap = marketCap ? formatMarketCap(marketCap) : 'Calculating...';
+  const formattedVolume = formatVolume(totalVolume);
   
   return (
     <>
@@ -149,6 +179,12 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
               </div>
             </div>
             
+            {/* Volume information */}
+            <div className="bg-stake-darkbg/50 p-2 rounded-md">
+              <span className="text-xs text-stake-muted">volume</span>
+              <p className="text-sm font-semibold text-stake-text">{formattedVolume}</p>
+            </div>
+            
             <div className="flex justify-between items-center pt-2 border-t border-stake-background">
               <button 
                 onClick={handleUpvote} 
@@ -176,9 +212,37 @@ const IndexCard: React.FC<IndexCardProps> = ({ index }) => {
           </SheetHeader>
           
           <div className="mt-6">
-            <div className="mb-4">
-              <h3 className="text-lg font-bold text-stake-text mb-1">total weighted market cap</h3>
-              <p className="text-2xl font-bold text-green-500">{formattedMarketCap}</p>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <h3 className="text-sm font-medium text-stake-muted">total market cap</h3>
+                <p className="text-xl font-bold text-stake-text">{formattedMarketCap}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-stake-muted">total volume</h3>
+                <p className="text-xl font-bold text-stake-text">{formattedVolume}</p>
+              </div>
+            </div>
+            
+            {/* Percentage changes grid */}
+            <div className="grid grid-cols-3 gap-3 mb-4 bg-stake-card rounded-lg p-3">
+              <div className="text-center">
+                <h4 className="text-xs text-stake-muted">1h %</h4>
+                <p className={`text-sm font-semibold ${getPercentageColor(percentChange1h)}`}>
+                  {percentChange1h >= 0 ? '+' : ''}{percentChange1h}%
+                </p>
+              </div>
+              <div className="text-center">
+                <h4 className="text-xs text-stake-muted">6h %</h4>
+                <p className={`text-sm font-semibold ${getPercentageColor(percentChange6h)}`}>
+                  {percentChange6h >= 0 ? '+' : ''}{percentChange6h}%
+                </p>
+              </div>
+              <div className="text-center">
+                <h4 className="text-xs text-stake-muted">24h %</h4>
+                <p className={`text-sm font-semibold ${getPercentageColor(gainPercentage)}`}>
+                  {gainPercentage >= 0 ? '+' : ''}{gainPercentage}%
+                </p>
+              </div>
             </div>
             
             <div className="h-[200px] mb-6 bg-stake-card rounded-lg p-2">

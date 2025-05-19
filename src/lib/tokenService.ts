@@ -1,3 +1,4 @@
+
 import { PublicKey } from '@solana/web3.js';
 
 export interface TokenData {
@@ -105,6 +106,47 @@ export const calculateIndexGainPercentage = (tokens: string[]): Promise<number> 
   // In a real implementation, this would calculate the actual gain percentage
   // For demo purposes, we'll return a random value between -30% and +50%
   return Promise.resolve(parseFloat((Math.random() * 80 - 30).toFixed(2)));
+};
+
+/**
+ * Calculate 1-hour gain percentage for an index
+ */
+export const calculate1HourGainPercentage = (tokens: string[]): Promise<number> => {
+  // Mock 1-hour gain percentage (-10% to +10%)
+  return Promise.resolve(parseFloat((Math.random() * 20 - 10).toFixed(2)));
+};
+
+/**
+ * Calculate 6-hour gain percentage for an index
+ */
+export const calculate6HourGainPercentage = (tokens: string[]): Promise<number> => {
+  // Mock 6-hour gain percentage (-15% to +15%)
+  return Promise.resolve(parseFloat((Math.random() * 30 - 15).toFixed(2)));
+};
+
+/**
+ * Generate mock volume data for an index
+ */
+export const generateMockVolume = (baseVolume?: number): number => {
+  // If a base volume is provided, vary it slightly to simulate changes
+  if (baseVolume) {
+    const change = baseVolume * (Math.random() * 0.1 - 0.05); // -5% to +5%
+    return Math.max(0, Math.round(baseVolume + change));
+  }
+  
+  // Generate a new random volume (more realistic distribution)
+  const randomFactor = Math.random();
+  
+  if (randomFactor > 0.95) {
+    // Top 5% of indices have very high volume
+    return Math.floor(5000000 + Math.random() * 20000000);
+  } else if (randomFactor > 0.7) {
+    // Next 25% have moderate volume
+    return Math.floor(500000 + Math.random() * 4500000);
+  } else {
+    // Remaining 70% have lower volume
+    return Math.floor(1000 + Math.random() * 499000);
+  }
 };
 
 /**
