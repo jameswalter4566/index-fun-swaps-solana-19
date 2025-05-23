@@ -7,12 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useWallet } from '@solana/wallet-adapter-react';
 
 const CreateSwapForm: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { publicKey } = useWallet();
   const [formData, setFormData] = useState({
     name: '',
     token1: '',
@@ -40,25 +38,6 @@ const CreateSwapForm: React.FC = () => {
       return;
     }
     
-    if (!publicKey) {
-      toast({
-        title: "Wallet Not Connected",
-        description: "Please connect your wallet to create an INDEX.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Check for auth token
-    const authToken = localStorage.getItem('auth_token');
-    if (!authToken) {
-      toast({
-        title: "Not Authenticated",
-        description: "Please reconnect your wallet to authenticate.",
-        variant: "destructive",
-      });
-      return;
-    }
     
     try {
       setIsSubmitting(true);
@@ -75,9 +54,6 @@ const CreateSwapForm: React.FC = () => {
       console.log('Calling edge function with addresses:', tokenAddresses);
       const { data: tokenData, error: fetchError } = await supabase.functions.invoke('fetch-token-data', {
         body: { tokenAddresses },
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
       });
       
       console.log('Edge function response:', { tokenData, fetchError });
@@ -96,7 +72,7 @@ const CreateSwapForm: React.FC = () => {
         .insert({
           name: formData.name,
           tokens: tokenData.tokens,
-          creator_wallet: publicKey.toString(),
+          creator_wallet: 'anonymous',
           total_market_cap: tokenData.metrics.totalMarketCap,
           average_market_cap: tokenData.metrics.averageMarketCap,
         })
