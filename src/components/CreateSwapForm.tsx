@@ -49,6 +49,17 @@ const CreateSwapForm: React.FC = () => {
       return;
     }
     
+    // Check for auth token
+    const authToken = localStorage.getItem('auth_token');
+    if (!authToken) {
+      toast({
+        title: "Not Authenticated",
+        description: "Please reconnect your wallet to authenticate.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       
@@ -64,6 +75,9 @@ const CreateSwapForm: React.FC = () => {
       console.log('Calling edge function with addresses:', tokenAddresses);
       const { data: tokenData, error: fetchError } = await supabase.functions.invoke('fetch-token-data', {
         body: { tokenAddresses },
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
       });
       
       console.log('Edge function response:', { tokenData, fetchError });

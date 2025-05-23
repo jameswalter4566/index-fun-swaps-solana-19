@@ -1,38 +1,84 @@
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const WalletConnect: React.FC = () => {
-  const [connected, setConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const { publicKey, disconnect, signMessage, connected } = useWallet();
+  const { setVisible } = useWalletModal();
+  const { toast } = useToast();
 
-  const connectWallet = async () => {
-    // In a real application, this would use Solana wallet adapter
-    // For now, we'll just mock the connection
+  useEffect(() => {
+    if (connected && publicKey) {
+      authenticateWallet();
+    }
+  }, [connected, publicKey]);
+
+  const authenticateWallet = async () => {
+    if (!publicKey || !signMessage) return;
+
     try {
-      console.log("Connecting to Phantom wallet...");
-      // Mock connection
-      setConnected(true);
-      setWalletAddress("ABCD...XYZ");
+      const message = `Sign this message to authenticate with Index: ${new Date().toISOString()}`;
+      const messageBytes = new TextEncoder().encode(message);
+      const signature = await signMessage(messageBytes);
+      const signatureBase58 = Buffer.from(signature).toString('base64');
+
+      // Call edge function to authenticate
+      const { data, error } = await supabase.functions.invoke('auth-wallet', {
+        body: {
+          walletAddress: publicKey.toString(),
+          signature: signatureBase58,
+          message,
+        },
+      });
+
+      if (error) throw error;
+
+      // Store auth token
+      if (data?.token) {
+        localStorage.setItem('auth_token', data.token);
+        localStorage.setItem('wallet_address', publicKey.toString());
+        
+        toast({
+          title: "Wallet Connected",
+          description: "You are now authenticated and can create indexes.",
+        });
+      }
     } catch (error) {
-      console.error("Error connecting to wallet:", error);
+      console.error("Error authenticating wallet:", error);
+      toast({
+        title: "Authentication Failed",
+        description: "Failed to authenticate your wallet. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const disconnectWallet = () => {
-    // In a real application, this would disconnect from the wallet
-    setConnected(false);
-    setWalletAddress(null);
+  const connectWallet = () => {
+    setVisible(true);
+  };
+
+  const disconnectWallet = async () => {
+    await disconnect();
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('wallet_address');
+    toast({
+      title: "Wallet Disconnected",
+      description: "You have been logged out.",
+    });
   };
 
   return (
     <div>
-      {connected ? (
+      {connected && publicKey ? (
         <Button
           onClick={disconnectWallet}
           className="bg-stake-card border border-stake-accent text-stake-text hover:bg-stake-darkbg rounded-md"
         >
-          {walletAddress}
+          {publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}
         </Button>
       ) : (
         <Button 
