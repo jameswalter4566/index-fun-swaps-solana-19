@@ -61,12 +61,19 @@ const CreateSwapForm: React.FC = () => {
       ].filter(token => token.trim() !== '');
       
       // Call edge function to fetch token data
+      console.log('Calling edge function with addresses:', tokenAddresses);
       const { data: tokenData, error: fetchError } = await supabase.functions.invoke('fetch-token-data', {
         body: { tokenAddresses },
       });
       
+      console.log('Edge function response:', { tokenData, fetchError });
+      
       if (fetchError) {
         throw new Error(fetchError.message);
+      }
+      
+      if (!tokenData || !tokenData.tokens) {
+        throw new Error('Invalid response from token data service');
       }
       
       // Save index to database
