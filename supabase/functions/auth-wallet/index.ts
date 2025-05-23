@@ -10,8 +10,12 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { 
+      status: 200,
+      headers: corsHeaders 
+    })
   }
 
   try {
@@ -67,15 +71,14 @@ serve(async (req) => {
         .eq('id', userId)
     }
 
-    // Create JWT token
-    const jwtSecret = Deno.env.get('JWT_SECRET') || 'your-secret-key'
+    // Create JWT token using a static secret
     const token = jwt.sign(
       { 
         wallet_address: walletAddress,
         user_id: userId,
         exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7) // 7 days
       },
-      jwtSecret
+      'index-fun-swaps-static-secret-2024'
     )
 
     return new Response(
