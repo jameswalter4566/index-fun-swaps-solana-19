@@ -1,11 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import IndexCard from '@/components/IndexCard';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Mock data
+interface IndexData {
+  id: string;
+  name: string;
+  tokens: any[];
+  creator_wallet: string;
+  total_market_cap: number;
+  average_market_cap: number;
+  created_at: string;
+}
+
+// Mock data for demonstration
 const mockIndexes = [{
   id: '1',
   name: 'Dog Coin Army',
@@ -106,14 +118,51 @@ const mockIndexes = [{
 const Index: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [indexes, setIndexes] = useState<IndexData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchIndexes();
+  }, []);
+
+  const fetchIndexes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('indexes')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setIndexes(data || []);
+    } catch (error) {
+      console.error('Error fetching indexes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Combine real indexes with mock data for demonstration
+  const allIndexes = [...indexes, ...mockIndexes];
 
   // Filter indexes based on search query and active tab
-  const filteredIndexes = mockIndexes.filter(index => {
+  const filteredIndexes = allIndexes.filter(index => {
     // Filter by search
-    const matchesSearch = searchQuery === "" || index.name.toLowerCase().includes(searchQuery.toLowerCase()) || index.tokens.some(token => token.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = searchQuery === "" || 
+      index.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      index.tokens.some(token => token.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
     // Filter by tab
-    const matchesTab = activeTab === "all" || activeTab === "top" && index.upvotes > 100 || activeTab === "gainers" && index.gainPercentage > 0 || activeTab === "recent" && (new Date().getTime() - index.createdAt.getTime()) / (1000 * 60 * 60 * 24) < 7;
+    if (activeTab === "all") return matchesSearch;
+    
+    // For real indexes from database, we don't have upvotes/gainPercentage yet
+    if (!('upvotes' in index)) return matchesSearch && activeTab === "recent";
+    
+    const matchesTab = 
+      (activeTab === "top" && index.upvotes > 100) ||
+      (activeTab === "gainers" && index.gainPercentage > 0) ||
+      (activeTab === "recent" && (new Date().getTime() - new Date(index.created_at || index.createdAt).getTime()) / (1000 * 60 * 60 * 24) < 7);
+    
     return matchesSearch && matchesTab;
   });
   return <Layout>
@@ -139,9 +188,26 @@ const Index: React.FC = () => {
         
         <TabsContent value="all" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredIndexes.length > 0 ? filteredIndexes.map(index => <IndexCard key={index.id} id={index.id} name={index.name} tokens={index.tokens} gainPercentage={index.gainPercentage} upvotes={index.upvotes} />) : <div className="col-span-full text-center py-8">
+            {loading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-48 w-full" />
+              ))
+            ) : filteredIndexes.length > 0 ? (
+              filteredIndexes.map(index => (
+                <IndexCard 
+                  key={index.id} 
+                  id={index.id} 
+                  name={index.name} 
+                  tokens={index.tokens} 
+                  gainPercentage={index.gainPercentage || 0} 
+                  upvotes={index.upvotes || 0} 
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8">
                 <p className="text-stake-muted">No INDEXES found matching your search.</p>
-              </div>}
+              </div>
+            )}
           </div>
         </TabsContent>
         

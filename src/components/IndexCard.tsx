@@ -1,11 +1,13 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Heart } from 'lucide-react';
 
 interface Token {
   name: string;
   address: string;
+  symbol?: string;
 }
 
 interface IndexCardProps {
@@ -17,6 +19,7 @@ interface IndexCardProps {
 }
 
 const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage, upvotes }) => {
+  const navigate = useNavigate();
   const [upvoted, setUpvoted] = useState(false);
   const [currentUpvotes, setCurrentUpvotes] = useState(upvotes);
   
@@ -52,7 +55,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
                   key={token.address} 
                   className="inline-block bg-stake-darkbg rounded-full px-3 py-1 text-xs text-stake-text"
                 >
-                  {token.name}
+                  {token.symbol || token.name}
                 </span>
               ))}
             </div>
@@ -67,7 +70,10 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
               <span>{currentUpvotes}</span>
             </button>
             
-            <button className="text-sm text-stake-accent hover:underline">
+            <button 
+              onClick={() => navigate(`/index/${id}`)}
+              className="text-sm text-stake-accent hover:underline"
+            >
               View Details
             </button>
           </div>

@@ -6,10 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 const CreateSwapForm: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { publicKey } = useWallet();
   const [formData, setFormData] = useState({
     name: '',
     token1: '',
@@ -37,11 +40,51 @@ const CreateSwapForm: React.FC = () => {
       return;
     }
     
+    if (!publicKey) {
+      toast({
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet to create an INDEX.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       
-      // Mock submission - in a real app this would interact with Solana
-      console.log("Creating INDEX:", formData);
+      // Collect token addresses
+      const tokenAddresses = [
+        formData.token1,
+        formData.token2,
+        formData.token3,
+        formData.token4,
+      ].filter(token => token.trim() !== '');
+      
+      // Call edge function to fetch token data
+      const { data: tokenData, error: fetchError } = await supabase.functions.invoke('fetch-token-data', {
+        body: { tokenAddresses },
+      });
+      
+      if (fetchError) {
+        throw new Error(fetchError.message);
+      }
+      
+      // Save index to database
+      const { data: index, error: insertError } = await supabase
+        .from('indexes')
+        .insert({
+          name: formData.name,
+          tokens: tokenData.tokens,
+          creator_wallet: publicKey.toString(),
+          total_market_cap: tokenData.metrics.totalMarketCap,
+          average_market_cap: tokenData.metrics.averageMarketCap,
+        })
+        .select()
+        .single();
+      
+      if (insertError) {
+        throw insertError;
+      }
       
       // Show success message
       toast({
@@ -49,13 +92,13 @@ const CreateSwapForm: React.FC = () => {
         description: `Your ${formData.name} INDEX has been created successfully.`,
       });
       
-      // Navigate back to home page
-      setTimeout(() => navigate('/'), 2000);
+      // Navigate to the new index page
+      navigate(`/index/${index.id}`);
     } catch (error) {
       console.error("Error creating INDEX:", error);
       toast({
         title: "Error Creating INDEX",
-        description: "There was an error creating your INDEX. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error creating your INDEX. Please try again.",
         variant: "destructive",
       });
     } finally {
