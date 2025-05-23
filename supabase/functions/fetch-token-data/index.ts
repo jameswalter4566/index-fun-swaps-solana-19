@@ -35,9 +35,12 @@ serve(async (req) => {
       )
     }
 
+    console.log(`Fetching data for ${tokenAddresses.length} tokens:`, tokenAddresses)
+    
     const tokenData = await Promise.all(
       tokenAddresses.map(async (address: string) => {
         try {
+          console.log(`Fetching token: ${address}`)
           const response = await fetch(
             `https://data.solanatracker.io/tokens/${address}`,
             {
@@ -48,11 +51,27 @@ serve(async (req) => {
           )
 
           if (!response.ok) {
-            console.error(`Failed to fetch token ${address}: ${response.status}`)
-            return null
+            const errorText = await response.text()
+            console.error(`Failed to fetch token ${address}: Status ${response.status}, Error: ${errorText}`)
+            
+            // Return a placeholder token with error info
+            return {
+              address,
+              name: 'Unknown Token',
+              symbol: address.slice(0, 6),
+              image: '',
+              decimals: 6,
+              marketCap: 0,
+              price: 0,
+              liquidity: 0,
+              holders: 0,
+              priceChange24h: 0,
+              error: `Failed to fetch: ${response.status}`,
+            }
           }
 
           const data = await response.json()
+          console.log(`Successfully fetched token ${address}:`, data.token?.name || 'Unknown')
           
           // Extract relevant data
           const pool = data.pools?.[0] // Get the first pool
@@ -70,13 +89,28 @@ serve(async (req) => {
           }
         } catch (error) {
           console.error(`Error fetching token ${address}:`, error)
-          return null
+          
+          // Return a placeholder token for failed requests
+          return {
+            address,
+            name: 'Unknown Token',
+            symbol: address.slice(0, 6),
+            image: '',
+            decimals: 6,
+            marketCap: 0,
+            price: 0,
+            liquidity: 0,
+            holders: 0,
+            priceChange24h: 0,
+            error: `Error: ${error.message}`,
+          }
         }
       })
     )
 
-    // Filter out failed requests
+    // Include all tokens (even failed ones)
     const validTokens = tokenData.filter(token => token !== null)
+    console.log(`Successfully processed ${validTokens.length} out of ${tokenAddresses.length} tokens`)
 
     // Calculate combined metrics
     const totalMarketCap = validTokens.reduce((sum, token) => sum + token.marketCap, 0)
