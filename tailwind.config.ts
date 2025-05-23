@@ -64,7 +64,7 @@ export default {
 					card: '#222A3A',
 					accent: '#3898FF',
 					highlight: '#4F66FF',
-					text: '#FFFFFF',
+					text: '#FF0000',
 					muted: '#A0AEC0'
 				},
 				sidebar: {
