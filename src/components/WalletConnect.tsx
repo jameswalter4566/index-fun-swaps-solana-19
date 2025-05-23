@@ -24,13 +24,14 @@ const WalletConnect: React.FC = () => {
       const message = `Sign this message to authenticate with Index: ${new Date().toISOString()}`;
       const messageBytes = new TextEncoder().encode(message);
       const signature = await signMessage(messageBytes);
-      const signatureBase58 = Buffer.from(signature).toString('base64');
+      // Convert Uint8Array to base64
+      const signatureBase64 = btoa(String.fromCharCode(...signature));
 
       // Call edge function to authenticate
       const { data, error } = await supabase.functions.invoke('auth-wallet', {
         body: {
           walletAddress: publicKey.toString(),
-          signature: signatureBase58,
+          signature: signatureBase64,
           message,
         },
       });
