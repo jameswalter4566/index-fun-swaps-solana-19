@@ -66,6 +66,7 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
       const { data, error } = await supabase.functions.invoke('retrieve-new-tweets', {
         body: {
           usernames: twitterUsernames,
+          agentId: agentId,
         },
       });
 
@@ -75,11 +76,22 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
         setTweets(data.tweets);
         setLastRefreshed(new Date());
         
-        // Show success toast
+        // Show success toast with source info
+        const sourceInfo = data.source === 'cache' ? ' (from cache)' : '';
         toast({
           title: 'Tweets Loaded',
-          description: `Loaded ${data.tweets.length} tweets from ${twitterUsernames.length} accounts.`,
+          description: `Loaded ${data.tweets.length} tweets from ${twitterUsernames.length} accounts${sourceInfo}.`,
         });
+        
+        // Show any errors/warnings
+        if (data.errors && data.errors.length > 0) {
+          console.warn('Tweet fetch warnings:', data.errors);
+          toast({
+            title: 'Some accounts had issues',
+            description: data.errors[0],
+            variant: 'destructive',
+          });
+        }
       }
     } catch (error) {
       console.error('Error fetching tweets:', error);
