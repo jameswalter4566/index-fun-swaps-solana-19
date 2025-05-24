@@ -50,9 +50,9 @@ serve(async (req) => {
       );
     }
 
-    const bearerToken = Deno.env.get('TWITTER_BEARER_TOKEN');
+    const bearerToken = Deno.env.get('X_API_BEARER_TOKEN');
     if (!bearerToken) {
-      throw new Error('Twitter bearer token not configured');
+      throw new Error('X API bearer token not configured. Please set X_API_BEARER_TOKEN in Supabase environment variables.');
     }
 
     const { usernames } = await req.json();
