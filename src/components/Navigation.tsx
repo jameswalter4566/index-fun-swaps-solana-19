@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import WalletConnect from './WalletConnect';
 import HowItWorksModal from './HowItWorksModal';
+import { Twitter } from 'lucide-react';
 
 const Navigation: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,6 +18,13 @@ const Navigation: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-4">
+            <a href="https://x.com/index_fun" target="_blank" rel="noopener noreferrer">
+              <Button className="bg-black hover:bg-gray-900 text-white rounded-full">
+                <Twitter size={18} />
+                <span className="ml-1">Follow us</span>
+              </Button>
+            </a>
+            
             <Link to="/create-swap">
               <Button className="bg-stake-accent hover:bg-stake-highlight text-white rounded-md">create index</Button>
             </Link>

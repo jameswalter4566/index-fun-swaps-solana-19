@@ -9,7 +9,71 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      indexes: {
+        Row: {
+          average_market_cap: number | null
+          created_at: string | null
+          creator_wallet: string
+          id: string
+          name: string
+          tokens: Json
+          total_market_cap: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          average_market_cap?: number | null
+          created_at?: string | null
+          creator_wallet: string
+          id?: string
+          name: string
+          tokens?: Json
+          total_market_cap?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          average_market_cap?: number | null
+          created_at?: string | null
+          creator_wallet?: string
+          id?: string
+          name?: string
+          tokens?: Json
+          total_market_cap?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indexes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_login: string | null
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_login?: string | null
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_login?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
