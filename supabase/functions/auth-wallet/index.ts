@@ -2,40 +2,58 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import jwt from 'https://esm.sh/jsonwebtoken@9.0.0'
 
-const corsHeaders = {
+// Define CORS headers for all responses
+const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-api-token',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info, x-supabase-api-token',
   'Access-Control-Allow-Credentials': 'true',
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle preflight (OPTIONS) requests first
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      status: 200,
-      headers: corsHeaders 
+    return new Response('OK', { 
+      status: 204,
+      headers: CORS_HEADERS 
     })
   }
 
+  // Main request handling (e.g., POST)
   try {
+    // Only try to parse JSON for actual requests (not OPTIONS)
     const { walletAddress, signature, message } = await req.json()
     
     if (!walletAddress || !signature || !message) {
       return new Response(
         JSON.stringify({ error: 'Wallet address, signature, and message are required' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        { 
+          status: 400,
+          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+        }
       )
     }
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return new Response(
+        JSON.stringify({ error: 'Supabase configuration missing' }),
+        { 
+          status: 500,
+          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Here you would verify the signature with the wallet's public key
     // For now, we'll trust the wallet address
     // In production, you should verify the signature using @solana/web3.js
+    console.log('Authenticating wallet:', walletAddress)
 
     // Check if user exists
     const { data: existingUser, error: userError } = await supabase
@@ -58,7 +76,14 @@ serve(async (req) => {
         .single()
 
       if (createError) {
-        throw createError
+        console.error('Error creating user:', createError)
+        return new Response(
+          JSON.stringify({ error: 'Failed to create user account' }),
+          { 
+            status: 500,
+            headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+          }
+        )
       }
       userId = newUser.id
     } else {
@@ -90,13 +115,24 @@ serve(async (req) => {
           wallet_address: walletAddress,
         }
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      { 
+        status: 200,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+      }
     )
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error in auth-wallet function:', error)
+    
+    // Handle JSON parse errors or other exceptions
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      JSON.stringify({ 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }),
+      { 
+        status: 500,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+      }
     )
   }
 })
