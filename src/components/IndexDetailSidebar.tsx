@@ -149,7 +149,7 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
                       <p className="text-2xl font-bold text-stake-highlight">{formatNumber(index.total_market_cap)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-stake-muted">Average per Token</p>
+                      <p className="text-sm text-stake-muted">Average Market Cap</p>
                       <p className="text-2xl font-bold text-stake-text">{formatNumber(index.average_market_cap)}</p>
                     </div>
                   </div>

@@ -151,9 +151,10 @@ serve(async (req) => {
     const failedTokens = tokenData.filter(token => token.error)
     console.log(`Successful: ${successfulTokens.length}, Failed: ${failedTokens.length}`)
 
-    // Calculate combined metrics (only from successful tokens)
-    const totalMarketCap = successfulTokens.reduce((sum, token) => sum + token.marketCap, 0)
-    const averageMarketCap = successfulTokens.length > 0 ? totalMarketCap / successfulTokens.length : 0
+    // Calculate combined metrics
+    const totalMarketCap = tokenData.reduce((sum, token) => sum + token.marketCap, 0)
+    // Average should be total divided by ALL tokens (not just successful ones)
+    const averageMarketCap = tokenData.length > 0 ? totalMarketCap / tokenData.length : 0
 
     return new Response(
       JSON.stringify({
