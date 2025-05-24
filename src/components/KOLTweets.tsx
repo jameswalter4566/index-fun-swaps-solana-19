@@ -17,22 +17,15 @@ interface Tweet {
     id: string;
     username: string;
     name: string;
+    verified?: boolean;
     profile_image_url?: string;
   };
-  engagement: {
+  metrics: {
     likes: number;
     retweets: number;
     replies: number;
     quotes: number;
   };
-}
-
-interface UserTweets {
-  userId: string;
-  username?: string;
-  name?: string;
-  profile_image_url?: string;
-  tweets: Tweet[];
 }
 
 interface KOLTweetsProps {
@@ -45,7 +38,7 @@ interface KOLTweetsProps {
 }
 
 const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
-  const [userTweets, setUserTweets] = useState<UserTweets[]>([]);
+  const [tweets, setTweets] = useState<Tweet[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const { toast } = useToast();
@@ -54,77 +47,38 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
     setLoading(true);
     
     try {
-      // Extract Twitter user IDs from token metadata
-      const twitterUserIds = tokens
-        .filter(token => {
-          // Check if it's a Twitter account and has valid metadata
-          return token.name?.startsWith('@') && 
-                 token.metadata && 
-                 (token.metadata.twitter_id || token.metadata.id);
-        })
-        .map(token => token.metadata.twitter_id || token.metadata.id);
+      // Extract Twitter usernames from tokens
+      const twitterUsernames = tokens
+        .filter(token => token.name?.startsWith('@'))
+        .map(token => token.name);
 
-      if (twitterUserIds.length === 0) {
-        // Try to use mock user IDs if no real Twitter IDs found
-        console.log('No Twitter IDs found in metadata, using mock data');
-        const mockUserIds = tokens
-          .filter(token => token.name?.startsWith('@'))
-          .map((_, index) => `mock-user-${index + 1}`);
-        
-        if (mockUserIds.length === 0) {
-          toast({
-            title: 'No Twitter Accounts',
-            description: 'This agent is not monitoring any Twitter accounts.',
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        // Use mock user IDs instead
-        const { data, error } = await supabase.functions.invoke('get-tweets', {
-          body: {
-            userIds: mockUserIds,
-            limit: 10,
-          },
+      if (twitterUsernames.length === 0) {
+        toast({
+          title: 'No Twitter Accounts',
+          description: 'This agent is not monitoring any Twitter accounts.',
+          variant: 'destructive',
         });
-
-        if (error) throw error;
-
-        if (data?.tweets) {
-          setUserTweets(data.tweets);
-          setLastRefreshed(new Date());
-          toast({
-            title: 'Tweets Loaded',
-            description: `Loaded mock tweets for demonstration.`,
-          });
-        }
         return;
       }
 
-      console.log('Fetching tweets for user IDs:', twitterUserIds);
+      console.log('Fetching tweets for usernames:', twitterUsernames);
 
-      const { data, error } = await supabase.functions.invoke('get-tweets', {
+      const { data, error } = await supabase.functions.invoke('retrieve-new-tweets', {
         body: {
-          userIds: twitterUserIds,
-          limit: 10, // 10 most recent tweets per account
+          usernames: twitterUsernames,
         },
       });
 
       if (error) throw error;
 
       if (data?.tweets) {
-        setUserTweets(data.tweets);
+        setTweets(data.tweets);
         setLastRefreshed(new Date());
         
         // Show success toast
-        const totalTweets = data.tweets.reduce(
-          (acc: number, user: UserTweets) => acc + user.tweets.length, 
-          0
-        );
-        
         toast({
           title: 'Tweets Loaded',
-          description: `Loaded ${totalTweets} tweets from ${twitterUserIds.length} accounts.`,
+          description: `Loaded ${data.tweets.length} tweets from ${twitterUsernames.length} accounts.`,
         });
       }
     } catch (error) {
@@ -197,7 +151,7 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
       </CardHeader>
       
       <CardContent className="p-0">
-        {userTweets.length === 0 && !loading && (
+        {tweets.length === 0 && !loading && (
           <div className="text-center py-12 text-muted-foreground">
             <Twitter className="h-12 w-12 mx-auto mb-4 opacity-20" />
             <p>Click refresh to load tweets from monitored accounts</p>
@@ -211,86 +165,69 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
           </div>
         )}
 
-        {userTweets.length > 0 && (
+        {tweets.length > 0 && (
           <ScrollArea className="h-[600px]">
-            <div className="p-4 space-y-6">
-              {userTweets.map((user) => (
-                <div key={user.userId} className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b border-stake-card">
-                    {user.profile_image_url && (
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={user.profile_image_url} alt={user.name} />
-                        <AvatarFallback>{user.name?.charAt(0) || 'U'}</AvatarFallback>
-                      </Avatar>
-                    )}
-                    <Badge variant="outline" className="gap-1">
-                      <Twitter className="h-3 w-3" />
-                      @{user.username || 'unknown'}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {user.tweets.length} tweets
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {user.tweets.map((tweet) => (
-                      <div
-                        key={tweet.id}
-                        className="bg-stake-card rounded-lg p-4 hover:bg-stake-darkbg transition-colors"
-                      >
-                        <div className="flex items-start gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage 
-                              src={tweet.author.profile_image_url} 
-                              alt={tweet.author.name}
-                            />
-                            <AvatarFallback>
-                              {tweet.author.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1">
-                                <span className="font-semibold text-sm">
-                                  {tweet.author.name}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  @{tweet.author.username}
-                                </span>
-                              </div>
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {formatTimestamp(tweet.created_at)}
-                              </span>
-                            </div>
-                            
-                            <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                              {highlightMentions(tweet.text)}
-                            </p>
-                            
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
-                              <span className="flex items-center gap-1 hover:text-red-500 cursor-pointer">
-                                <Heart className="h-3 w-3" />
-                                {formatEngagement(tweet.engagement.likes)}
-                              </span>
-                              <span className="flex items-center gap-1 hover:text-green-500 cursor-pointer">
-                                <Repeat2 className="h-3 w-3" />
-                                {formatEngagement(tweet.engagement.retweets)}
-                              </span>
-                              <span className="flex items-center gap-1 hover:text-blue-500 cursor-pointer">
-                                <MessageCircle className="h-3 w-3" />
-                                {formatEngagement(tweet.engagement.replies)}
-                              </span>
-                              <span className="flex items-center gap-1 hover:text-purple-500 cursor-pointer">
-                                <Quote className="h-3 w-3" />
-                                {formatEngagement(tweet.engagement.quotes)}
-                              </span>
-                            </div>
-                          </div>
+            <div className="p-4 space-y-4">
+              {tweets.map((tweet) => (
+                <div
+                  key={tweet.id}
+                  className="bg-stake-card rounded-lg p-4 hover:bg-stake-darkbg transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage 
+                        src={tweet.author.profile_image_url} 
+                        alt={tweet.author.name}
+                      />
+                      <AvatarFallback>
+                        {tweet.author.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <span className="font-semibold text-sm">
+                            {tweet.author.name}
+                          </span>
+                          {tweet.author.verified && (
+                            <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                            </svg>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            @{tweet.author.username}
+                          </span>
                         </div>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {formatTimestamp(tweet.created_at)}
+                        </span>
                       </div>
-                    ))}
+                      
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {highlightMentions(tweet.text)}
+                      </p>
+                      
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
+                        <span className="flex items-center gap-1 hover:text-red-500 cursor-pointer">
+                          <Heart className="h-3 w-3" />
+                          {formatEngagement(tweet.metrics.likes)}
+                        </span>
+                        <span className="flex items-center gap-1 hover:text-green-500 cursor-pointer">
+                          <Repeat2 className="h-3 w-3" />
+                          {formatEngagement(tweet.metrics.retweets)}
+                        </span>
+                        <span className="flex items-center gap-1 hover:text-blue-500 cursor-pointer">
+                          <MessageCircle className="h-3 w-3" />
+                          {formatEngagement(tweet.metrics.replies)}
+                        </span>
+                        <span className="flex items-center gap-1 hover:text-purple-500 cursor-pointer">
+                          <Quote className="h-3 w-3" />
+                          {formatEngagement(tweet.metrics.quotes)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
