@@ -50,30 +50,72 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
       <CardContent className="p-4">
         <div className="space-y-4">
           <div>
-            <h4 className="text-sm font-medium text-stake-muted mb-2">tokens</h4>
-            <div className="flex flex-wrap gap-2">
-              {tokens.map((token) => (
-                <div 
-                  key={token.address} 
-                  className="flex items-center gap-1.5 bg-stake-darkbg rounded-full px-3 py-1"
-                >
-                  {token.image ? (
-                    <img 
-                      src={token.image} 
-                      alt={token.name}
-                      className="w-4 h-4 rounded-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = '/placeholder.svg';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-4 h-4 rounded-full bg-stake-accent/20" />
-                  )}
-                  <span className="text-xs text-stake-text">
-                    {token.symbol || token.name}
-                  </span>
-                </div>
-              ))}
+            <h4 className="text-sm font-medium text-stake-muted mb-2">Monitoring Twitter Accounts</h4>
+            <div className="space-y-2">
+              {tokens.map((token) => {
+                const metadata = token.metadata as any;
+                const isTwitterAccount = token.name?.startsWith('@');
+                
+                if (isTwitterAccount && metadata) {
+                  return (
+                    <div 
+                      key={token.address} 
+                      className="flex items-center gap-2 bg-stake-darkbg rounded-lg p-2"
+                    >
+                      <img 
+                        src={token.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${token.name}`} 
+                        alt={token.name}
+                        className="w-8 h-8 rounded-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder.svg';
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-medium text-stake-text truncate">
+                            {metadata.display_name || token.name}
+                          </span>
+                          {metadata.verified && (
+                            <svg className="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                            </svg>
+                          )}
+                        </div>
+                        <span className="text-xs text-stake-muted">{token.name}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-stake-muted">
+                          {metadata.followers_count ? `${(metadata.followers_count / 1000).toFixed(1)}K` : '0'} followers
+                        </span>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  // Fallback for non-Twitter tokens
+                  return (
+                    <div 
+                      key={token.address} 
+                      className="flex items-center gap-1.5 bg-stake-darkbg rounded-full px-3 py-1"
+                    >
+                      {token.image ? (
+                        <img 
+                          src={token.image} 
+                          alt={token.name}
+                          className="w-4 h-4 rounded-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = '/placeholder.svg';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full bg-stake-accent/20" />
+                      )}
+                      <span className="text-xs text-stake-text">
+                        {token.symbol || token.name}
+                      </span>
+                    </div>
+                  );
+                }
+              })}
             </div>
           </div>
           

@@ -61,23 +61,42 @@ const CreateSwapForm: React.FC = () => {
         formData.twitter4,
       ].filter(account => account.trim() !== '');
       
-      // For now, we'll save the agent data as an index with Twitter accounts
-      // In a real implementation, this would be a separate table
+      // Fetch Twitter user data
+      console.log('Fetching Twitter user data for:', twitterAccounts);
+      const { data: twitterData, error: twitterError } = await supabase.functions.invoke('get-twitter-users', {
+        body: { usernames: twitterAccounts },
+      });
+      
+      if (twitterError) {
+        throw new Error(`Failed to fetch Twitter users: ${twitterError.message}`);
+      }
+      
+      // Save agent data with Twitter user information
       const { data: agent, error: insertError } = await supabase
         .from('indexes')
         .insert({
           name: formData.name,
-          tokens: twitterAccounts.map(account => ({
-            name: account,
-            address: account, // Using Twitter handle as address for now
-            symbol: account.replace('@', ''),
+          tokens: twitterData.users.map((user: any) => ({
+            name: `@${user.username}`,
+            address: user.username,
+            symbol: user.username,
+            image: user.profile_image_url,
+            metadata: {
+              twitter_id: user.id,
+              display_name: user.name,
+              description: user.description,
+              verified: user.verified,
+              followers_count: user.followers_count,
+              following_count: user.following_count,
+            }
           })),
           creator_wallet: 'anonymous',
           // Store phone number in metadata if provided
           metadata: formData.phoneNumber ? {
             phoneNumber: formData.phoneNumber,
             smsOptIn: smsOptIn,
-          } : undefined,
+            agentType: 'twitter_monitor',
+          } : { agentType: 'twitter_monitor' },
         })
         .select()
         .single();
