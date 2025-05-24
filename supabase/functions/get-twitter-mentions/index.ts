@@ -85,7 +85,7 @@ serve(async (req) => {
           // Build Twitter API URL for searching recent tweets
           const twitterUrl = new URL('https://api.twitter.com/2/tweets/search/recent');
           twitterUrl.searchParams.append('query', `@${cleanUsername} -is:retweet`);
-          twitterUrl.searchParams.append('max_results', limit.toString());
+          twitterUrl.searchParams.append('max_results', '10'); // Twitter API minimum is 10
           twitterUrl.searchParams.append('tweet.fields', 'created_at,author_id');
           twitterUrl.searchParams.append('expansions', 'author_id');
           twitterUrl.searchParams.append('user.fields', 'name,username,profile_image_url');
@@ -115,9 +115,12 @@ serve(async (req) => {
           // Format the Twitter API response
           const mentions = formatTwitterResponse(twitterData, cleanUsername);
           
+          // Limit to requested amount (since API minimum is 10)
+          const limitedMentions = mentions.slice(0, limit);
+          
           return {
             username: cleanUsername,
-            mentions: mentions
+            mentions: limitedMentions
           };
         } catch (error) {
           console.error(`Error fetching mentions for ${username}:`, error);
