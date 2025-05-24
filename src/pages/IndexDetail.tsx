@@ -10,6 +10,7 @@ import { ArrowLeft, TrendingUp, TrendingDown, Users, DollarSign } from 'lucide-r
 import NodeVisualizer from '@/components/NodeVisualizer';
 import AgentChat from '@/components/AgentChat';
 import KOLFeed from '@/components/KOLFeed';
+import KOLTweets from '@/components/KOLTweets';
 
 interface Token {
   address: string;
@@ -130,6 +131,11 @@ const IndexDetail: React.FC = () => {
       {/* KOL Feed */}
       <div className="mb-8">
         <KOLFeed tokens={index.tokens} agentId={index.id} />
+      </div>
+
+      {/* KOL Tweets */}
+      <div className="mb-8">
+        <KOLTweets tokens={index.tokens} agentId={index.id} />
       </div>
 
       {/* Twitter Accounts Being Monitored */}
