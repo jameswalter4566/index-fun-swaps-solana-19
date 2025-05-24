@@ -60,7 +60,9 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { usernames, agentId } = await req.json();
+    const { usernames, agentId, forceFresh = false } = await req.json();
+    
+    console.log('Request received:', { usernames, agentId, forceFresh });
     
     if (!usernames || !Array.isArray(usernames) || usernames.length === 0) {
       return new Response(
@@ -75,15 +77,15 @@ serve(async (req) => {
     // Remove @ symbols if present
     const cleanUsernames = usernames.map(u => u.replace('@', ''));
     
-    // First, try to get tweets from our database (last 7 days)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // First, try to get tweets from our database (fetched in last 2 hours)
+    const twoHoursAgo = new Date();
+    twoHoursAgo.setHours(twoHoursAgo.getHours() - 2);
     
     const { data: cachedTweets, error: dbError } = await supabase
       .from('kol_tweets')
       .select('*')
       .in('author_username', cleanUsernames)
-      .gte('created_at', sevenDaysAgo.toISOString())
+      .gte('fetched_at', twoHoursAgo.toISOString())
       .order('created_at', { ascending: false })
       .limit(100);
 
@@ -91,12 +93,15 @@ serve(async (req) => {
       console.error('Database error:', dbError);
     }
 
-    // Check if we have recent tweets for all users
-    const usersWithCachedTweets = new Set(cachedTweets?.map(t => t.author_username) || []);
-    const usersNeedingFetch = cleanUsernames.filter(u => !usersWithCachedTweets.has(u));
+    // Check if we have recently fetched tweets for all users
+    const usersWithRecentTweets = new Set(cachedTweets?.map(t => t.author_username) || []);
+    const usersNeedingFetch = cleanUsernames.filter(u => !usersWithRecentTweets.has(u));
 
-    // If we have recent tweets for all users, return cached data
-    if (usersNeedingFetch.length === 0 && cachedTweets && cachedTweets.length > 0) {
+    console.log('Users with recent tweets:', Array.from(usersWithRecentTweets));
+    console.log('Users needing fetch:', usersNeedingFetch);
+
+    // If we have recently fetched tweets for all users AND not forcing fresh, return cached data
+    if (!forceFresh && usersNeedingFetch.length === 0 && cachedTweets && cachedTweets.length > 0) {
       // Update agent_ids for these tweets if needed
       if (agentId) {
         for (const tweet of cachedTweets) {
@@ -124,9 +129,10 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true,
-          tweets: formattedTweets,
+          tweets: formattedTweets.slice(0, 20), // Return max 20 tweets from cache
           count: formattedTweets.length,
-          source: 'cache'
+          source: 'cache',
+          message: 'Returning cached tweets fetched within last 2 hours'
         }),
         { 
           status: 200,
@@ -139,8 +145,8 @@ serve(async (req) => {
     const allTweets: Tweet[] = [];
     const errors: string[] = [];
     
-    // Add cached tweets to results
-    if (cachedTweets && cachedTweets.length > 0) {
+    // Add recently fetched cached tweets to results
+    if (cachedTweets && cachedTweets.length > 0 && usersNeedingFetch.length < cleanUsernames.length) {
       const cachedFormattedTweets = cachedTweets.map(tweet => ({
         id: tweet.tweet_id,
         text: tweet.tweet_text,
@@ -161,6 +167,7 @@ serve(async (req) => {
     // Fetch new tweets for users that need updates
     for (const username of usersNeedingFetch) {
       try {
+        console.log(`Fetching new tweets for user: ${username}`);
         // Add delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000));
         
@@ -235,7 +242,8 @@ serve(async (req) => {
               replies: tweet.public_metrics.reply_count,
               quotes: tweet.public_metrics.quote_count
             },
-            agent_ids: agentId ? [agentId] : []
+            agent_ids: agentId ? [agentId] : [],
+            fetched_at: new Date().toISOString()
           }));
 
           // Upsert tweets (insert or update)
@@ -283,8 +291,10 @@ serve(async (req) => {
         success: true,
         tweets: formattedTweets.slice(0, 50), // Return max 50 tweets
         count: formattedTweets.length,
-        source: 'mixed',
-        errors: errors.length > 0 ? errors : undefined
+        source: usersNeedingFetch.length > 0 ? 'api' : 'cache',
+        errors: errors.length > 0 ? errors : undefined,
+        fetchedUsers: usersNeedingFetch,
+        cachedUsers: Array.from(usersWithRecentTweets)
       }),
       { 
         status: 200,

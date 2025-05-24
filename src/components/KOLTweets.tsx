@@ -41,6 +41,7 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
   const [tweets, setTweets] = useState<Tweet[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [forceFresh, setForceFresh] = useState(false);
   const { toast } = useToast();
 
   const fetchTweets = async () => {
@@ -69,6 +70,7 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
         body: {
           usernames: twitterUsernames,
           agentId: agentId,
+          forceFresh: forceFresh,
         },
       });
 
@@ -79,11 +81,14 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
         setLastRefreshed(new Date());
         
         // Show success toast with source info
-        const sourceInfo = data.source === 'cache' ? ' (from cache)' : '';
+        const sourceInfo = data.source === 'cache' ? ' (from cache)' : data.source === 'api' ? ' (fresh from API)' : '';
         toast({
           title: 'Tweets Loaded',
-          description: `Loaded ${data.tweets.length} tweets from ${twitterUsernames.length} accounts${sourceInfo}.`,
+          description: `Loaded ${data.tweets.length} tweets${sourceInfo}.`,
         });
+        
+        // Reset forceFresh after successful fetch
+        setForceFresh(false);
         
         // Show any errors/warnings
         if (data.errors && data.errors.length > 0) {
@@ -154,15 +159,30 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
             </p>
           )}
         </div>
-        <Button
-          onClick={fetchTweets}
-          disabled={loading}
-          size="sm"
-          className="gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={fetchTweets}
+            disabled={loading}
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button
+            onClick={() => {
+              setForceFresh(true);
+              fetchTweets();
+            }}
+            disabled={loading}
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            title="Force refresh from Twitter API"
+          >
+            Force Fresh
+          </Button>
+        </div>
       </CardHeader>
       
       <CardContent className="p-0">
