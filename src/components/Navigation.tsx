@@ -12,17 +12,17 @@ const Navigation: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <span className="text-2xl font-bold text-stake-accent">INDEX.FUN</span>
+              <span className="text-2xl font-bold text-stake-accent">index.fun</span>
             </Link>
           </div>
           
           <div className="flex items-center space-x-4">
             <Link to="/create-swap">
-              <Button className="bg-stake-accent hover:bg-stake-highlight text-white rounded-md">Create Index</Button>
+              <Button className="bg-stake-accent hover:bg-stake-highlight text-white rounded-md">create index</Button>
             </Link>
             
             <Button variant="ghost" className="hover:bg-stake-card rounded-md text-stake-muted hover:text-stake-text" onClick={() => setIsModalOpen(true)}>
-              How it Works
+              how it works
             </Button>
             
             <WalletConnect />

@@ -73,9 +73,9 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
             
             <button 
               onClick={onClick || (() => navigate(`/index/${id}`))}
-              className="text-sm text-stake-accent hover:underline"
+              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-1 rounded-full text-sm transition-colors"
             >
-              View Details
+              VIEW
             </button>
           </div>
         </div>

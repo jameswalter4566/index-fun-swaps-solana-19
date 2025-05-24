@@ -7,6 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { X, TrendingUp, TrendingDown, Users, DollarSign } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 
 interface Token {
   address: string;
@@ -42,6 +44,8 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
   const [index, setIndex] = useState<IndexData | null>(null);
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState<any[]>([]);
+  const { connected } = useWallet();
+  const { setVisible } = useWalletModal();
 
   useEffect(() => {
     if (indexId && isOpen) {
@@ -111,7 +115,7 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
       }`}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-stake-card sticky top-0 bg-stake-darkbg z-10">
-          <h2 className="text-2xl font-bold text-stake-text">Index Details</h2>
+          <h2 className="text-2xl font-bold text-stake-text">index details</h2>
           <Button variant="ghost" size="sm" onClick={onClose} className="text-stake-muted hover:text-stake-text">
             <X className="h-5 w-5" />
           </Button>
@@ -132,7 +136,7 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
               <div>
                 <h1 className="text-3xl font-bold mb-2 text-stake-text">{index.name}</h1>
                 <div className="flex flex-col gap-1 text-sm text-stake-muted">
-                  <span>Created {new Date(index.created_at).toLocaleDateString()}</span>
+                  <span>created {new Date(index.created_at).toLocaleDateString()}</span>
                   <span>{index.tokens.length} tokens</span>
                 </div>
               </div>
@@ -140,16 +144,16 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
               {/* Market Cap Summary */}
               <Card className="bg-stake-card border-stake-accent">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg text-stake-text">Market Cap</CardTitle>
+                  <CardTitle className="text-lg text-stake-text">market cap</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between items-center">
                     <div>
-                      <p className="text-sm text-stake-muted">Total Market Cap</p>
+                      <p className="text-sm text-stake-muted">total market cap</p>
                       <p className="text-2xl font-bold text-stake-highlight">{formatNumber(index.total_market_cap)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-stake-muted">Average Market Cap</p>
+                      <p className="text-sm text-stake-muted">average market cap</p>
                       <p className="text-2xl font-bold text-stake-text">{formatNumber(index.average_market_cap)}</p>
                     </div>
                   </div>
@@ -159,7 +163,7 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
               {/* Chart */}
               <Card className="bg-stake-card border-stake-accent">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg text-stake-text">Cumulative Market Cap</CardTitle>
+                  <CardTitle className="text-lg text-stake-text">cumulative market cap</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
@@ -173,8 +177,7 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
                       <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" opacity={0.5} />
                       <XAxis 
                         dataKey="name" 
-                        fontSize={12} 
-                        tick={{ fill: '#999' }}
+                        tick={false}
                         axisLine={{ stroke: '#444' }}
                       />
                       <YAxis 
@@ -211,7 +214,7 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
 
               {/* Token List */}
               <div className="space-y-4">
-                <h3 className="text-xl font-bold text-stake-text">Tokens in this Index</h3>
+                <h3 className="text-xl font-bold text-stake-text">tokens in this index</h3>
                 <div className="grid gap-4">
                   {index.tokens.map((token) => (
                     <Card key={token.address} className="overflow-hidden bg-stake-card border-stake-accent hover:border-stake-highlight transition-colors">
@@ -247,15 +250,15 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
                             ) : (
                               <div className="grid grid-cols-3 gap-4 text-sm">
                                 <div>
-                                  <p className="text-stake-muted">Market Cap</p>
+                                  <p className="text-stake-muted">market cap</p>
                                   <p className="font-semibold text-stake-text">{formatNumber(token.marketCap)}</p>
                                 </div>
                                 <div>
-                                  <p className="text-stake-muted">Price</p>
+                                  <p className="text-stake-muted">price</p>
                                   <p className="font-semibold text-stake-text">${token.price.toFixed(8)}</p>
                                 </div>
                                 <div>
-                                  <p className="text-stake-muted">Holders</p>
+                                  <p className="text-stake-muted">holders</p>
                                   <p className="font-semibold text-stake-text">{token.holders.toLocaleString()}</p>
                                 </div>
                               </div>
@@ -272,18 +275,24 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
               <Button 
                 className="w-full h-12 text-lg font-bold bg-green-500 hover:bg-green-600 text-black shadow-[0_0_20px_rgba(34,197,94,0.5)] hover:shadow-[0_0_30px_rgba(34,197,94,0.7)] transition-all duration-300"
                 onClick={() => {
-                  toast({
-                    title: "Swap Feature Coming Soon",
-                    description: "The swap functionality will be available in the next update.",
-                  });
+                  if (!connected) {
+                    setVisible(true);
+                  } else {
+                    toast({
+                      title: "ERROR YOU HAVE BEEN RATE LIMITED",
+                      description: "PLEASE TRY AGAIN IN 10 SECONDS",
+                      variant: "destructive",
+                      className: "bg-red-600 text-white border-red-700",
+                    });
+                  }
                 }}
               >
-                SWAP INTO INDEX
+                {connected ? 'SWAP INTO INDEX' : 'CONNECT WALLET'}
               </Button>
             </>
           ) : (
             <div className="text-center py-8">
-              <p className="text-stake-muted">Index not found</p>
+              <p className="text-stake-muted">index not found</p>
             </div>
           )}
         </div>

@@ -180,23 +180,23 @@ const Index: React.FC = () => {
   });
   return <Layout>
       <div className="mb-8 max-w-2xl mx-auto text-center animate-fade-in">
-        <h1 className="text-4xl font-bold mb-4 text-stake-text">Index</h1>
-        <p className="text-stake-muted text-lg">Create instantly tradable token indexes. Get paid when others swap.</p>
+        <h1 className="text-4xl font-bold mb-4 text-stake-text">index</h1>
+        <p className="text-stake-muted text-lg">create instantly tradable token indexes. get paid when others swap.</p>
       </div>
       
       <div className="mb-8 max-w-md mx-auto relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <Search size={18} className="text-stake-muted" />
         </div>
-        <Input type="text" placeholder="Search by INDEX name or token" className="pl-10 rounded-md bg-stake-card border-stake-card text-stake-text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+        <Input type="text" placeholder="search by index name or token" className="pl-10 rounded-md bg-stake-card border-stake-card text-stake-text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
       </div>
       
       <Tabs defaultValue="all" className="mb-8" onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-4 max-w-md mx-auto bg-stake-darkbg">
-          <TabsTrigger value="all" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">All</TabsTrigger>
-          <TabsTrigger value="top" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">Top Rated</TabsTrigger>
-          <TabsTrigger value="gainers" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">Best Gainers</TabsTrigger>
-          <TabsTrigger value="recent" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">Most Recent</TabsTrigger>
+          <TabsTrigger value="all" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">all</TabsTrigger>
+          <TabsTrigger value="top" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">top rated</TabsTrigger>
+          <TabsTrigger value="gainers" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">best gainers</TabsTrigger>
+          <TabsTrigger value="recent" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">most recent</TabsTrigger>
         </TabsList>
         
         <TabsContent value="all" className="mt-6">
@@ -219,7 +219,7 @@ const Index: React.FC = () => {
               ))
             ) : (
               <div className="col-span-full text-center py-8">
-                <p className="text-stake-muted">No INDEXES found matching your search.</p>
+                <p className="text-stake-muted">no indexes found matching your search.</p>
               </div>
             )}
           </div>
@@ -238,7 +238,7 @@ const Index: React.FC = () => {
                 onClick={() => handleIndexClick(index.id)}
               />
             )) : <div className="col-span-full text-center py-8">
-                <p className="text-stake-muted">No top-rated INDEXES found.</p>
+                <p className="text-stake-muted">no top-rated indexes found.</p>
               </div>}
           </div>
         </TabsContent>
@@ -256,7 +256,7 @@ const Index: React.FC = () => {
                 onClick={() => handleIndexClick(index.id)}
               />
             )) : <div className="col-span-full text-center py-8">
-                <p className="text-stake-muted">No gaining INDEXES found.</p>
+                <p className="text-stake-muted">no gaining indexes found.</p>
               </div>}
           </div>
         </TabsContent>
@@ -274,7 +274,7 @@ const Index: React.FC = () => {
                 onClick={() => handleIndexClick(index.id)}
               />
             )) : <div className="col-span-full text-center py-8">
-                <p className="text-stake-muted">No recent INDEXES found.</p>
+                <p className="text-stake-muted">no recent indexes found.</p>
               </div>}
           </div>
         </TabsContent>
