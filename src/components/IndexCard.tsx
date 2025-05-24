@@ -16,9 +16,10 @@ interface IndexCardProps {
   tokens: Token[];
   gainPercentage: number;
   upvotes: number;
+  onClick?: () => void;
 }
 
-const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage, upvotes }) => {
+const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage, upvotes, onClick }) => {
   const navigate = useNavigate();
   const [upvoted, setUpvoted] = useState(false);
   const [currentUpvotes, setCurrentUpvotes] = useState(upvotes);
@@ -71,7 +72,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
             </button>
             
             <button 
-              onClick={() => navigate(`/index/${id}`)}
+              onClick={onClick || (() => navigate(`/index/${id}`))}
               className="text-sm text-stake-accent hover:underline"
             >
               View Details

@@ -37,64 +37,32 @@ serve(async (req) => {
 
     console.log(`Fetching data for ${tokenAddresses.length} tokens:`, tokenAddresses)
     
-    const tokenData = await Promise.all(
-      tokenAddresses.map(async (address: string) => {
-        try {
-          console.log(`Fetching token: ${address}`)
-          const response = await fetch(
-            `https://data.solanatracker.io/tokens/${address}`,
-            {
-              headers: {
-                'x-api-key': solanaApiKey,
-              },
-            }
-          )
-
-          if (!response.ok) {
-            const errorText = await response.text()
-            console.error(`Failed to fetch token ${address}: Status ${response.status}, Error: ${errorText}`)
-            
-            // Return a placeholder token with error info
-            return {
-              address,
-              name: 'Unknown Token',
-              symbol: address.slice(0, 6),
-              image: '',
-              decimals: 6,
-              marketCap: 0,
-              price: 0,
-              liquidity: 0,
-              holders: 0,
-              priceChange24h: 0,
-              error: `Failed to fetch: ${response.status}`,
-            }
+    // Fetch tokens sequentially to avoid overwhelming the API
+    const tokenData = []
+    
+    for (let i = 0; i < tokenAddresses.length; i++) {
+      const address = tokenAddresses[i]
+      console.log(`[${i + 1}/${tokenAddresses.length}] Fetching token: ${address}`)
+      
+      try {
+        const response = await fetch(
+          `https://data.solanatracker.io/tokens/${address}`,
+          {
+            headers: {
+              'x-api-key': solanaApiKey,
+            },
           }
+        )
 
-          const data = await response.json()
-          console.log(`Successfully fetched token ${address}:`, data.token?.name || 'Unknown')
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error(`Failed to fetch token ${address}: Status ${response.status}, Error: ${errorText}`)
           
-          // Extract relevant data
-          const pool = data.pools?.[0] // Get the first pool
-          return {
-            address,
-            name: data.token?.name || 'Unknown',
-            symbol: data.token?.symbol || 'N/A',
-            image: data.token?.image || '',
-            decimals: data.token?.decimals || 6,
-            marketCap: pool?.marketCap?.usd || 0,
-            price: pool?.price?.usd || 0,
-            liquidity: pool?.liquidity?.usd || 0,
-            holders: data.holders || 0,
-            priceChange24h: data.events?.['24h']?.priceChangePercentage || 0,
-          }
-        } catch (error) {
-          console.error(`Error fetching token ${address}:`, error)
-          
-          // Return a placeholder token for failed requests
-          return {
+          // Add placeholder token with error info
+          tokenData.push({
             address,
             name: 'Unknown Token',
-            symbol: address.slice(0, 6),
+            symbol: address.slice(0, 8),
             image: '',
             decimals: 6,
             marketCap: 0,
@@ -102,27 +70,75 @@ serve(async (req) => {
             liquidity: 0,
             holders: 0,
             priceChange24h: 0,
-            error: `Error: ${error.message}`,
-          }
+            error: `Failed to fetch: ${response.status}`,
+          })
+          continue
         }
-      })
-    )
 
-    // Include all tokens (even failed ones)
-    const validTokens = tokenData.filter(token => token !== null)
-    console.log(`Successfully processed ${validTokens.length} out of ${tokenAddresses.length} tokens`)
+        const data = await response.json()
+        console.log(`Successfully fetched token ${address}:`, data.token?.name || 'Unknown')
+        
+        // Extract relevant data
+        const pool = data.pools?.[0] // Get the first pool
+        tokenData.push({
+          address,
+          name: data.token?.name || 'Unknown',
+          symbol: data.token?.symbol || 'N/A',
+          image: data.token?.image || '',
+          decimals: data.token?.decimals || 6,
+          marketCap: pool?.marketCap?.usd || 0,
+          price: pool?.price?.usd || 0,
+          liquidity: pool?.liquidity?.usd || 0,
+          holders: data.holders || 0,
+          priceChange24h: data.events?.['24h']?.priceChangePercentage || 0,
+        })
+        
+        // Add a small delay between requests to be respectful to the API
+        if (i < tokenAddresses.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+        
+      } catch (error) {
+        console.error(`Error fetching token ${address}:`, error)
+        
+        // Add placeholder token for failed requests
+        tokenData.push({
+          address,
+          name: 'Unknown Token',
+          symbol: address.slice(0, 8),
+          image: '',
+          decimals: 6,
+          marketCap: 0,
+          price: 0,
+          liquidity: 0,
+          holders: 0,
+          priceChange24h: 0,
+          error: `Error: ${error.message}`,
+        })
+      }
+    }
 
-    // Calculate combined metrics
-    const totalMarketCap = validTokens.reduce((sum, token) => sum + token.marketCap, 0)
-    const averageMarketCap = validTokens.length > 0 ? totalMarketCap / validTokens.length : 0
+    // All tokens are already included (even failed ones show as placeholders)
+    console.log(`Successfully processed ${tokenData.length} out of ${tokenAddresses.length} tokens`)
+    
+    // Count successful vs failed tokens
+    const successfulTokens = tokenData.filter(token => !token.error)
+    const failedTokens = tokenData.filter(token => token.error)
+    console.log(`Successful: ${successfulTokens.length}, Failed: ${failedTokens.length}`)
+
+    // Calculate combined metrics (only from successful tokens)
+    const totalMarketCap = successfulTokens.reduce((sum, token) => sum + token.marketCap, 0)
+    const averageMarketCap = successfulTokens.length > 0 ? totalMarketCap / successfulTokens.length : 0
 
     return new Response(
       JSON.stringify({
-        tokens: validTokens,
+        tokens: tokenData, // Return all tokens (including failed ones as placeholders)
         metrics: {
           totalMarketCap,
           averageMarketCap,
-          tokenCount: validTokens.length,
+          tokenCount: tokenData.length,
+          successfulCount: successfulTokens.length,
+          failedCount: failedTokens.length,
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }

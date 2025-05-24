@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import IndexCard from '@/components/IndexCard';
+import IndexDetailSidebar from '@/components/IndexDetailSidebar';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search } from 'lucide-react';
@@ -120,6 +121,8 @@ const Index: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [indexes, setIndexes] = useState<IndexData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedIndexId, setSelectedIndexId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     fetchIndexes();
@@ -140,6 +143,16 @@ const Index: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleIndexClick = (indexId: string) => {
+    setSelectedIndexId(indexId);
+    setSidebarOpen(true);
+  };
+
+  const handleSidebarClose = () => {
+    setSidebarOpen(false);
+    setSelectedIndexId(null);
   };
 
   // Combine real indexes with mock data for demonstration
@@ -200,7 +213,8 @@ const Index: React.FC = () => {
                   name={index.name} 
                   tokens={index.tokens} 
                   gainPercentage={index.gainPercentage || 0} 
-                  upvotes={index.upvotes || 0} 
+                  upvotes={index.upvotes || 0}
+                  onClick={() => handleIndexClick(index.id)}
                 />
               ))
             ) : (
@@ -213,7 +227,17 @@ const Index: React.FC = () => {
         
         <TabsContent value="top" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredIndexes.length > 0 ? filteredIndexes.map(index => <IndexCard key={index.id} id={index.id} name={index.name} tokens={index.tokens} gainPercentage={index.gainPercentage} upvotes={index.upvotes} />) : <div className="col-span-full text-center py-8">
+            {filteredIndexes.length > 0 ? filteredIndexes.map(index => (
+              <IndexCard 
+                key={index.id} 
+                id={index.id} 
+                name={index.name} 
+                tokens={index.tokens} 
+                gainPercentage={index.gainPercentage} 
+                upvotes={index.upvotes}
+                onClick={() => handleIndexClick(index.id)}
+              />
+            )) : <div className="col-span-full text-center py-8">
                 <p className="text-stake-muted">No top-rated INDEXES found.</p>
               </div>}
           </div>
@@ -221,7 +245,17 @@ const Index: React.FC = () => {
         
         <TabsContent value="gainers" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredIndexes.length > 0 ? filteredIndexes.map(index => <IndexCard key={index.id} id={index.id} name={index.name} tokens={index.tokens} gainPercentage={index.gainPercentage} upvotes={index.upvotes} />) : <div className="col-span-full text-center py-8">
+            {filteredIndexes.length > 0 ? filteredIndexes.map(index => (
+              <IndexCard 
+                key={index.id} 
+                id={index.id} 
+                name={index.name} 
+                tokens={index.tokens} 
+                gainPercentage={index.gainPercentage} 
+                upvotes={index.upvotes}
+                onClick={() => handleIndexClick(index.id)}
+              />
+            )) : <div className="col-span-full text-center py-8">
                 <p className="text-stake-muted">No gaining INDEXES found.</p>
               </div>}
           </div>
@@ -229,12 +263,29 @@ const Index: React.FC = () => {
         
         <TabsContent value="recent" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredIndexes.length > 0 ? filteredIndexes.map(index => <IndexCard key={index.id} id={index.id} name={index.name} tokens={index.tokens} gainPercentage={index.gainPercentage} upvotes={index.upvotes} />) : <div className="col-span-full text-center py-8">
+            {filteredIndexes.length > 0 ? filteredIndexes.map(index => (
+              <IndexCard 
+                key={index.id} 
+                id={index.id} 
+                name={index.name} 
+                tokens={index.tokens} 
+                gainPercentage={index.gainPercentage} 
+                upvotes={index.upvotes}
+                onClick={() => handleIndexClick(index.id)}
+              />
+            )) : <div className="col-span-full text-center py-8">
                 <p className="text-stake-muted">No recent INDEXES found.</p>
               </div>}
           </div>
         </TabsContent>
       </Tabs>
+      
+      {/* Index Detail Sidebar */}
+      <IndexDetailSidebar 
+        indexId={selectedIndexId}
+        isOpen={sidebarOpen}
+        onClose={handleSidebarClose}
+      />
     </Layout>;
 };
 export default Index;
