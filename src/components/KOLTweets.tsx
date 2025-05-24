@@ -56,15 +56,48 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
     try {
       // Extract Twitter user IDs from token metadata
       const twitterUserIds = tokens
-        .filter(token => token.name?.startsWith('@') && token.metadata?.twitter_id)
-        .map(token => token.metadata.twitter_id);
+        .filter(token => {
+          // Check if it's a Twitter account and has valid metadata
+          return token.name?.startsWith('@') && 
+                 token.metadata && 
+                 (token.metadata.twitter_id || token.metadata.id);
+        })
+        .map(token => token.metadata.twitter_id || token.metadata.id);
 
       if (twitterUserIds.length === 0) {
-        toast({
-          title: 'No Twitter Accounts',
-          description: 'This agent is not monitoring any Twitter accounts with valid IDs.',
-          variant: 'destructive',
+        // Try to use mock user IDs if no real Twitter IDs found
+        console.log('No Twitter IDs found in metadata, using mock data');
+        const mockUserIds = tokens
+          .filter(token => token.name?.startsWith('@'))
+          .map((_, index) => `mock-user-${index + 1}`);
+        
+        if (mockUserIds.length === 0) {
+          toast({
+            title: 'No Twitter Accounts',
+            description: 'This agent is not monitoring any Twitter accounts.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Use mock user IDs instead
+        const { data, error } = await supabase.functions.invoke('get-tweets', {
+          body: {
+            userIds: mockUserIds,
+            limit: 10,
+          },
         });
+
+        if (error) throw error;
+
+        if (data?.tweets) {
+          setUserTweets(data.tweets);
+          setLastRefreshed(new Date());
+          toast({
+            title: 'Tweets Loaded',
+            description: `Loaded mock tweets for demonstration.`,
+          });
+        }
         return;
       }
 
@@ -96,9 +129,12 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
       }
     } catch (error) {
       console.error('Error fetching tweets:', error);
+      
+      // Provide more specific error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
         title: 'Error Loading Tweets',
-        description: 'Failed to fetch user tweets. Please try again.',
+        description: `Failed to fetch tweets: ${errorMessage}`,
         variant: 'destructive',
       });
     } finally {
