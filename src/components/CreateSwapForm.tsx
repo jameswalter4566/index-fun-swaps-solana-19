@@ -71,6 +71,13 @@ const CreateSwapForm: React.FC = () => {
         throw new Error(`Failed to fetch Twitter users: ${twitterError.message}`);
       }
       
+      // Ensure we have valid Twitter data
+      if (!twitterData || !twitterData.users) {
+        throw new Error('Invalid Twitter data received');
+      }
+
+      console.log('Twitter data received:', twitterData);
+
       // Save agent data with Twitter user information
       const { data: agent, error: insertError } = await supabase
         .from('indexes')
@@ -80,23 +87,31 @@ const CreateSwapForm: React.FC = () => {
             name: `@${user.username}`,
             address: user.username,
             symbol: user.username,
-            image: user.profile_image_url,
+            image: user.profile_image_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`,
             metadata: {
               twitter_id: user.id,
               display_name: user.name,
-              description: user.description,
-              verified: user.verified,
-              followers_count: user.followers_count,
-              following_count: user.following_count,
+              description: user.description || '',
+              verified: user.verified || false,
+              verified_type: user.verified_type,
+              followers_count: user.followers_count || 0,
+              following_count: user.following_count || 0,
+              tweet_count: user.tweet_count || 0,
+              listed_count: user.listed_count || 0,
             }
           })),
           creator_wallet: 'anonymous',
-          // Store phone number in metadata if provided
-          metadata: formData.phoneNumber ? {
-            phoneNumber: formData.phoneNumber,
-            smsOptIn: smsOptIn,
+          total_market_cap: 0,
+          average_market_cap: 0,
+          metadata: {
+            ...(formData.phoneNumber ? {
+              phoneNumber: formData.phoneNumber,
+              smsOptIn: smsOptIn,
+            } : {}),
             agentType: 'twitter_monitor',
-          } : { agentType: 'twitter_monitor' },
+            twitterAccounts: twitterAccounts,
+            createdBy: 'smart-platform',
+          },
         })
         .select()
         .single();
