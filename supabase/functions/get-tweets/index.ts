@@ -1,11 +1,11 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// Define CORS headers for browser access
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 interface Tweet {
   id: string;
@@ -38,21 +38,93 @@ interface TwitterAPIResponse {
   };
 }
 
-serve(async (req) => {
-  // Handle CORS preflight request
+// Generate mock tweets as fallback
+function generateMockTweets(userId: string, count: number = 10) {
+  const mockTexts = [
+    "Just launched our new AI trading agent! 🚀 It's analyzing market patterns 24/7",
+    "The $PEPE community is stronger than ever. Holding through the dips 💎🙌",
+    "New ATH incoming? Chart patterns looking bullish 📈",
+    "Remember: DYOR, NFA. But this setup looks promising...",
+    "Airdrop season is here! Make sure you're eligible 🪂",
+    "Market correction = buying opportunity. Who's accumulating? 🛒",
+    "That feeling when your AI agent catches a 10x before anyone else 🤖💰",
+    "Breaking: Major partnership announcement coming next week 👀",
+    "Gas fees are finally reasonable. Time to make some moves! ⛽",
+    "Portfolio update: Still bullish on the long term vision 📊"
+  ];
+  
+  const tweets = [];
+  for (let i = 0; i < count; i++) {
+    const date = new Date();
+    date.setHours(date.getHours() - Math.floor(Math.random() * 72)); // Random time in last 3 days
+    
+    tweets.push({
+      id: `mock-${userId}-${Date.now()}-${i}`,
+      text: mockTexts[i % mockTexts.length],
+      created_at: date.toISOString(),
+      author: {
+        id: userId,
+        username: `user_${userId}`,
+        name: `Mock User ${userId}`,
+        profile_image_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`
+      },
+      engagement: {
+        likes: Math.floor(Math.random() * 1000),
+        retweets: Math.floor(Math.random() * 200),
+        replies: Math.floor(Math.random() * 50),
+        quotes: Math.floor(Math.random() * 20),
+      }
+    });
+  }
+  
+  // Sort by date descending (newest first)
+  return tweets.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+}
+
+// Format Twitter API response to match our expected data structure
+function formatTwitterResponse(twitterData: TwitterAPIResponse, userId: string) {
+  if (!twitterData.data || twitterData.data.length === 0) {
+    return [];
+  }
+  
+  const author = twitterData.includes?.users?.[0];
+  
+  return twitterData.data.map(tweet => ({
+    id: tweet.id,
+    text: tweet.text,
+    created_at: tweet.created_at,
+    author: {
+      id: author?.id || userId,
+      username: author?.username || 'unknown',
+      name: author?.name || 'Unknown User',
+      profile_image_url: author?.profile_image_url
+    },
+    engagement: {
+      likes: tweet.public_metrics?.like_count || 0,
+      retweets: tweet.public_metrics?.retweet_count || 0,
+      replies: tweet.public_metrics?.reply_count || 0,
+      quotes: tweet.public_metrics?.quote_count || 0,
+    }
+  }));
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { 
+      status: 204, 
+      headers: corsHeaders 
+    });
   }
   
   try {
-    // Get the request body
     const { userIds, limit = 10 } = await req.json();
     
     if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
       return new Response(
         JSON.stringify({ error: 'Twitter user IDs array is required' }),
         { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" }, 
           status: 400 
         }
       );
@@ -71,7 +143,10 @@ serve(async (req) => {
       
       return new Response(
         JSON.stringify({ tweets: mockTweets }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200
+        }
       );
     }
     
@@ -138,87 +213,22 @@ serve(async (req) => {
     // Return all tweets with CORS headers
     return new Response(
       JSON.stringify({ tweets: allTweets }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200
+      }
     );
   } catch (error) {
-    console.error('Error in get-tweets function:', error);
-    
+    console.error("Error in get-tweets function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: "Internal server error", 
+        details: error instanceof Error ? error.message : "Unknown error" 
+      }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, 
         status: 500 
       }
     );
   }
 });
-
-// Format Twitter API response to match our expected data structure
-function formatTwitterResponse(twitterData: TwitterAPIResponse, userId: string) {
-  if (!twitterData.data || twitterData.data.length === 0) {
-    return [];
-  }
-  
-  const author = twitterData.includes?.users?.[0];
-  
-  return twitterData.data.map(tweet => ({
-    id: tweet.id,
-    text: tweet.text,
-    created_at: tweet.created_at,
-    author: {
-      id: author?.id || userId,
-      username: author?.username || 'unknown',
-      name: author?.name || 'Unknown User',
-      profile_image_url: author?.profile_image_url
-    },
-    engagement: {
-      likes: tweet.public_metrics?.like_count || 0,
-      retweets: tweet.public_metrics?.retweet_count || 0,
-      replies: tweet.public_metrics?.reply_count || 0,
-      quotes: tweet.public_metrics?.quote_count || 0,
-    }
-  }));
-}
-
-// Generate mock tweets as fallback
-function generateMockTweets(userId: string, count: number = 10) {
-  const mockTexts = [
-    "Just launched our new AI trading agent! 🚀 It's analyzing market patterns 24/7",
-    "The $PEPE community is stronger than ever. Holding through the dips 💎🙌",
-    "New ATH incoming? Chart patterns looking bullish 📈",
-    "Remember: DYOR, NFA. But this setup looks promising...",
-    "Airdrop season is here! Make sure you're eligible 🪂",
-    "Market correction = buying opportunity. Who's accumulating? 🛒",
-    "That feeling when your AI agent catches a 10x before anyone else 🤖💰",
-    "Breaking: Major partnership announcement coming next week 👀",
-    "Gas fees are finally reasonable. Time to make some moves! ⛽",
-    "Portfolio update: Still bullish on the long term vision 📊"
-  ];
-  
-  const tweets = [];
-  for (let i = 0; i < count; i++) {
-    const date = new Date();
-    date.setHours(date.getHours() - Math.floor(Math.random() * 72)); // Random time in last 3 days
-    
-    tweets.push({
-      id: `mock-${userId}-${Date.now()}-${i}`,
-      text: mockTexts[i % mockTexts.length],
-      created_at: date.toISOString(),
-      author: {
-        id: userId,
-        username: `user_${userId}`,
-        name: `Mock User ${userId}`,
-        profile_image_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`
-      },
-      engagement: {
-        likes: Math.floor(Math.random() * 1000),
-        retweets: Math.floor(Math.random() * 200),
-        replies: Math.floor(Math.random() * 50),
-        quotes: Math.floor(Math.random() * 20),
-      }
-    });
-  }
-  
-  // Sort by date descending (newest first)
-  return tweets.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-}
