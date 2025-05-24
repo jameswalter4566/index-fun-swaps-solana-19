@@ -1,73 +1,149 @@
-# Welcome to your Lovable project
+# SMART - AI Trading Agents Platform
 
-## Project info
+AI-powered trading agents that monitor Twitter accounts for trading signals and execute trades automatically.
+
+## Project Info
 
 **URL**: https://lovable.dev/projects/5ed9e9f5-8216-4e27-a85c-eac7fe0e4fc7
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- 🤖 **AI Trading Agents** - Create personalized trading agents that monitor Twitter accounts
+- 🐦 **Twitter Integration** - Real-time monitoring of up to 4 Twitter accounts per agent
+- 📊 **Smart Filters** - Set market cap, volume, and social media requirements
+- 💬 **Voice Chat** - Talk to your agent for trading recommendations
+- 📱 **SMS Alerts** - Get notified when your agent finds opportunities
+- 🔍 **Multi-Source Data** - Pull data from Twitter, Pump.fun, and Photon
 
-**Use Lovable**
+## Setup
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/5ed9e9f5-8216-4e27-a85c-eac7fe0e4fc7) and start prompting.
+### Prerequisites
 
-Changes made via Lovable will be committed automatically to this repo.
+- Node.js & npm - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Supabase account
+- X (Twitter) Developer account with Basic tier ($200/month)
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Local Development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
+# Navigate to project directory
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### X (Twitter) API Setup
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+To enable real Twitter user data fetching, you need to configure X API credentials:
 
-**Use GitHub Codespaces**
+1. **Get X Developer Account**
+   - Sign up at [developer.x.com](https://developer.x.com)
+   - Subscribe to Basic tier or higher (required for user lookups)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+2. **Create App & Get Bearer Token**
+   ```bash
+   # Option 1: Use the provided script
+   node scripts/generate-x-bearer-token.js YOUR_API_KEY YOUR_API_SECRET
+   
+   # Option 2: Generate in X Developer Portal
+   # Go to your app's "Keys and Tokens" tab and click "Generate"
+   ```
 
-## What technologies are used for this project?
+3. **Set Supabase Environment Variable**
+   ```bash
+   supabase secrets set X_API_BEARER_TOKEN="YOUR_BEARER_TOKEN_HERE"
+   ```
 
-This project is built with:
+For detailed setup instructions, see [docs/X_API_SETUP.md](docs/X_API_SETUP.md)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Supabase Edge Functions
 
-## How can I deploy this project?
+Deploy the edge functions:
 
-Simply open [Lovable](https://lovable.dev/projects/5ed9e9f5-8216-4e27-a85c-eac7fe0e4fc7) and click on Share -> Publish.
+```bash
+# Deploy all functions
+supabase functions deploy
 
-## Can I connect a custom domain to my Lovable project?
+# Or deploy specific function
+supabase functions deploy get-twitter-users
+```
 
-Yes, you can!
+## Architecture
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Frontend
+- **Framework**: React with TypeScript
+- **UI Library**: shadcn-ui
+- **Styling**: Tailwind CSS
+- **Build Tool**: Vite
+- **Wallet**: Solana Wallet Adapter
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Backend
+- **Database**: Supabase (PostgreSQL)
+- **Edge Functions**: Deno-based serverless functions
+- **Authentication**: Supabase Auth with wallet integration
+
+### External APIs
+- **X (Twitter) API v2**: User profile data
+- **Solana**: Blockchain interactions
+- **AI/ML**: Trading signal analysis
+
+## Key Components
+
+- **NodeVisualizer**: Interactive agent configuration with 4 nodes
+- **AgentChat**: Voice-enabled chat interface for trading recommendations
+- **CreateSwapForm**: Agent creation with Twitter account selection
+- **IndexCard**: Display Twitter accounts with real-time data
+
+## Deployment
+
+### Via Lovable
+Simply open [Lovable](https://lovable.dev/projects/5ed9e9f5-8216-4e27-a85c-eac7fe0e4fc7) and click on Share → Publish.
+
+### Custom Domain
+To connect a domain:
+1. Navigate to Project > Settings > Domains
+2. Click Connect Domain
+3. Follow the [custom domain guide](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## Environment Variables
+
+Required environment variables for Supabase Edge Functions:
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `X_API_BEARER_TOKEN` | X API Bearer Token with users.read scope | Yes (for production) |
+
+## Rate Limits
+
+- **X API Basic Tier**: 900 requests per 15 minutes
+- **Supabase Free Tier**: 500K edge function invocations/month
+
+## Security
+
+- Never commit API keys or tokens
+- Use environment variables for sensitive data
+- Implement rate limiting and caching
+- Follow [X Developer Policy](https://developer.x.com/en/developer-terms/agreement-and-policy)
+
+## Contributing
+
+1. Clone the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+This project is proprietary software. All rights reserved.
+
+## Support
+
+For issues and feature requests, please use the GitHub issues page.
