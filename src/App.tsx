@@ -12,6 +12,7 @@ import { useMemo } from 'react';
 import Index from "./pages/Index";
 import CreateSwap from "./pages/CreateSwap";
 import IndexDetail from "./pages/IndexDetail";
+import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
 // Import wallet adapter styles
@@ -44,6 +45,7 @@ const App = () => {
                   <Route path="/" element={<Index />} />
                   <Route path="/create-swap" element={<CreateSwap />} />
                   <Route path="/index/:id" element={<IndexDetail />} />
+                  <Route path="/privacy" element={<Privacy />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

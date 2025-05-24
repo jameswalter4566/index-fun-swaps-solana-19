@@ -27,8 +27,6 @@ const Index: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [indexes, setIndexes] = useState<IndexData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedIndexId, setSelectedIndexId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     fetchIndexes();
@@ -51,15 +49,6 @@ const Index: React.FC = () => {
     }
   };
 
-  const handleIndexClick = (indexId: string) => {
-    setSelectedIndexId(indexId);
-    setSidebarOpen(true);
-  };
-
-  const handleSidebarClose = () => {
-    setSidebarOpen(false);
-    setSelectedIndexId(null);
-  };
 
   // Filter indexes based on search query and active tab
   const filteredIndexes = indexes.filter(index => {
@@ -83,8 +72,8 @@ const Index: React.FC = () => {
       {/* Twitter/X Button has been moved to Navigation component */}
       
       <div className="mb-8 max-w-2xl mx-auto text-center animate-fade-in">
-        <h1 className="text-4xl font-bold mb-4 text-stake-text">index</h1>
-        <p className="text-stake-muted text-lg">create instantly tradable token indexes. get paid when others swap.</p>
+        <h1 className="text-4xl font-bold mb-4 text-stake-text">SMART</h1>
+        <p className="text-stake-muted text-lg">personalize your own ai trading agent</p>
       </div>
       
       <div className="mb-8 max-w-md mx-auto relative">
@@ -117,7 +106,6 @@ const Index: React.FC = () => {
                   tokens={index.tokens} 
                   gainPercentage={index.gainPercentage || 0} 
                   upvotes={index.upvotes || 0}
-                  onClick={() => handleIndexClick(index.id)}
                 />
               ))
             ) : (
@@ -183,12 +171,6 @@ const Index: React.FC = () => {
         </TabsContent>
       </Tabs>
       
-      {/* Index Detail Sidebar */}
-      <IndexDetailSidebar 
-        indexId={selectedIndexId}
-        isOpen={sidebarOpen}
-        onClose={handleSidebarClose}
-      />
     </Layout>;
 };
 export default Index;

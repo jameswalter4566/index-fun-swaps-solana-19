@@ -34,7 +34,7 @@ const Navigation: React.FC = () => {
             </a>
             
             <Link to="/create-swap">
-              <Button className="bg-stake-accent hover:bg-stake-highlight text-white rounded-md">create index</Button>
+              <Button className="bg-stake-accent hover:bg-stake-highlight text-white rounded-md">create agent</Button>
             </Link>
             
             <Button variant="ghost" className="hover:bg-stake-card rounded-md text-stake-muted hover:text-stake-text" onClick={() => setIsModalOpen(true)}>

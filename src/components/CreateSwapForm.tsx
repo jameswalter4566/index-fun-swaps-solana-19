@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,11 +13,13 @@ const CreateSwapForm: React.FC = () => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
-    token1: '',
-    token2: '',
-    token3: '',
-    token4: '',
+    twitter1: '',
+    twitter2: '',
+    twitter3: '',
+    twitter4: '',
+    phoneNumber: '',
   });
+  const [smsOptIn, setSmsOptIn] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,52 +31,53 @@ const CreateSwapForm: React.FC = () => {
     e.preventDefault();
     
     // Validate form
-    if (!formData.name || !formData.token1 || !formData.token2) {
+    if (!formData.name || !formData.twitter1 || !formData.twitter2 || !formData.twitter3 || !formData.twitter4) {
       toast({
         title: "Form Validation Error",
-        description: "INDEX name and at least 2 tokens are required.",
+        description: "Agent name and all 4 Twitter accounts are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate phone number if provided
+    if (formData.phoneNumber && !smsOptIn) {
+      toast({
+        title: "SMS Opt-in Required",
+        description: "Please check the box to opt-in to SMS notifications.",
         variant: "destructive",
       });
       return;
     }
     
-    
     try {
       setIsSubmitting(true);
       
-      // Collect token addresses
-      const tokenAddresses = [
-        formData.token1,
-        formData.token2,
-        formData.token3,
-        formData.token4,
-      ].filter(token => token.trim() !== '');
+      // Collect Twitter accounts
+      const twitterAccounts = [
+        formData.twitter1,
+        formData.twitter2,
+        formData.twitter3,
+        formData.twitter4,
+      ].filter(account => account.trim() !== '');
       
-      // Call edge function to fetch token data
-      console.log('Calling edge function with addresses:', tokenAddresses);
-      const { data: tokenData, error: fetchError } = await supabase.functions.invoke('fetch-token-data', {
-        body: { tokenAddresses },
-      });
-      
-      console.log('Edge function response:', { tokenData, fetchError });
-      
-      if (fetchError) {
-        throw new Error(fetchError.message);
-      }
-      
-      if (!tokenData || !tokenData.tokens) {
-        throw new Error('Invalid response from token data service');
-      }
-      
-      // Save index to database
-      const { data: index, error: insertError } = await supabase
+      // For now, we'll save the agent data as an index with Twitter accounts
+      // In a real implementation, this would be a separate table
+      const { data: agent, error: insertError } = await supabase
         .from('indexes')
         .insert({
           name: formData.name,
-          tokens: tokenData.tokens,
+          tokens: twitterAccounts.map(account => ({
+            name: account,
+            address: account, // Using Twitter handle as address for now
+            symbol: account.replace('@', ''),
+          })),
           creator_wallet: 'anonymous',
-          total_market_cap: tokenData.metrics.totalMarketCap,
-          average_market_cap: tokenData.metrics.averageMarketCap,
+          // Store phone number in metadata if provided
+          metadata: formData.phoneNumber ? {
+            phoneNumber: formData.phoneNumber,
+            smsOptIn: smsOptIn,
+          } : undefined,
         })
         .select()
         .single();
@@ -85,17 +88,17 @@ const CreateSwapForm: React.FC = () => {
       
       // Show success message
       toast({
-        title: "INDEX Created!",
-        description: `Your ${formData.name} INDEX has been created successfully.`,
+        title: "Agent Created!",
+        description: `Your ${formData.name} agent has been created successfully.`,
       });
       
-      // Navigate to the new index page
-      navigate(`/index/${index.id}`);
+      // Navigate to the new agent page
+      navigate(`/index/${agent.id}`);
     } catch (error) {
-      console.error("Error creating INDEX:", error);
+      console.error("Error creating agent:", error);
       toast({
-        title: "Error Creating INDEX",
-        description: error instanceof Error ? error.message : "There was an error creating your INDEX. Please try again.",
+        title: "Error Creating Agent",
+        description: error instanceof Error ? error.message : "There was an error creating your agent. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -106,19 +109,19 @@ const CreateSwapForm: React.FC = () => {
   return (
     <Card className="max-w-lg mx-auto">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center">create a new index</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">create a new agent</CardTitle>
         <CardDescription className="text-center">
-          create a bundle of tokens that people can swap into with a single transaction
+          create an AI trading agent that monitors Twitter accounts for trading signals
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="name">index name</Label>
+            <Label htmlFor="name">agent name</Label>
             <Input
               id="name"
               name="name"
-              placeholder="e.g., meme heroes"
+              placeholder="e.g., meme coin hunter"
               value={formData.name}
               onChange={handleChange}
               className="rounded-lg"
@@ -127,12 +130,12 @@ const CreateSwapForm: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token1">token 1 (required)</Label>
+            <Label htmlFor="twitter1">Twitter account 1</Label>
             <Input
-              id="token1"
-              name="token1"
-              placeholder="token address or select from dropdown"
-              value={formData.token1}
+              id="twitter1"
+              name="twitter1"
+              placeholder="@username"
+              value={formData.twitter1}
               onChange={handleChange}
               className="rounded-lg"
               required
@@ -140,12 +143,12 @@ const CreateSwapForm: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token2">token 2 (required)</Label>
+            <Label htmlFor="twitter2">Twitter account 2</Label>
             <Input
-              id="token2"
-              name="token2"
-              placeholder="token address or select from dropdown"
-              value={formData.token2}
+              id="twitter2"
+              name="twitter2"
+              placeholder="@username"
+              value={formData.twitter2}
               onChange={handleChange}
               className="rounded-lg"
               required
@@ -153,35 +156,71 @@ const CreateSwapForm: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token3">token 3 (optional)</Label>
+            <Label htmlFor="twitter3">Twitter account 3</Label>
             <Input
-              id="token3"
-              name="token3"
-              placeholder="token address or select from dropdown"
-              value={formData.token3}
+              id="twitter3"
+              name="twitter3"
+              placeholder="@username"
+              value={formData.twitter3}
+              onChange={handleChange}
+              className="rounded-lg"
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="twitter4">Twitter account 4</Label>
+            <Input
+              id="twitter4"
+              name="twitter4"
+              placeholder="@username"
+              value={formData.twitter4}
+              onChange={handleChange}
+              className="rounded-lg"
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="phoneNumber">Phone number (optional)</Label>
+            <Input
+              id="phoneNumber"
+              name="phoneNumber"
+              type="tel"
+              placeholder="+1 (555) 123-4567"
+              value={formData.phoneNumber}
               onChange={handleChange}
               className="rounded-lg"
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="token4">token 4 (optional)</Label>
-            <Input
-              id="token4"
-              name="token4"
-              placeholder="token address or select from dropdown"
-              value={formData.token4}
-              onChange={handleChange}
-              className="rounded-lg"
-            />
-          </div>
+          {formData.phoneNumber && (
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="smsOptIn"
+                checked={smsOptIn}
+                onCheckedChange={(checked) => setSmsOptIn(checked as boolean)}
+              />
+              <div className="space-y-1">
+                <Label htmlFor="smsOptIn" className="text-sm font-normal cursor-pointer">
+                  I agree to receive SMS notifications about my agent's trading activities
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Message and data rates may apply. Text STOP to unsubscribe. View our{' '}
+                  <Link to="/privacy" className="underline">
+                    Privacy Policy
+                  </Link>
+                </p>
+              </div>
+            </div>
+          )}
           
           <Button 
             type="submit" 
             className="w-full btn-solana"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'creating...' : 'create index'}
+            {isSubmitting ? 'creating...' : 'create agent'}
           </Button>
         </form>
       </CardContent>
