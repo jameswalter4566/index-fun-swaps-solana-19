@@ -2,15 +2,16 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import jwt from 'https://esm.sh/jsonwebtoken@9.0.0'
 
-// Define CORS headers for all responses
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info, x-supabase-api-token',
-  'Access-Control-Allow-Credentials': 'true',
-}
-
 serve(async (req) => {
+  // Dynamic CORS headers based on request origin
+  const origin = req.headers.get("Origin") || "http://in-dex.fun"
+  const CORS_HEADERS = {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info, x-supabase-api-token',
+    'Access-Control-Allow-Credentials': 'true',
+  }
+
   // Handle preflight (OPTIONS) requests first
   if (req.method === 'OPTIONS') {
     return new Response('OK', { 
@@ -21,7 +22,6 @@ serve(async (req) => {
 
   // Main request handling (e.g., POST)
   try {
-    // Only try to parse JSON for actual requests (not OPTIONS)
     const { walletAddress, signature, message } = await req.json()
     
     if (!walletAddress || !signature || !message) {
@@ -49,14 +49,10 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    // Here you would verify the signature with the wallet's public key
-    // For now, we'll trust the wallet address
-    // In production, you should verify the signature using @solana/web3.js
     console.log('Authenticating wallet:', walletAddress)
 
     // Check if user exists
-    const { data: existingUser, error: userError } = await supabase
+    const { data: existingUser } = await supabase
       .from('users')
       .select('*')
       .eq('wallet_address', walletAddress)
@@ -96,7 +92,7 @@ serve(async (req) => {
         .eq('id', userId)
     }
 
-    // Create JWT token using a static secret
+    // Create JWT token
     const token = jwt.sign(
       { 
         wallet_address: walletAddress,
@@ -123,7 +119,6 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in auth-wallet function:', error)
     
-    // Handle JSON parse errors or other exceptions
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error',
