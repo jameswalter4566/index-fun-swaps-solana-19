@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import WalletConnect from './WalletConnect';
 import HowItWorksModal from './HowItWorksModal';
-import { Twitter } from 'lucide-react';
 
 const Navigation: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -18,11 +17,20 @@ const Navigation: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <a href="https://x.com/index_fun" target="_blank" rel="noopener noreferrer">
-              <Button className="bg-black hover:bg-gray-900 text-white rounded-full">
-                <Twitter size={18} />
-                <span className="ml-1">Follow us</span>
-              </Button>
+            <a
+              href="https://x.com/index_fun"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-10 h-10 bg-black hover:bg-gray-900 text-white rounded-full transition-all hover:scale-110"
+              aria-label="Follow us on X"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="w-5 h-5"
+                fill="currentColor"
+              >
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
             </a>
             
             <Link to="/create-swap">

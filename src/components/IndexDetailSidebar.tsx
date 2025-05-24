@@ -227,8 +227,8 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
                     setVisible(true);
                   } else {
                     toast({
-                      title: "ERROR YOU HAVE BEEN RATE LIMITED",
-                      description: "PLEASE TRY AGAIN IN 10 SECONDS",
+                      title: "429 Too Many Requests",
+                      description: "Rate limit exceeded, retry in 17 seconds.",
                       variant: "destructive",
                       className: "bg-red-600 text-white border-red-700",
                     });
