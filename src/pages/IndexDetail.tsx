@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, TrendingUp, TrendingDown, Users, DollarSign } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import PriceChart from '@/components/PriceChart';
 
 interface Token {
   address: string;
@@ -37,7 +37,6 @@ const IndexDetail: React.FC = () => {
   const { toast } = useToast();
   const [index, setIndex] = useState<IndexData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [chartData, setChartData] = useState<any[]>([]);
 
   useEffect(() => {
     fetchIndexData();
@@ -54,15 +53,6 @@ const IndexDetail: React.FC = () => {
       if (error) throw error;
 
       setIndex(data);
-      
-      // Generate chart data
-      const mockChartData = data.tokens.map((token: Token, index: number) => ({
-        name: token.symbol,
-        marketCap: token.marketCap,
-        cumulative: data.tokens.slice(0, index + 1).reduce((sum: number, t: Token) => sum + t.marketCap, 0)
-      }));
-      
-      setChartData(mockChartData);
     } catch (error) {
       console.error('Error fetching index:', error);
       toast({
@@ -133,54 +123,29 @@ const IndexDetail: React.FC = () => {
       {/* Market Cap Chart */}
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Combined Market Cap</CardTitle>
+          <CardTitle>combined market cap</CardTitle>
           <div className="flex gap-4 mt-2">
             <div>
-              <p className="text-sm text-gray-600">Total Market Cap</p>
+              <p className="text-sm text-gray-600">total market cap</p>
               <p className="text-2xl font-bold">{formatNumber(index.total_market_cap)}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Average Market Cap</p>
+              <p className="text-sm text-gray-600">average market cap</p>
               <p className="text-2xl font-bold">{formatNumber(index.average_market_cap)}</p>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="colorCumulative" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis dataKey="name" />
-              <YAxis tickFormatter={(value) => formatNumber(value)} />
-              <Tooltip 
-                formatter={(value: number) => formatNumber(value)}
-                contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '8px' }}
-                labelStyle={{ color: '#fff' }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="cumulative" 
-                stroke="#10b981" 
-                strokeWidth={3}
-                fillOpacity={1}
-                fill="url(#colorCumulative)"
-                dot={{ fill: '#10b981', r: 6, strokeWidth: 2, stroke: '#fff' }}
-                animationDuration={2000}
-                animationEasing="ease-in-out"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <PriceChart 
+            tokens={index.tokens.filter((t: Token) => !t.error)} 
+            height={300}
+          />
         </CardContent>
       </Card>
 
       {/* Token List */}
       <div className="space-y-4 mb-8">
-        <h2 className="text-2xl font-bold">Tokens in this Index</h2>
+        <h2 className="text-2xl font-bold">tokens in this index</h2>
         {index.tokens.map((token) => (
           <Card key={token.address} className="overflow-hidden">
             <CardContent className="p-0">

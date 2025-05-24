@@ -12,7 +12,7 @@ const Navigation: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <span className="text-2xl font-bold text-stake-accent">index.fun</span>
+              <span className="text-2xl font-bold text-stake-accent">in-dex.fun</span>
             </Link>
           </div>
           

@@ -179,6 +179,25 @@ const Index: React.FC = () => {
     return matchesSearch && matchesTab;
   });
   return <Layout>
+      {/* Twitter/X Button */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <a
+          href="https://x.com/index_fun"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center w-12 h-12 bg-black hover:bg-gray-900 text-white rounded-full shadow-lg transition-all hover:scale-110"
+          aria-label="Follow us on X"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="w-6 h-6"
+            fill="currentColor"
+          >
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+        </a>
+      </div>
+
       <div className="mb-8 max-w-2xl mx-auto text-center animate-fade-in">
         <h1 className="text-4xl font-bold mb-4 text-stake-text">index</h1>
         <p className="text-stake-muted text-lg">create instantly tradable token indexes. get paid when others swap.</p>

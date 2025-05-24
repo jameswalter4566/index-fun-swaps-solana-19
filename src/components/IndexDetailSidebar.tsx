@@ -6,9 +6,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { X, TrendingUp, TrendingDown, Users, DollarSign } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import PriceChart from './PriceChart';
 
 interface Token {
   address: string;
@@ -43,7 +43,6 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
   const { toast } = useToast();
   const [index, setIndex] = useState<IndexData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [chartData, setChartData] = useState<any[]>([]);
   const { connected } = useWallet();
   const { setVisible } = useWalletModal();
 
@@ -67,15 +66,6 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
       if (error) throw error;
 
       setIndex(data);
-      
-      // Generate chart data
-      const mockChartData = data.tokens.map((token: Token, index: number) => ({
-        name: token.symbol,
-        marketCap: token.marketCap,
-        cumulative: data.tokens.slice(0, index + 1).reduce((sum: number, t: Token) => sum + t.marketCap, 0)
-      }));
-      
-      setChartData(mockChartData);
     } catch (error) {
       console.error('Error fetching index:', error);
       toast({
@@ -162,53 +152,11 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
 
               {/* Chart */}
               <Card className="bg-stake-card border-stake-accent">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg text-stake-text">cumulative market cap</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="colorCumulativeSidebar" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#00d4ff" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#00d4ff" stopOpacity={0.1}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" opacity={0.5} />
-                      <XAxis 
-                        dataKey="name" 
-                        tick={false}
-                        axisLine={{ stroke: '#444' }}
-                      />
-                      <YAxis 
-                        tickFormatter={(value) => formatNumber(value)} 
-                        fontSize={12}
-                        tick={{ fill: '#999' }}
-                        axisLine={{ stroke: '#444' }}
-                      />
-                      <Tooltip 
-                        formatter={(value: number) => formatNumber(value)}
-                        contentStyle={{ 
-                          backgroundColor: '#1a1a1a', 
-                          border: '1px solid #333', 
-                          borderRadius: '8px',
-                          color: '#fff' 
-                        }}
-                        labelStyle={{ color: '#00d4ff' }}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="cumulative" 
-                        stroke="#00d4ff" 
-                        strokeWidth={3}
-                        fillOpacity={1}
-                        fill="url(#colorCumulativeSidebar)"
-                        dot={{ fill: '#00d4ff', r: 5, strokeWidth: 2, stroke: '#1a1a1a' }}
-                        animationDuration={1500}
-                        animationEasing="ease-in-out"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                <CardContent className="pt-4">
+                  <PriceChart 
+                    tokens={index.tokens.filter(t => !t.error)} 
+                    height={250}
+                  />
                 </CardContent>
               </Card>
 

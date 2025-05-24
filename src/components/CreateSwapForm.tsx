@@ -106,19 +106,19 @@ const CreateSwapForm: React.FC = () => {
   return (
     <Card className="max-w-lg mx-auto">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center">Create a New INDEX</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">create a new index</CardTitle>
         <CardDescription className="text-center">
-          Create a bundle of tokens that people can swap into with a single transaction
+          create a bundle of tokens that people can swap into with a single transaction
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="name">INDEX Name</Label>
+            <Label htmlFor="name">index name</Label>
             <Input
               id="name"
               name="name"
-              placeholder="e.g., Meme Heroes"
+              placeholder="e.g., meme heroes"
               value={formData.name}
               onChange={handleChange}
               className="rounded-lg"
@@ -127,11 +127,11 @@ const CreateSwapForm: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token1">Token 1 (Required)</Label>
+            <Label htmlFor="token1">token 1 (required)</Label>
             <Input
               id="token1"
               name="token1"
-              placeholder="Token address or select from dropdown"
+              placeholder="token address or select from dropdown"
               value={formData.token1}
               onChange={handleChange}
               className="rounded-lg"
@@ -140,11 +140,11 @@ const CreateSwapForm: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token2">Token 2 (Required)</Label>
+            <Label htmlFor="token2">token 2 (required)</Label>
             <Input
               id="token2"
               name="token2"
-              placeholder="Token address or select from dropdown"
+              placeholder="token address or select from dropdown"
               value={formData.token2}
               onChange={handleChange}
               className="rounded-lg"
@@ -153,11 +153,11 @@ const CreateSwapForm: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token3">Token 3 (Optional)</Label>
+            <Label htmlFor="token3">token 3 (optional)</Label>
             <Input
               id="token3"
               name="token3"
-              placeholder="Token address or select from dropdown"
+              placeholder="token address or select from dropdown"
               value={formData.token3}
               onChange={handleChange}
               className="rounded-lg"
@@ -165,11 +165,11 @@ const CreateSwapForm: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="token4">Token 4 (Optional)</Label>
+            <Label htmlFor="token4">token 4 (optional)</Label>
             <Input
               id="token4"
               name="token4"
-              placeholder="Token address or select from dropdown"
+              placeholder="token address or select from dropdown"
               value={formData.token4}
               onChange={handleChange}
               className="rounded-lg"
@@ -181,7 +181,7 @@ const CreateSwapForm: React.FC = () => {
             className="w-full btn-solana"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Creating...' : 'Create INDEX'}
+            {isSubmitting ? 'creating...' : 'create index'}
           </Button>
         </form>
       </CardContent>
