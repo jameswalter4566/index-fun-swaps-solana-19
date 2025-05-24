@@ -203,8 +203,9 @@ const IndexDetail: React.FC = () => {
         className="w-full h-16 text-lg font-bold bg-green-500 hover:bg-green-600 text-black shadow-[0_0_20px_rgba(34,197,94,0.5)] hover:shadow-[0_0_30px_rgba(34,197,94,0.7)] transition-all duration-300"
         onClick={() => {
           toast({
-            title: "Swap Feature Coming Soon",
-            description: "The swap functionality will be available in the next update.",
+            title: "429 Too Many Requests",
+            description: "Rate limit exceeded, retry in 17 seconds.",
+            variant: "destructive",
           });
         }}
       >
