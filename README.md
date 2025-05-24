@@ -59,6 +59,21 @@ To enable real Twitter user data fetching, you need to configure X API credentia
 
 For detailed setup instructions, see [docs/X_API_SETUP.md](docs/X_API_SETUP.md)
 
+### Vapi Voice Assistant Setup
+
+Enable browser-based voice conversations with your trading agents:
+
+1. **Get Vapi Account**
+   - Sign up at [vapi.ai](https://vapi.ai)
+   - Get your API key from the dashboard
+
+2. **Set Environment Variable**
+   ```bash
+   supabase secrets set VAPI_API_KEY="your-vapi-api-key"
+   ```
+
+For detailed setup instructions, see [docs/VAPI_SETUP.md](docs/VAPI_SETUP.md)
+
 ### Supabase Edge Functions
 
 Deploy the edge functions:
@@ -115,6 +130,8 @@ Required environment variables for Supabase Edge Functions:
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `X_API_BEARER_TOKEN` | X API Bearer Token with users.read scope | Yes (for production) |
+| `VAPI_API_KEY` | Vapi API key for voice conversations | Yes (for voice features) |
+| `VAPI_ASSISTANT_ID` | Pre-configured Vapi assistant ID | Optional |
 
 ## Rate Limits
 

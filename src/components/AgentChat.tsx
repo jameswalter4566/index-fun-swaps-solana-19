@@ -3,8 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Mic, MicOff, Send, X } from 'lucide-react';
+import { Mic, MicOff, Send, X, Phone, PhoneOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
@@ -30,7 +32,9 @@ interface AgentChatProps {
 
 const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
+  const [isVoiceCallActive, setIsVoiceCallActive] = useState(false);
+  const [currentCallId, setCurrentCallId] = useState<string | null>(null);
+  const [vapiFrame, setVapiFrame] = useState<HTMLIFrameElement | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -41,6 +45,7 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId }) => {
   ]);
   const [inputText, setInputText] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -48,18 +53,96 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId }) => {
     }
   }, [messages]);
 
-  const handleToggleRecording = () => {
-    setIsRecording(!isRecording);
-    if (!isRecording) {
-      // Start recording logic here
-      console.log('Starting voice recording...');
-    } else {
-      // Stop recording and process
-      console.log('Stopping voice recording...');
-      // Simulate voice input
-      setTimeout(() => {
-        handleSendMessage('Show me the top trending coins from the monitored accounts');
-      }, 500);
+  const startVoiceCall = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('smart-agent-speak', {
+        body: {
+          action: 'create-web-call',
+          data: {
+            agentId,
+            agentName,
+            firstMessage: `Hi! I'm ${agentName}, your AI trading assistant. I can help you analyze market trends and find trading opportunities. What would you like to know?`,
+            metadata: {
+              chatHistory: messages.slice(-5), // Send last 5 messages for context
+            },
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.data?.webCallUrl && data?.data?.callId) {
+        setCurrentCallId(data.data.callId);
+        setIsVoiceCallActive(true);
+
+        // Create and open Vapi iframe
+        const iframe = document.createElement('iframe');
+        iframe.src = data.data.webCallUrl;
+        iframe.style.position = 'fixed';
+        iframe.style.bottom = '20px';
+        iframe.style.right = '420px';
+        iframe.style.width = '350px';
+        iframe.style.height = '500px';
+        iframe.style.border = '1px solid #e5e7eb';
+        iframe.style.borderRadius = '12px';
+        iframe.style.boxShadow = '0 10px 25px rgba(0,0,0,0.1)';
+        iframe.style.zIndex = '9999';
+        iframe.allow = 'microphone';
+        
+        document.body.appendChild(iframe);
+        setVapiFrame(iframe);
+
+        // Add message about voice call
+        const voiceMessage: Message = {
+          id: Date.now().toString(),
+          text: '🎙️ Voice call started. Speak naturally with your agent!',
+          sender: 'agent',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, voiceMessage]);
+      }
+    } catch (error) {
+      console.error('Error starting voice call:', error);
+      toast({
+        title: 'Voice Call Error',
+        description: 'Failed to start voice call. Please check your microphone permissions.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const endVoiceCall = async () => {
+    try {
+      if (currentCallId) {
+        await supabase.functions.invoke('smart-agent-speak', {
+          body: {
+            action: 'end-call',
+            data: {
+              callId: currentCallId,
+            },
+          },
+        });
+      }
+
+      // Remove iframe
+      if (vapiFrame) {
+        vapiFrame.remove();
+        setVapiFrame(null);
+      }
+
+      setIsVoiceCallActive(false);
+      setCurrentCallId(null);
+
+      // Add message about voice call ending
+      const endMessage: Message = {
+        id: Date.now().toString(),
+        text: '📞 Voice call ended.',
+        sender: 'agent',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, endMessage]);
+    } catch (error) {
+      console.error('Error ending voice call:', error);
     }
   };
 
@@ -136,14 +219,10 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId }) => {
           className={cn(
             "w-16 h-16 rounded-full shadow-lg transition-all",
             "bg-stake-accent hover:bg-stake-highlight",
-            "flex items-center justify-center",
-            isRecording && "animate-pulse"
+            "flex items-center justify-center"
           )}
         >
           <Mic className="w-6 h-6" />
-          {isRecording && (
-            <div className="absolute inset-0 rounded-full border-4 border-stake-accent animate-ping" />
-          )}
         </Button>
         <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm bg-black/80 text-white px-2 py-1 rounded">
           Talk with Agent
@@ -155,14 +234,37 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId }) => {
         <Card className="fixed bottom-24 right-8 w-96 h-[600px] z-50 shadow-2xl animate-in slide-in-from-bottom-5">
           <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
             <CardTitle className="text-lg">{agentName} Trading Agent</CardTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsOpen(false)}
-              className="h-8 w-8"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {isVoiceCallActive ? (
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  onClick={endVoiceCall}
+                  className="h-8 w-8"
+                  title="End voice call"
+                >
+                  <PhoneOff className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  size="icon"
+                  onClick={startVoiceCall}
+                  className="h-8 w-8 bg-green-600 hover:bg-green-700"
+                  title="Start voice call"
+                >
+                  <Phone className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(false)}
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
           
           <CardContent className="p-0 flex flex-col h-[calc(100%-73px)]">
@@ -226,31 +328,31 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId }) => {
             </ScrollArea>
             
             <div className="p-4 border-t flex gap-2">
-              <Button
-                variant={isRecording ? 'destructive' : 'outline'}
-                size="icon"
-                onClick={handleToggleRecording}
-                className="shrink-0"
-              >
-                {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-              </Button>
-              
               <Input
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Ask about trading opportunities..."
                 className="flex-1"
+                disabled={isVoiceCallActive}
               />
               
               <Button
                 size="icon"
                 onClick={() => handleSendMessage()}
-                disabled={!inputText.trim()}
+                disabled={!inputText.trim() || isVoiceCallActive}
               >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
+            
+            {isVoiceCallActive && (
+              <div className="px-4 pb-4">
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-sm text-green-600">
+                  🎙️ Voice call active - Speak naturally with your agent
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
