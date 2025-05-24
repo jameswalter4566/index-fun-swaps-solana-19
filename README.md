@@ -47,14 +47,10 @@ To enable real Twitter user data fetching, you need to configure X API credentia
    - Sign up at [developer.x.com](https://developer.x.com)
    - Subscribe to Basic tier or higher (required for user lookups)
 
-2. **Create App & Get Bearer Token**
-   ```bash
-   # Option 1: Use the provided script
-   node scripts/generate-x-bearer-token.js YOUR_API_KEY YOUR_API_SECRET
-   
-   # Option 2: Generate in X Developer Portal
-   # Go to your app's "Keys and Tokens" tab and click "Generate"
-   ```
+2. **Get Bearer Token from X Dashboard**
+   - Go to your app's "Keys and Tokens" tab in X Developer Portal
+   - Find "Bearer Token" section and click "Generate"
+   - Copy the token (starts with `AAAA...`)
 
 3. **Set Supabase Environment Variable**
    ```bash

@@ -19,28 +19,13 @@ This guide explains how to set up X API credentials for the SMART platform to fe
 2. Create an App within that Project
 3. Go to the "Keys and Tokens" tab
 
-## Step 3: Generate Bearer Token
+## Step 3: Get Bearer Token from X Dashboard
 
-You have two options:
-
-### Option A: Use Portal (Recommended)
-1. In your App's "Keys and Tokens" tab
+1. In your App's "Keys and Tokens" tab in the X Developer Portal
 2. Find the "Bearer Token" section
 3. Click "Generate" or "Regenerate"
-4. Copy the token (starts with `AAAA...`)
-
-### Option B: Generate Programmatically
-```bash
-# First, base64 encode your API Key:API Secret
-B64=$(echo -n "YOUR_API_KEY:YOUR_API_SECRET" | base64)
-
-# Then request a bearer token
-curl -X POST \
-  -H "Authorization: Basic $B64" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=client_credentials" \
-  "https://api.twitter.com/oauth2/token"
-```
+4. Copy the token (it will start with `AAAA...`)
+5. **Important**: Save this token securely - you won't be able to see it again!
 
 ## Step 4: Set Supabase Environment Variables
 
