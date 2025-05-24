@@ -192,26 +192,25 @@ const CreateSwapForm: React.FC = () => {
               onChange={handleChange}
               className="rounded-lg"
             />
-            {formData.phoneNumber && (
-              <div className="flex items-start space-x-2 mt-3">
-                <Checkbox
-                  id="smsOptIn"
-                  checked={smsOptIn}
-                  onCheckedChange={(checked) => setSmsOptIn(checked as boolean)}
-                />
-                <div className="space-y-1">
-                  <Label htmlFor="smsOptIn" className="text-sm font-normal cursor-pointer">
-                    I consent to receive SMS notifications about my agent's trading activities
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Message and data rates may apply. Text STOP to unsubscribe. View our{' '}
-                    <Link to="/privacy" className="underline">
-                      Privacy Policy
-                    </Link>
-                  </p>
-                </div>
-              </div>
-            )}
+          </div>
+          
+          <div className="flex items-start space-x-2">
+            <Checkbox
+              id="smsOptIn"
+              checked={smsOptIn}
+              onCheckedChange={(checked) => setSmsOptIn(checked as boolean)}
+            />
+            <div className="space-y-1">
+              <Label htmlFor="smsOptIn" className="text-sm font-normal cursor-pointer">
+                I consent to receive SMS notifications about my agent's trading activities
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Message and data rates may apply. Text STOP to unsubscribe. View our{' '}
+                <Link to="/privacy" className="underline">
+                  Privacy Policy
+                </Link>
+              </p>
+            </div>
           </div>
           
           <Button 
