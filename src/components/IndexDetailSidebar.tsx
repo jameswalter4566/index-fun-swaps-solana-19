@@ -106,19 +106,19 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
       />
       
       {/* Sidebar */}
-      <div className={`fixed right-0 top-0 h-full w-96 bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
+      <div className={`fixed right-0 top-0 h-full w-[600px] bg-stake-darkbg shadow-xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto border-l border-stake-card ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-bold">Index Details</h2>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
+        <div className="flex items-center justify-between p-6 border-b border-stake-card sticky top-0 bg-stake-darkbg z-10">
+          <h2 className="text-2xl font-bold text-stake-text">Index Details</h2>
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-stake-muted hover:text-stake-text">
+            <X className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-6">
+        <div className="p-6 space-y-6">
           {loading ? (
             <div className="space-y-4">
               <Skeleton className="h-8 w-48" />
@@ -130,60 +130,77 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
             <>
               {/* Index Info */}
               <div>
-                <h1 className="text-2xl font-bold mb-2">{index.name}</h1>
-                <div className="flex flex-col gap-1 text-sm text-gray-600">
+                <h1 className="text-3xl font-bold mb-2 text-stake-text">{index.name}</h1>
+                <div className="flex flex-col gap-1 text-sm text-stake-muted">
                   <span>Created {new Date(index.created_at).toLocaleDateString()}</span>
                   <span>{index.tokens.length} tokens</span>
                 </div>
               </div>
 
               {/* Market Cap Summary */}
-              <Card>
+              <Card className="bg-stake-card border-stake-accent">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Market Cap</CardTitle>
+                  <CardTitle className="text-lg text-stake-text">Market Cap</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Total</p>
-                    <p className="text-xl font-bold">{formatNumber(index.total_market_cap)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Average</p>
-                    <p className="text-xl font-bold">{formatNumber(index.average_market_cap)}</p>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-stake-muted">Total Market Cap</p>
+                      <p className="text-2xl font-bold text-stake-highlight">{formatNumber(index.total_market_cap)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-stake-muted">Average per Token</p>
+                      <p className="text-2xl font-bold text-stake-text">{formatNumber(index.average_market_cap)}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Chart */}
-              <Card>
+              <Card className="bg-stake-card border-stake-accent">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Cumulative Market Cap</CardTitle>
+                  <CardTitle className="text-lg text-stake-text">Cumulative Market Cap</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <AreaChart data={chartData}>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                       <defs>
-                        <linearGradient id="colorCumulative" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                        <linearGradient id="colorCumulativeSidebar" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#00d4ff" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#00d4ff" stopOpacity={0.1}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                      <XAxis dataKey="name" fontSize={12} />
-                      <YAxis tickFormatter={(value) => formatNumber(value)} fontSize={12} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" opacity={0.5} />
+                      <XAxis 
+                        dataKey="name" 
+                        fontSize={12} 
+                        tick={{ fill: '#999' }}
+                        axisLine={{ stroke: '#444' }}
+                      />
+                      <YAxis 
+                        tickFormatter={(value) => formatNumber(value)} 
+                        fontSize={12}
+                        tick={{ fill: '#999' }}
+                        axisLine={{ stroke: '#444' }}
+                      />
                       <Tooltip 
                         formatter={(value: number) => formatNumber(value)}
-                        contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '8px' }}
-                        labelStyle={{ color: '#fff' }}
+                        contentStyle={{ 
+                          backgroundColor: '#1a1a1a', 
+                          border: '1px solid #333', 
+                          borderRadius: '8px',
+                          color: '#fff' 
+                        }}
+                        labelStyle={{ color: '#00d4ff' }}
                       />
                       <Area 
                         type="monotone" 
                         dataKey="cumulative" 
-                        stroke="#10b981" 
-                        strokeWidth={2}
+                        stroke="#00d4ff" 
+                        strokeWidth={3}
                         fillOpacity={1}
-                        fill="url(#colorCumulative)"
-                        dot={{ fill: '#10b981', r: 4, strokeWidth: 1, stroke: '#fff' }}
+                        fill="url(#colorCumulativeSidebar)"
+                        dot={{ fill: '#00d4ff', r: 5, strokeWidth: 2, stroke: '#1a1a1a' }}
                         animationDuration={1500}
                         animationEasing="ease-in-out"
                       />
@@ -193,52 +210,62 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
               </Card>
 
               {/* Token List */}
-              <div className="space-y-3">
-                <h3 className="text-lg font-bold">Tokens</h3>
-                {index.tokens.map((token) => (
-                  <Card key={token.address} className="overflow-hidden">
-                    <CardContent className="p-3">
-                      <div className="flex items-center gap-3">
-                        <img 
-                          src={token.image || '/placeholder.svg'} 
-                          alt={token.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="min-w-0">
-                              <h4 className="font-bold text-sm truncate">{token.name}</h4>
-                              <p className="text-xs text-gray-600">{token.symbol}</p>
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-stake-text">Tokens in this Index</h3>
+                <div className="grid gap-4">
+                  {index.tokens.map((token) => (
+                    <Card key={token.address} className="overflow-hidden bg-stake-card border-stake-accent hover:border-stake-highlight transition-colors">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-4">
+                          <img 
+                            src={token.image || '/placeholder.svg'} 
+                            alt={token.name}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-stake-accent"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="min-w-0">
+                                <h4 className="font-bold text-base truncate text-stake-text">{token.name}</h4>
+                                <p className="text-sm text-stake-muted">{token.symbol}</p>
+                              </div>
+                              {!token.error && (
+                                <Badge 
+                                  variant={token.priceChange24h >= 0 ? 'default' : 'destructive'}
+                                  className={`flex items-center gap-1 text-sm ${
+                                    token.priceChange24h >= 0 
+                                      ? 'bg-green-500/20 text-green-400 border-green-500/50' 
+                                      : 'bg-red-500/20 text-red-400 border-red-500/50'
+                                  }`}
+                                >
+                                  {token.priceChange24h >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                                  {formatPercentage(token.priceChange24h)}
+                                </Badge>
+                              )}
                             </div>
-                            {!token.error && (
-                              <Badge 
-                                variant={token.priceChange24h >= 0 ? 'default' : 'destructive'}
-                                className="flex items-center gap-1 text-xs"
-                              >
-                                {token.priceChange24h >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                                {formatPercentage(token.priceChange24h)}
-                              </Badge>
+                            {token.error ? (
+                              <p className="text-sm text-red-400">{token.error}</p>
+                            ) : (
+                              <div className="grid grid-cols-3 gap-4 text-sm">
+                                <div>
+                                  <p className="text-stake-muted">Market Cap</p>
+                                  <p className="font-semibold text-stake-text">{formatNumber(token.marketCap)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-stake-muted">Price</p>
+                                  <p className="font-semibold text-stake-text">${token.price.toFixed(8)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-stake-muted">Holders</p>
+                                  <p className="font-semibold text-stake-text">{token.holders.toLocaleString()}</p>
+                                </div>
+                              </div>
                             )}
                           </div>
-                          {token.error ? (
-                            <p className="text-xs text-red-500">{token.error}</p>
-                          ) : (
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div>
-                                <p className="text-gray-600">Market Cap</p>
-                                <p className="font-semibold">{formatNumber(token.marketCap)}</p>
-                              </div>
-                              <div>
-                                <p className="text-gray-600">Holders</p>
-                                <p className="font-semibold">{token.holders.toLocaleString()}</p>
-                              </div>
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
 
               {/* Swap Button */}
@@ -256,7 +283,7 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
             </>
           ) : (
             <div className="text-center py-8">
-              <p className="text-gray-600">Index not found</p>
+              <p className="text-stake-muted">Index not found</p>
             </div>
           )}
         </div>
