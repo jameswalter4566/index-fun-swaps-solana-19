@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, TrendingUp, TrendingDown, Users, DollarSign } from 'lucide-react';
 import NodeVisualizer from '@/components/NodeVisualizer';
 import AgentChat from '@/components/AgentChat';
+import KOLFeed from '@/components/KOLFeed';
 
 interface Token {
   address: string;
@@ -124,6 +125,11 @@ const IndexDetail: React.FC = () => {
       {/* Agent Configuration */}
       <div className="mb-8">
         <NodeVisualizer agentId={index.id} />
+      </div>
+
+      {/* KOL Feed */}
+      <div className="mb-8">
+        <KOLFeed tokens={index.tokens} agentId={index.id} />
       </div>
 
       {/* Twitter Accounts Being Monitored */}
