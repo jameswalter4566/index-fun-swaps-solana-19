@@ -123,23 +123,46 @@ const IndexDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Agent Configuration */}
-      <div className="mb-8">
-        <NodeVisualizer agentId={index.id} />
-      </div>
+      <div className="flex gap-6">
+        {/* Agent Chat - Left Side (40% width) */}
+        <div className="w-[40%]">
+          <Card className="h-[calc(100vh-12rem)] sticky top-4 bg-stake-card border-stake-border">
+            <CardHeader className="pb-0">
+              <CardTitle className="text-lg">AI Trading Assistant</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 h-[calc(100%-4rem)]">
+              <AgentChat 
+                agentName={index.name} 
+                agentId={index.id} 
+                isPersistent={true}
+              />
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* KOL Feed */}
-      <div className="mb-8">
-        <KOLFeed tokens={index.tokens} agentId={index.id} />
-      </div>
+        {/* Main Content - Right Side (60% width) */}
+        <div className="flex-1 space-y-8">
+          {/* Agent Configuration */}
+          <Card className="bg-stake-card border-stake-border">
+            <CardHeader>
+              <CardTitle className="text-2xl">Agent Configuration</CardTitle>
+              <p className="text-sm text-stake-muted">
+                Configure your trading agent's parameters and filters
+              </p>
+            </CardHeader>
+            <CardContent>
+              <NodeVisualizer agentId={index.id} />
+            </CardContent>
+          </Card>
 
-      {/* KOL Tweets */}
-      <div className="mb-8">
-        <KOLTweets tokens={index.tokens} agentId={index.id} />
-      </div>
+          {/* KOL Feed */}
+          <KOLFeed tokens={index.tokens} agentId={index.id} />
 
-      {/* Twitter Accounts Being Monitored */}
-      <div className="space-y-4 mb-8">
+          {/* KOL Tweets */}
+          <KOLTweets tokens={index.tokens} agentId={index.id} />
+
+          {/* Twitter Accounts Being Monitored */}
+          <div className="space-y-4">
         <h2 className="text-2xl font-bold">Monitored Twitter Accounts</h2>
         {index.tokens.map((token) => {
           const metadata = token.metadata as any;
@@ -210,10 +233,10 @@ const IndexDetail: React.FC = () => {
             </Card>
           );
         })}
-      </div>
+          </div>
 
-      {/* Swap Button */}
-      <Button 
+          {/* Swap Button */}
+          <Button 
         className="w-full h-16 text-lg font-bold bg-green-500 hover:bg-green-600 text-black shadow-[0_0_20px_rgba(34,197,94,0.5)] hover:shadow-[0_0_30px_rgba(34,197,94,0.7)] transition-all duration-300"
         onClick={() => {
           toast({
@@ -224,10 +247,9 @@ const IndexDetail: React.FC = () => {
         }}
       >
         SWAP INTO INDEX
-      </Button>
-
-      {/* Agent Chat */}
-      <AgentChat agentName={index.name} agentId={index.id} />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
