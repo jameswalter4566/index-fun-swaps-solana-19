@@ -7,6 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import AgentChat from '@/components/AgentChat';
+import NodeVisualizer from '@/components/NodeVisualizer';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface IndexData {
   id: string;
@@ -69,12 +72,26 @@ const Index: React.FC = () => {
   });
 
   return <Layout>
-      {/* Twitter/X Button has been moved to Navigation component */}
-      
-      <div className="mb-8 max-w-2xl mx-auto text-center animate-fade-in">
-        <h1 className="text-4xl font-bold mb-4 text-stake-text">SMART</h1>
-        <p className="text-stake-muted text-lg">personalize your own ai trading agent</p>
-      </div>
+      <div className="flex gap-6">
+        {/* Agent Chat - Left Side (40% width) */}
+        <div className="w-[40%]">
+          <Card className="h-[calc(100vh-8rem)] sticky top-8 bg-stake-card border-stake-border">
+            <CardContent className="p-0 h-full">
+              <AgentChat 
+                agentName="Smart Agent" 
+                agentId="default" 
+                isPersistent={true}
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content - Right Side (60% width) */}
+        <div className="flex-1">
+          <div className="mb-8 max-w-2xl mx-auto text-center animate-fade-in">
+            <h1 className="text-4xl font-bold mb-4 text-stake-text">SMART</h1>
+            <p className="text-stake-muted text-lg">personalize your own ai trading agent</p>
+          </div>
       
       <div className="mb-8 max-w-md mx-auto relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -126,7 +143,6 @@ const Index: React.FC = () => {
                 tokens={index.tokens} 
                 gainPercentage={index.gainPercentage || 0} 
                 upvotes={index.upvotes || 0}
-                onClick={() => handleIndexClick(index.id)}
               />
             )) : <div className="col-span-full text-center py-8">
                 <p className="text-stake-muted">no top-rated indexes found.</p>
@@ -144,7 +160,6 @@ const Index: React.FC = () => {
                 tokens={index.tokens} 
                 gainPercentage={index.gainPercentage || 0} 
                 upvotes={index.upvotes || 0}
-                onClick={() => handleIndexClick(index.id)}
               />
             )) : <div className="col-span-full text-center py-8">
                 <p className="text-stake-muted">no gaining indexes found.</p>
@@ -162,7 +177,6 @@ const Index: React.FC = () => {
                 tokens={index.tokens} 
                 gainPercentage={index.gainPercentage || 0} 
                 upvotes={index.upvotes || 0}
-                onClick={() => handleIndexClick(index.id)}
               />
             )) : <div className="col-span-full text-center py-8">
                 <p className="text-stake-muted">no recent indexes found.</p>
@@ -170,7 +184,14 @@ const Index: React.FC = () => {
           </div>
         </TabsContent>
       </Tabs>
-      
+
+      {/* Agent Configuration */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4 text-stake-text">Agent Configuration</h2>
+        <NodeVisualizer agentId="default" />
+      </div>
+    </div>
+  </div>
     </Layout>;
 };
 export default Index;

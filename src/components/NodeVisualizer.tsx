@@ -8,32 +8,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Filter, Phone, Brain, Database } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
 interface NodeVisualizerProps {
   agentId: string;
 }
 
 const NodeVisualizer: React.FC<NodeVisualizerProps> = ({ agentId }) => {
+  const { toast } = useToast();
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     searchKeywords: ['', '', ''],
     excludeKeywords: ['', '', ''],
     socials: {
       twitter: false,
-      website: false,
       telegram: false,
-      youtube: false,
-      tiktok: false,
-      instagram: false,
     },
-    marketCap: [0, 1000000],
-    volume: [0, 100000],
-    liquidity: [0, 50000],
-    holdersCount: [0, 1000],
-    botHolders: [0, 100],
-    txns: [0, 1000],
-    buys: [0, 500],
-    sells: [0, 500],
+    marketCap: { min: 0, max: 1000000 },
+    liquidity: { min: 0, max: 500000 },
+    volume24h: { min: 0, max: 100000 },
+    priceChange: { min: -50, max: 100 },
+    tokenAge: { max: 24 }, // hours
+    buys: { min: 0 },
+    sells: { min: 0, max: 1000 },
+    burnPercentage: { min: 0 },
+    freezeAuthority: null, // null, true, or false
+    mintAuthority: null, // null, true, or false
   });
 
   const nodes = [
@@ -51,6 +52,57 @@ const NodeVisualizer: React.FC<NodeVisualizerProps> = ({ agentId }) => {
 
   const handleNodeClick = (nodeId: string) => {
     setSelectedNode(nodeId);
+  };
+
+  const handleFilterSave = async () => {
+    try {
+      // Transform the filters to match the edge function format
+      const transformedFilters = {
+        minMarketCap: filters.marketCap.min,
+        maxMarketCap: filters.marketCap.max,
+        minLiquidity: filters.liquidity.min,
+        maxLiquidity: filters.liquidity.max,
+        minVolume24h: filters.volume24h.min,
+        maxVolume24h: filters.volume24h.max,
+        minPriceChangePercentage: filters.priceChange.min,
+        maxPriceChangePercentage: filters.priceChange.max,
+        maxAge: filters.tokenAge.max,
+        minBuys: filters.buys.min,
+        minSells: filters.sells.min,
+        maxSells: filters.sells.max,
+        burnPercentage: filters.burnPercentage.min,
+        freezeAuthority: filters.freezeAuthority,
+        mintAuthority: filters.mintAuthority,
+        // Add search keywords and socials as custom fields
+        searchKeywords: filters.searchKeywords.filter(k => k !== ''),
+        excludeKeywords: filters.excludeKeywords.filter(k => k !== ''),
+        requiredSocials: filters.socials
+      };
+
+      const { data, error } = await supabase.functions.invoke('coin-parameters', {
+        body: {
+          method: 'POST',
+          agentId: agentId,
+          filters: transformedFilters
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Filter settings saved successfully",
+      });
+      
+      setSelectedNode(null);
+    } catch (error) {
+      console.error('Error saving filters:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save filter settings",
+        variant: "destructive",
+      });
+    }
   };
 
   const renderFilterDialog = () => (
@@ -120,39 +172,43 @@ const NodeVisualizer: React.FC<NodeVisualizerProps> = ({ agentId }) => {
         </div>
 
         <div>
-          <Label>Market Cap Range</Label>
+          <Label>Market Cap Range ($)</Label>
           <div className="flex items-center space-x-4 mt-2">
             <Input
               type="number"
-              value={filters.marketCap[0]}
-              onChange={(e) => setFilters({ ...filters, marketCap: [parseInt(e.target.value), filters.marketCap[1]] })}
+              value={filters.marketCap.min}
+              onChange={(e) => setFilters({ ...filters, marketCap: { ...filters.marketCap, min: parseInt(e.target.value) || 0 } })}
               className="w-32"
+              placeholder="Min"
             />
             <span>to</span>
             <Input
               type="number"
-              value={filters.marketCap[1]}
-              onChange={(e) => setFilters({ ...filters, marketCap: [filters.marketCap[0], parseInt(e.target.value)] })}
+              value={filters.marketCap.max}
+              onChange={(e) => setFilters({ ...filters, marketCap: { ...filters.marketCap, max: parseInt(e.target.value) || 0 } })}
               className="w-32"
+              placeholder="Max"
             />
           </div>
         </div>
 
         <div>
-          <Label>Volume Range</Label>
+          <Label>24h Volume Range ($)</Label>
           <div className="flex items-center space-x-4 mt-2">
             <Input
               type="number"
-              value={filters.volume[0]}
-              onChange={(e) => setFilters({ ...filters, volume: [parseInt(e.target.value), filters.volume[1]] })}
+              value={filters.volume24h.min}
+              onChange={(e) => setFilters({ ...filters, volume24h: { ...filters.volume24h, min: parseInt(e.target.value) || 0 } })}
               className="w-32"
+              placeholder="Min"
             />
             <span>to</span>
             <Input
               type="number"
-              value={filters.volume[1]}
-              onChange={(e) => setFilters({ ...filters, volume: [filters.volume[0], parseInt(e.target.value)] })}
+              value={filters.volume24h.max}
+              onChange={(e) => setFilters({ ...filters, volume24h: { ...filters.volume24h, max: parseInt(e.target.value) || 0 } })}
               className="w-32"
+              placeholder="Max"
             />
           </div>
         </div>
@@ -162,17 +218,151 @@ const NodeVisualizer: React.FC<NodeVisualizerProps> = ({ agentId }) => {
           <div className="flex items-center space-x-4 mt-2">
             <Input
               type="number"
-              value={filters.liquidity[0]}
-              onChange={(e) => setFilters({ ...filters, liquidity: [parseInt(e.target.value), filters.liquidity[1]] })}
+              value={filters.liquidity.min}
+              onChange={(e) => setFilters({ ...filters, liquidity: { ...filters.liquidity, min: parseInt(e.target.value) || 0 } })}
               className="w-32"
+              placeholder="Min"
             />
             <span>to</span>
             <Input
               type="number"
-              value={filters.liquidity[1]}
-              onChange={(e) => setFilters({ ...filters, liquidity: [filters.liquidity[0], parseInt(e.target.value)] })}
+              value={filters.liquidity.max}
+              onChange={(e) => setFilters({ ...filters, liquidity: { ...filters.liquidity, max: parseInt(e.target.value) || 0 } })}
               className="w-32"
+              placeholder="Max"
             />
+          </div>
+        </div>
+
+        <div>
+          <Label>Price Change Range (%)</Label>
+          <div className="flex items-center space-x-4 mt-2">
+            <Input
+              type="number"
+              value={filters.priceChange.min}
+              onChange={(e) => setFilters({ ...filters, priceChange: { ...filters.priceChange, min: parseInt(e.target.value) || -100 } })}
+              className="w-32"
+              placeholder="Min"
+            />
+            <span>to</span>
+            <Input
+              type="number"
+              value={filters.priceChange.max}
+              onChange={(e) => setFilters({ ...filters, priceChange: { ...filters.priceChange, max: parseInt(e.target.value) || 0 } })}
+              className="w-32"
+              placeholder="Max"
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label>Maximum Token Age (hours)</Label>
+          <div className="mt-2">
+            <Input
+              type="number"
+              value={filters.tokenAge.max}
+              onChange={(e) => setFilters({ ...filters, tokenAge: { max: parseInt(e.target.value) || 0 } })}
+              className="w-32"
+              placeholder="Max hours"
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label>Buy/Sell Activity</Label>
+          <div className="space-y-2 mt-2">
+            <div className="flex items-center space-x-4">
+              <Label className="w-20">Min Buys:</Label>
+              <Input
+                type="number"
+                value={filters.buys.min}
+                onChange={(e) => setFilters({ ...filters, buys: { min: parseInt(e.target.value) || 0 } })}
+                className="w-32"
+                placeholder="0"
+              />
+            </div>
+            <div className="flex items-center space-x-4">
+              <Label className="w-20">Min Sells:</Label>
+              <Input
+                type="number"
+                value={filters.sells.min}
+                onChange={(e) => setFilters({ ...filters, sells: { ...filters.sells, min: parseInt(e.target.value) || 0 } })}
+                className="w-32"
+                placeholder="0"
+              />
+            </div>
+            <div className="flex items-center space-x-4">
+              <Label className="w-20">Max Sells:</Label>
+              <Input
+                type="number"
+                value={filters.sells.max}
+                onChange={(e) => setFilters({ ...filters, sells: { ...filters.sells, max: parseInt(e.target.value) || 0 } })}
+                className="w-32"
+                placeholder="No limit"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <Label>LP Burn Percentage (minimum)</Label>
+          <div className="mt-2">
+            <Input
+              type="number"
+              value={filters.burnPercentage.min}
+              onChange={(e) => setFilters({ ...filters, burnPercentage: { min: parseInt(e.target.value) || 0 } })}
+              className="w-32"
+              placeholder="0"
+            />
+            <span className="ml-2 text-sm text-gray-500">%</span>
+          </div>
+        </div>
+
+        <div>
+          <Label>Security Settings</Label>
+          <div className="space-y-2 mt-2">
+            <div>
+              <Label className="text-sm">Freeze Authority</Label>
+              <Select
+                value={filters.freezeAuthority === null ? 'any' : filters.freezeAuthority ? 'yes' : 'no'}
+                onValueChange={(value) => {
+                  setFilters({
+                    ...filters,
+                    freezeAuthority: value === 'any' ? null : value === 'yes'
+                  });
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any</SelectItem>
+                  <SelectItem value="no">Must NOT have</SelectItem>
+                  <SelectItem value="yes">Must have</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm">Mint Authority</Label>
+              <Select
+                value={filters.mintAuthority === null ? 'any' : filters.mintAuthority ? 'yes' : 'no'}
+                onValueChange={(value) => {
+                  setFilters({
+                    ...filters,
+                    mintAuthority: value === 'any' ? null : value === 'yes'
+                  });
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any</SelectItem>
+                  <SelectItem value="no">Must NOT have</SelectItem>
+                  <SelectItem value="yes">Must have</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
@@ -182,24 +372,22 @@ const NodeVisualizer: React.FC<NodeVisualizerProps> = ({ agentId }) => {
             excludeKeywords: ['', '', ''],
             socials: {
               twitter: false,
-              website: false,
               telegram: false,
-              youtube: false,
-              tiktok: false,
-              instagram: false,
             },
-            marketCap: [0, 1000000],
-            volume: [0, 100000],
-            liquidity: [0, 50000],
-            holdersCount: [0, 1000],
-            botHolders: [0, 100],
-            txns: [0, 1000],
-            buys: [0, 500],
-            sells: [0, 500],
+            marketCap: { min: 0, max: 1000000 },
+            liquidity: { min: 0, max: 500000 },
+            volume24h: { min: 0, max: 100000 },
+            priceChange: { min: -50, max: 100 },
+            tokenAge: { max: 24 },
+            buys: { min: 0 },
+            sells: { min: 0, max: 1000 },
+            burnPercentage: { min: 0 },
+            freezeAuthority: null,
+            mintAuthority: null,
           })}>
             Reset
           </Button>
-          <Button onClick={() => setSelectedNode(null)}>Apply</Button>
+          <Button onClick={handleFilterSave}>Apply</Button>
         </div>
       </div>
     </DialogContent>
