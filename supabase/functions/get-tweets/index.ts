@@ -1,11 +1,11 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-// CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
-};
+}
 
 interface Tweet {
   id: string;
@@ -75,9 +75,12 @@ serve(async (req) => {
       );
     }
     
-    // Fetch tweets for each user
+    // Get unique user IDs to avoid duplicate requests
+    const uniqueUserIds = [...new Set(userIds)];
+    
+    // Fetch tweets for each unique user
     const allTweets = await Promise.all(
-      userIds.map(async (userId) => {
+      uniqueUserIds.map(async (userId) => {
         try {
           // Build Twitter API URL for user tweets
           const twitterUrl = new URL(`https://api.twitter.com/2/users/${userId}/tweets`);
