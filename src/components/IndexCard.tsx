@@ -8,6 +8,7 @@ interface Token {
   name: string;
   address: string;
   symbol?: string;
+  image?: string;
 }
 
 interface IndexCardProps {
@@ -49,15 +50,29 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
       <CardContent className="p-4">
         <div className="space-y-4">
           <div>
-            <h4 className="text-sm font-medium text-stake-muted mb-2">Tokens</h4>
+            <h4 className="text-sm font-medium text-stake-muted mb-2">tokens</h4>
             <div className="flex flex-wrap gap-2">
               {tokens.map((token) => (
-                <span 
+                <div 
                   key={token.address} 
-                  className="inline-block bg-stake-darkbg rounded-full px-3 py-1 text-xs text-stake-text"
+                  className="flex items-center gap-1.5 bg-stake-darkbg rounded-full px-3 py-1"
                 >
-                  {token.symbol || token.name}
-                </span>
+                  {token.image ? (
+                    <img 
+                      src={token.image} 
+                      alt={token.name}
+                      className="w-4 h-4 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder.svg';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-4 h-4 rounded-full bg-stake-accent/20" />
+                  )}
+                  <span className="text-xs text-stake-text">
+                    {token.symbol || token.name}
+                  </span>
+                </div>
               ))}
             </div>
           </div>
