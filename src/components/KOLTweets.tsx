@@ -47,10 +47,12 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
     setLoading(true);
     
     try {
-      // Extract Twitter usernames from tokens
-      const twitterUsernames = tokens
-        .filter(token => token.name?.startsWith('@'))
-        .map(token => token.name);
+      // Extract unique Twitter usernames from tokens
+      const twitterUsernames = [...new Set(
+        tokens
+          .filter(token => token.name?.startsWith('@'))
+          .map(token => token.name)
+      )];
 
       if (twitterUsernames.length === 0) {
         toast({
@@ -131,7 +133,8 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
     }
   };
 
-  const formatEngagement = (count: number) => {
+  const formatEngagement = (count: number | undefined) => {
+    if (!count && count !== 0) return '0';
     if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
     if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
     return count.toString();
@@ -180,9 +183,9 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
         {tweets.length > 0 && (
           <ScrollArea className="h-[600px]">
             <div className="p-4 space-y-4">
-              {tweets.map((tweet) => (
+              {tweets.map((tweet, index) => (
                 <div
-                  key={tweet.id}
+                  key={`${tweet.id}-${index}`}
                   className="bg-stake-card rounded-lg p-4 hover:bg-stake-darkbg transition-colors"
                 >
                   <div className="flex items-start gap-3">
@@ -192,7 +195,7 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
                         alt={tweet.author.name}
                       />
                       <AvatarFallback>
-                        {tweet.author.name.charAt(0).toUpperCase()}
+                        {tweet.author.name ? tweet.author.name.charAt(0).toUpperCase() : 'U'}
                       </AvatarFallback>
                     </Avatar>
                     
@@ -200,7 +203,7 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
                           <span className="font-semibold text-sm">
-                            {tweet.author.name}
+                            {tweet.author?.name || 'Unknown'}
                           </span>
                           {tweet.author.verified && (
                             <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
@@ -208,7 +211,7 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
                             </svg>
                           )}
                           <span className="text-xs text-muted-foreground">
-                            @{tweet.author.username}
+                            @{tweet.author?.username || 'unknown'}
                           </span>
                         </div>
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -224,19 +227,19 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
                       <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
                         <span className="flex items-center gap-1 hover:text-red-500 cursor-pointer">
                           <Heart className="h-3 w-3" />
-                          {formatEngagement(tweet.metrics.likes)}
+                          {formatEngagement(tweet.metrics?.likes)}
                         </span>
                         <span className="flex items-center gap-1 hover:text-green-500 cursor-pointer">
                           <Repeat2 className="h-3 w-3" />
-                          {formatEngagement(tweet.metrics.retweets)}
+                          {formatEngagement(tweet.metrics?.retweets)}
                         </span>
                         <span className="flex items-center gap-1 hover:text-blue-500 cursor-pointer">
                           <MessageCircle className="h-3 w-3" />
-                          {formatEngagement(tweet.metrics.replies)}
+                          {formatEngagement(tweet.metrics?.replies)}
                         </span>
                         <span className="flex items-center gap-1 hover:text-purple-500 cursor-pointer">
                           <Quote className="h-3 w-3" />
-                          {formatEngagement(tweet.metrics.quotes)}
+                          {formatEngagement(tweet.metrics?.quotes)}
                         </span>
                       </div>
                     </div>
