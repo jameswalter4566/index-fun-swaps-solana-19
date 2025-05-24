@@ -1,13 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
-import Chart from 'react-apexcharts';
-import { ApexOptions } from 'apexcharts';
+import React, { useEffect, useState } from 'react';
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { format } from 'date-fns';
 
 export type Timeframe = '1m' | '15m' | '1h' | '4h' | '1d';
-
-interface Candle {
-  x: number; // Unix timestamp in ms
-  y: [number, number, number, number]; // [open, high, low, close]
-}
 
 interface Props {
   tokens: Array<{
@@ -20,14 +15,18 @@ interface Props {
   height?: number;
 }
 
+interface ChartData {
+  time: number;
+  value: number;
+  displayTime: string;
+}
+
 const PriceChart: React.FC<Props> = ({ tokens, title = 'market cap history', height = 350 }) => {
   const [timeframe, setTimeframe] = useState<Timeframe>('1h');
-  const [series, setSeries] = useState<any[]>([]);
-  const chartRef = useRef<any>(null);
+  const [data, setData] = useState<ChartData[]>([]);
 
   // Generate mock data based on tokens
   useEffect(() => {
-    // For now, we'll create area chart data based on cumulative market cap
     const generateMockData = () => {
       const now = Date.now();
       const dataPoints = 50;
@@ -36,7 +35,7 @@ const PriceChart: React.FC<Props> = ({ tokens, title = 'market cap history', hei
                       timeframe === '1h' ? 3600000 :
                       timeframe === '4h' ? 14400000 : 86400000;
       
-      const data: Array<{x: number, y: number}> = [];
+      const chartData: ChartData[] = [];
       let cumulative = 0;
       
       for (let i = dataPoints; i > 0; i--) {
@@ -46,182 +45,64 @@ const PriceChart: React.FC<Props> = ({ tokens, title = 'market cap history', hei
           cumulative += token.marketCap * variance;
         });
         
-        data.push({
-          x: now - (i * interval),
-          y: cumulative
+        const time = now - (i * interval);
+        chartData.push({
+          time,
+          value: cumulative,
+          displayTime: format(new Date(time), timeframe === '1m' || timeframe === '15m' ? 'HH:mm' : 
+                                            timeframe === '1h' || timeframe === '4h' ? 'MMM dd, HH:mm' : 
+                                            'MMM dd')
         });
       }
       
-      return data;
+      return chartData;
     };
 
     const chartData = generateMockData();
-    setSeries([{
-      name: 'Total Market Cap',
-      data: chartData
-    }]);
+    setData(chartData);
   }, [tokens, timeframe]);
 
   // Simulate real-time updates
   useEffect(() => {
     const interval = setInterval(() => {
-      if (series.length > 0 && series[0].data.length > 0) {
-        const lastValue = series[0].data[series[0].data.length - 1].y;
+      if (data.length > 0) {
+        const lastValue = data[data.length - 1].value;
         const newValue = lastValue * (1 + (Math.random() - 0.5) * 0.02);
+        const time = Date.now();
         
-        const newData = [...series[0].data.slice(1), {
-          x: Date.now(),
-          y: newValue
+        const newData = [...data.slice(1), {
+          time,
+          value: newValue,
+          displayTime: format(new Date(time), timeframe === '1m' || timeframe === '15m' ? 'HH:mm' : 
+                                              timeframe === '1h' || timeframe === '4h' ? 'MMM dd, HH:mm' : 
+                                              'MMM dd')
         }];
 
-        setSeries([{
-          ...series[0],
-          data: newData
-        }]);
-
-        // Update chart without re-render
-        if (chartRef.current && window.ApexCharts) {
-          window.ApexCharts.exec(
-            'priceChart',
-            'updateSeries',
-            [{
-              data: newData
-            }],
-            true
-          );
-        }
+        setData(newData);
       }
     }, 5000); // Update every 5 seconds
 
     return () => clearInterval(interval);
-  }, [series]);
+  }, [data, timeframe]);
 
-  const options: ApexOptions = {
-    chart: {
-      id: 'priceChart',
-      type: 'area',
-      height: height,
-      animations: {
-        enabled: true,
-        easing: 'easeinout',
-        speed: 800,
-        animateGradually: {
-          enabled: true,
-          delay: 150
-        },
-        dynamicAnimation: {
-          enabled: true,
-          speed: 350
-        }
-      },
-      toolbar: {
-        show: false
-      },
-      zoom: {
-        enabled: false
-      },
-      background: 'transparent'
-    },
-    dataLabels: {
-      enabled: false
-    },
-    stroke: {
-      curve: 'smooth',
-      width: 3,
-      colors: ['#00d4ff']
-    },
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.7,
-        opacityTo: 0.1,
-        stops: [0, 90, 100],
-        colorStops: [
-          {
-            offset: 0,
-            color: '#00d4ff',
-            opacity: 0.8
-          },
-          {
-            offset: 95,
-            color: '#00d4ff',
-            opacity: 0.1
-          }
-        ]
-      }
-    },
-    theme: {
-      mode: 'dark'
-    },
-    xaxis: {
-      type: 'datetime',
-      labels: {
-        style: {
-          colors: '#999',
-          fontSize: '11px'
-        },
-        datetimeUTC: false
-      },
-      axisBorder: {
-        show: false
-      },
-      axisTicks: {
-        show: false
-      }
-    },
-    yaxis: {
-      labels: {
-        style: {
-          colors: '#999',
-          fontSize: '11px'
-        },
-        formatter: (val: number) => {
-          if (val >= 1e9) return `$${(val / 1e9).toFixed(2)}B`;
-          if (val >= 1e6) return `$${(val / 1e6).toFixed(2)}M`;
-          if (val >= 1e3) return `$${(val / 1e3).toFixed(2)}K`;
-          return `$${val.toFixed(2)}`;
-        }
-      },
-      axisBorder: {
-        show: false
-      },
-      axisTicks: {
-        show: false
-      }
-    },
-    tooltip: {
-      theme: 'dark',
-      style: {
-        fontSize: '12px',
-        fontFamily: 'inherit'
-      },
-      x: {
-        format: 'dd MMM HH:mm'
-      },
-      y: {
-        formatter: (val: number) => {
-          if (val >= 1e9) return `$${(val / 1e9).toFixed(2)}B`;
-          if (val >= 1e6) return `$${(val / 1e6).toFixed(2)}M`;
-          if (val >= 1e3) return `$${(val / 1e3).toFixed(2)}K`;
-          return `$${val.toFixed(2)}`;
-        }
-      }
-    },
-    grid: {
-      borderColor: '#2a2a2a',
-      strokeDashArray: 3,
-      xaxis: {
-        lines: {
-          show: false
-        }
-      },
-      yaxis: {
-        lines: {
-          show: true
-        }
-      }
+  const formatValue = (val: number) => {
+    if (val >= 1e9) return `$${(val / 1e9).toFixed(2)}B`;
+    if (val >= 1e6) return `$${(val / 1e6).toFixed(2)}M`;
+    if (val >= 1e3) return `$${(val / 1e3).toFixed(2)}K`;
+    return `$${val.toFixed(2)}`;
+  };
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload[0]) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-stake-card p-3 rounded-lg border border-stake-border shadow-lg">
+          <p className="text-stake-muted text-xs mb-1">{data.displayTime}</p>
+          <p className="text-stake-text font-semibold">{formatValue(data.value)}</p>
+        </div>
+      );
     }
+    return null;
   };
 
   const timeframes: Timeframe[] = ['1m', '15m', '1h', '4h', '1d'];
@@ -247,13 +128,40 @@ const PriceChart: React.FC<Props> = ({ tokens, title = 'market cap history', hei
         </div>
       </div>
 
-      <Chart
-        ref={chartRef}
-        options={options}
-        series={series}
-        type="area"
-        height={height}
-      />
+      <ResponsiveContainer width="100%" height={height}>
+        <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#00d4ff" stopOpacity={0.8}/>
+              <stop offset="95%" stopColor="#00d4ff" stopOpacity={0.1}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
+          <XAxis 
+            dataKey="displayTime" 
+            stroke="#999"
+            fontSize={11}
+            tickLine={false}
+            axisLine={false}
+          />
+          <YAxis 
+            stroke="#999"
+            fontSize={11}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={formatValue}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke="#00d4ff"
+            strokeWidth={3}
+            fillOpacity={1}
+            fill="url(#colorValue)"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 };
