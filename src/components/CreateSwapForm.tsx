@@ -78,41 +78,37 @@ const CreateSwapForm: React.FC = () => {
 
       console.log('Twitter data received:', twitterData);
 
+      // Prepare the data to insert - storing metadata in tokens for now
+      const indexData = {
+        name: formData.name,
+        tokens: twitterData.users.map((user: any) => ({
+          name: `@${user.username}`,
+          address: user.username,
+          symbol: user.username,
+          image: user.profile_image_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`,
+          metadata: {
+            twitter_id: user.id,
+            display_name: user.name,
+            description: user.description || '',
+            verified: user.verified || false,
+            verified_type: user.verified_type,
+            followers_count: user.followers_count || 0,
+            following_count: user.following_count || 0,
+            tweet_count: user.tweet_count || 0,
+            listed_count: user.listed_count || 0,
+          }
+        })),
+        creator_wallet: 'anonymous',
+        total_market_cap: 0,
+        average_market_cap: 0,
+      };
+
+      console.log('Data to insert:', JSON.stringify(indexData, null, 2));
+
       // Save agent data with Twitter user information
       const { data: agent, error: insertError } = await supabase
         .from('indexes')
-        .insert({
-          name: formData.name,
-          tokens: twitterData.users.map((user: any) => ({
-            name: `@${user.username}`,
-            address: user.username,
-            symbol: user.username,
-            image: user.profile_image_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`,
-            metadata: {
-              twitter_id: user.id,
-              display_name: user.name,
-              description: user.description || '',
-              verified: user.verified || false,
-              verified_type: user.verified_type,
-              followers_count: user.followers_count || 0,
-              following_count: user.following_count || 0,
-              tweet_count: user.tweet_count || 0,
-              listed_count: user.listed_count || 0,
-            }
-          })),
-          creator_wallet: 'anonymous',
-          total_market_cap: 0,
-          average_market_cap: 0,
-          metadata: {
-            ...(formData.phoneNumber ? {
-              phoneNumber: formData.phoneNumber,
-              smsOptIn: smsOptIn,
-            } : {}),
-            agentType: 'twitter_monitor',
-            twitterAccounts: twitterAccounts,
-            createdBy: 'smart-platform',
-          },
-        })
+        .insert(indexData)
         .select()
         .single();
       
