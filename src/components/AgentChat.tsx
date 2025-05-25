@@ -61,7 +61,6 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
   const [isVoiceCallActive, setIsVoiceCallActive] = useState(false);
   const [currentCallId, setCurrentCallId] = useState<string | null>(null);
   const vapiRef = useRef<any>(null); // Will be Vapi instance when SDK is installed
-  const audioRef = useRef<HTMLAudioElement | null>(null); // Audio element for Vapi output
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -152,15 +151,9 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
         }
         vapiRef.current = new Vapi(publicKey);
         
-        // Create and attach audio element for output
-        if (!audioRef.current) {
-          const audio = new Audio();
-          audio.id = 'vapi-audio-output';
-          audio.autoplay = true;
-          document.body.appendChild(audio);
-          audioRef.current = audio;
-          vapiRef.current.attachAudio(audio);
-        }
+        // The SDK handles audio automatically via Daily.co
+        // No need to manually create audio elements
+        console.log('Vapi SDK initialized - audio will be handled automatically');
       }
 
       const vapi = vapiRef.current;
@@ -266,8 +259,8 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
             temperature: 0.7,
           },
           voice: {
-            provider: "11labs",
-            voiceId: "21m00Tcm4TlvDq8ikWAM", // Rachel
+            provider: "openai",
+            voiceId: "nova", // OpenAI's nova voice - more reliable
           },
           firstMessage: `Hi! I'm ${agentName}, your AI trading assistant. I can help you analyze market trends and find trading opportunities. What would you like to know?`,
           variableValues: {
@@ -297,8 +290,8 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
             temperature: 0.7,
           },
           voice: {
-            provider: "11labs",
-            voiceId: "21m00Tcm4TlvDq8ikWAM", // Rachel
+            provider: "openai",
+            voiceId: "nova", // OpenAI's nova voice - more reliable
           },
           name: agentName,
           firstMessage: `Hi! I'm ${agentName}, your AI trading assistant. I can help you analyze market trends and find trading opportunities. What would you like to know?`,
@@ -373,13 +366,6 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
     try {
       if (vapiRef.current && typeof vapiRef.current.stop === 'function') {
         vapiRef.current.stop();
-      }
-      
-      // Clean up audio element
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.remove();
-        audioRef.current = null;
       }
 
       /* TEMPORARY: Handle iframe cleanup
@@ -554,11 +540,6 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
     return () => {
       if (vapiRef.current && typeof vapiRef.current.stop === 'function') {
         vapiRef.current.stop();
-      }
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.remove();
-        audioRef.current = null;
       }
     };
   }, []);
