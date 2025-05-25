@@ -152,12 +152,12 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
     try {
       // Initialize Vapi if not already done
       if (!vapiRef.current) {
-        // Get public key from environment or use JWT from backend
-        const publicKey = import.meta.env.VITE_VAPI_PUBLIC_KEY;
-        console.log('📝 Public key:', publicKey ? `${publicKey.substring(0, 8)}...` : 'NOT FOUND!');
+        // HARDCODED PUBLIC KEY
+        const publicKey = '098bd142-677b-40a8-ab39-11792cb7737b';
+        console.log('📝 Using hardcoded public key');
         
         if (!publicKey) {
-          const errorMsg = 'VITE_VAPI_PUBLIC_KEY not configured. Did you restart dev server after adding .env.local?';
+          const errorMsg = 'Public key not configured';
           console.error('❌', errorMsg);
           toast({
             title: 'Configuration Error',
