@@ -66,13 +66,28 @@ const KOLTweets: React.FC<KOLTweetsProps> = ({ tokens, agentId }) => {
 
       console.log('Fetching tweets for usernames:', twitterUsernames);
 
-      const { data, error } = await supabase.functions.invoke('retrieve-new-tweets', {
+      // Try the new v1.1 API function first
+      let { data, error } = await supabase.functions.invoke('fetch-twitter-timeline', {
         body: {
           usernames: twitterUsernames,
           agentId: agentId,
-          forceFresh: forceFresh,
+          count: 10,
         },
       });
+      
+      // If v1.1 fails, fall back to v2 API
+      if (error || !data?.success) {
+        console.log('v1.1 API failed, trying v2 API...');
+        const v2Response = await supabase.functions.invoke('retrieve-new-tweets', {
+          body: {
+            usernames: twitterUsernames,
+            agentId: agentId,
+            forceFresh: forceFresh,
+          },
+        });
+        data = v2Response.data;
+        error = v2Response.error;
+      }
 
       if (error) throw error;
 
