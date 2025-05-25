@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vapi Test</title>
+</head>
+<body>
+    <h1>Vapi Voice Call Test</h1>
+    <button id="startCall">Start Voice Call</button>
+    <button id="endCall" disabled>End Call</button>
+    <div id="status">Ready</div>
+    
+    <script type="module">
+        // Import Vapi from CDN
+        import Vapi from 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.2.5/+esm';
+        
+        // Replace with your actual public key
+        const PUBLIC_KEY = 'your-public-key-here';
+        
+        let vapi = null;
+        let audio = null;
+        
+        document.getElementById('startCall').addEventListener('click', async () => {
+            try {
+                // Initialize Vapi
+                vapi = new Vapi(PUBLIC_KEY);
+                
+                // Create and attach audio element
+                audio = new Audio();
+                audio.autoplay = true;
+                document.body.appendChild(audio);
+                vapi.attachAudio(audio);
+                
+                // Set up event listeners
+                vapi.on('call-start', () => {
+                    console.log('Call started');
+                    document.getElementById('status').textContent = 'Call active';
+                    document.getElementById('startCall').disabled = true;
+                    document.getElementById('endCall').disabled = false;
+                });
+                
+                vapi.on('call-end', () => {
+                    console.log('Call ended');
+                    document.getElementById('status').textContent = 'Call ended';
+                    document.getElementById('startCall').disabled = false;
+                    document.getElementById('endCall').disabled = true;
+                });
+                
+                vapi.on('speech-start', () => {
+                    console.log('Assistant speaking');
+                    document.getElementById('status').textContent = 'Assistant speaking...';
+                });
+                
+                vapi.on('speech-end', () => {
+                    console.log('Assistant stopped');
+                    document.getElementById('status').textContent = 'Listening...';
+                });
+                
+                vapi.on('error', (e) => {
+                    console.error('Vapi error:', e);
+                    document.getElementById('status').textContent = 'Error: ' + e.message;
+                });
+                
+                // Start the call
+                const call = await vapi.start({
+                    transcriber: {
+                        provider: "deepgram",
+                        model: "nova-2",
+                        language: "en-US"
+                    },
+                    model: {
+                        provider: "openai",
+                        model: "gpt-4-turbo",
+                        messages: [{
+                            role: "system",
+                            content: "You are a helpful assistant. Be brief and friendly."
+                        }],
+                        temperature: 0.7
+                    },
+                    voice: {
+                        provider: "11labs",
+                        voiceId: "21m00Tcm4TlvDq8ikWAM"
+                    },
+                    name: "Test Assistant",
+                    firstMessage: "Hello! I can hear you now. How can I help?",
+                    firstMessageMode: "assistant-speaks-first",
+                    clientMessages: ["transcript", "assistant_response", "speech-start", "speech-end"]
+                });
+                
+                console.log('Call object:', call);
+                
+            } catch (error) {
+                console.error('Failed to start call:', error);
+                document.getElementById('status').textContent = 'Failed: ' + error.message;
+            }
+        });
+        
+        document.getElementById('endCall').addEventListener('click', () => {
+            if (vapi) {
+                vapi.stop();
+                if (audio) {
+                    audio.remove();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

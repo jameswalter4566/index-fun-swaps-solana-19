@@ -7,8 +7,8 @@ import { Mic, MicOff, Send, X, Phone, PhoneOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-// Uncomment when @vapi-ai/web is installed
-// import Vapi from '@vapi-ai/web';
+// @ts-ignore - Package will be installed via npm
+import Vapi from '@vapi-ai/web';
 
 interface Message {
   id: string;
@@ -61,6 +61,7 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
   const [isVoiceCallActive, setIsVoiceCallActive] = useState(false);
   const [currentCallId, setCurrentCallId] = useState<string | null>(null);
   const vapiRef = useRef<any>(null); // Will be Vapi instance when SDK is installed
+  const audioRef = useRef<HTMLAudioElement | null>(null); // Audio element for Vapi output
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -142,8 +143,6 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
 
   const startVoiceCall = async () => {
     try {
-      // TODO: Uncomment when @vapi-ai/web is installed
-      /*
       // Initialize Vapi if not already done
       if (!vapiRef.current) {
         // Get public key from environment or use JWT from backend
@@ -152,6 +151,16 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
           throw new Error('VITE_VAPI_PUBLIC_KEY not configured');
         }
         vapiRef.current = new Vapi(publicKey);
+        
+        // Create and attach audio element for output
+        if (!audioRef.current) {
+          const audio = new Audio();
+          audio.id = 'vapi-audio-output';
+          audio.autoplay = true;
+          document.body.appendChild(audio);
+          audioRef.current = audio;
+          vapiRef.current.attachAudio(audio);
+        }
       }
 
       const vapi = vapiRef.current;
@@ -214,6 +223,15 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
             };
             setMessages(prev => [...prev, userMessage]);
           }
+        } else if (message.type === 'assistant_response' && message.response) {
+          // Handle final assistant response
+          const assistantMessage: Message = {
+            id: Date.now().toString(),
+            text: message.response,
+            sender: 'agent',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, assistantMessage]);
         }
       });
 
@@ -256,7 +274,8 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
             agentName: agentName,
             agentId: agentId,
           },
-          clientMessages: ["transcript", "function-call", "hang", "speech-start", "speech-end"],
+          clientMessages: ["transcript", "assistant_response", "function-call", "hang", "speech-start", "speech-end"],
+          firstMessageMode: "assistant-speaks-first",
         });
       } else {
         // Create inline assistant
@@ -283,15 +302,16 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
           },
           name: agentName,
           firstMessage: `Hi! I'm ${agentName}, your AI trading assistant. I can help you analyze market trends and find trading opportunities. What would you like to know?`,
+          firstMessageMode: "assistant-speaks-first",
+          clientMessages: ["transcript", "assistant_response", "function-call", "hang", "speech-start", "speech-end"],
         });
       }
 
       if (call?.id) {
         setCurrentCallId(call.id);
       }
-      */
 
-      // TEMPORARY: Use the current iframe approach until SDK is installed
+      /* TEMPORARY: Use the current iframe approach until SDK is installed
       const { data, error } = await supabase.functions.invoke('smart-agent-speak', {
         body: {
           action: 'create-web-call',
@@ -338,7 +358,7 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, voiceMessage]);
-      }
+      } */
     } catch (error) {
       console.error('Error starting voice call:', error);
       toast({
@@ -351,14 +371,18 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
 
   const endVoiceCall = async () => {
     try {
-      // TODO: Uncomment when @vapi-ai/web is installed
-      /*
       if (vapiRef.current && typeof vapiRef.current.stop === 'function') {
         vapiRef.current.stop();
       }
-      */
+      
+      // Clean up audio element
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.remove();
+        audioRef.current = null;
+      }
 
-      // TEMPORARY: Handle iframe cleanup
+      /* TEMPORARY: Handle iframe cleanup
       if (currentCallId) {
         await supabase.functions.invoke('smart-agent-speak', {
           body: {
@@ -374,7 +398,7 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
       if (vapiRef.current && vapiRef.current instanceof HTMLIFrameElement) {
         vapiRef.current.remove();
         vapiRef.current = null;
-      }
+      } */
 
       setIsVoiceCallActive(false);
       setCurrentCallId(null);
@@ -525,6 +549,18 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
         setIsListening(false);
       };
     }
+
+    // Cleanup on unmount
+    return () => {
+      if (vapiRef.current && typeof vapiRef.current.stop === 'function') {
+        vapiRef.current.stop();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.remove();
+        audioRef.current = null;
+      }
+    };
   }, []);
 
   const toggleListening = () => {
