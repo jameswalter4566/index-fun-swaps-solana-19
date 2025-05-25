@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
-import { createHmac } from "https://deno.land/std@0.177.0/node/crypto.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,77 +8,41 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400',
 };
 
-// OAuth 1.0a signature generation for Twitter API v1.1
-function generateOAuthSignature(
-  method: string,
-  url: string,
-  params: Record<string, string>,
-  consumerSecret: string,
-  tokenSecret: string
-): string {
-  const signatureBaseString = `${method}&${encodeURIComponent(
-    url
-  )}&${encodeURIComponent(
-    Object.entries(params)
-      .sort()
-      .map(([k, v]) => `${k}=${v}`)
-      .join("&")
-  )}`;
-  
-  const signingKey = `${encodeURIComponent(
-    consumerSecret
-  )}&${encodeURIComponent(tokenSecret)}`;
-  
-  const hmac = createHmac("sha1", signingKey);
-  const signature = hmac.update(signatureBaseString).digest("base64");
-  
-  return signature;
+interface TwitterUser {
+  id: string;
+  name: string;
+  username: string;
+  profile_image_url?: string;
+  verified?: boolean;
 }
 
-function generateOAuthHeader(
-  method: string,
-  url: string,
-  params: Record<string, string>,
-  apiKey: string,
-  apiSecret: string,
-  accessToken: string,
-  accessTokenSecret: string
-): string {
-  const oauthParams: Record<string, string> = {
-    oauth_consumer_key: apiKey,
-    oauth_nonce: Math.random().toString(36).substring(2),
-    oauth_signature_method: "HMAC-SHA1",
-    oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
-    oauth_token: accessToken,
-    oauth_version: "1.0",
+interface Tweet {
+  id: string;
+  text: string;
+  created_at: string;
+  author_id: string;
+  public_metrics?: {
+    retweet_count: number;
+    reply_count: number;
+    like_count: number;
+    quote_count: number;
   };
+}
 
-  // Combine OAuth params with request params for signature
-  const allParams = { ...oauthParams, ...params };
-
-  const signature = generateOAuthSignature(
-    method,
-    url,
-    allParams,
-    apiSecret,
-    accessTokenSecret
-  );
-
-  const signedOAuthParams = {
-    ...oauthParams,
-    oauth_signature: signature,
+interface TwitterAPIResponse {
+  data?: Tweet[];
+  includes?: {
+    users?: TwitterUser[];
   };
-
-  const entries = Object.entries(signedOAuthParams).sort((a, b) =>
-    a[0].localeCompare(b[0])
-  );
-
-  return (
-    "OAuth " +
-    entries
-      .map(([k, v]) => `${encodeURIComponent(k)}="${encodeURIComponent(v)}"`)
-      .join(", ")
-  );
+  meta?: {
+    result_count: number;
+    next_token?: string;
+  };
+  errors?: Array<{
+    detail: string;
+    title: string;
+    type: string;
+  }>;
 }
 
 serve(async (req) => {
@@ -96,18 +59,15 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get Twitter OAuth 1.0a credentials from environment
-    const apiKey = Deno.env.get('TWITTER_API_KEY');
-    const apiSecret = Deno.env.get('TWITTER_API_SECRET');
-    const accessToken = Deno.env.get('TWITTER_ACCESS_TOKEN');
-    const accessTokenSecret = Deno.env.get('TWITTER_ACCESS_TOKEN_SECRET');
+    // Get Twitter Bearer Token from environment
+    const bearerToken = Deno.env.get('X_API_BEARER_TOKEN');
 
-    if (!apiKey || !apiSecret || !accessToken || !accessTokenSecret) {
-      console.error('Missing Twitter OAuth credentials');
+    if (!bearerToken) {
+      console.error('Missing Twitter Bearer Token');
       return new Response(
         JSON.stringify({ 
-          error: 'Twitter OAuth credentials not configured',
-          message: 'Please set TWITTER_API_KEY, TWITTER_API_SECRET, TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_TOKEN_SECRET'
+          error: 'Twitter Bearer Token not configured',
+          message: 'Please set X_API_BEARER_TOKEN'
         }),
         { 
           status: 500,
@@ -175,40 +135,66 @@ serve(async (req) => {
       })));
     }
 
+    // First, get user IDs from usernames
+    const userIdMap = new Map<string, TwitterUser>();
+    
+    if (usersToFetch.length > 0) {
+      try {
+        console.log('Getting user IDs for:', usersToFetch);
+        
+        // Twitter v2 API allows up to 100 usernames in a single request
+        const usernamesParam = usersToFetch.join(',');
+        const userLookupUrl = `https://api.twitter.com/2/users/by?usernames=${usernamesParam}&user.fields=id,name,username,profile_image_url,verified`;
+        
+        const userResponse = await fetch(userLookupUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${bearerToken}`,
+          }
+        });
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          if (userData.data) {
+            userData.data.forEach((user: TwitterUser) => {
+              userIdMap.set(user.username.toLowerCase(), user);
+            });
+          }
+        } else {
+          const errorText = await userResponse.text();
+          console.error('Error fetching user data:', userResponse.status, errorText);
+          errors.push('Failed to fetch user information');
+        }
+      } catch (error) {
+        console.error('Error looking up users:', error);
+        errors.push(`Error looking up users: ${error.message}`);
+      }
+    }
+
     // Fetch new tweets for users without cache
     for (const username of usersToFetch) {
       try {
-        console.log(`Fetching tweets for @${username} from Twitter API v1.1`);
+        const user = userIdMap.get(username.toLowerCase());
+        if (!user) {
+          console.error(`User not found: ${username}`);
+          errors.push(`User not found: ${username}`);
+          continue;
+        }
+
+        console.log(`Fetching tweets for @${username} (ID: ${user.id}) from Twitter API v2`);
         
-        const baseUrl = "https://api.twitter.com/1.1/statuses/user_timeline.json";
-        const params = {
-          screen_name: username,
-          count: count.toString(),
-          tweet_mode: "extended",
-          exclude_replies: "false",
-          include_rts: "true"
-        };
+        // Build Twitter API v2 URL for user tweets
+        const twitterUrl = new URL(`https://api.twitter.com/2/users/${user.id}/tweets`);
+        twitterUrl.searchParams.append('max_results', Math.min(count, 100).toString());
+        twitterUrl.searchParams.append('tweet.fields', 'created_at,author_id,public_metrics');
+        twitterUrl.searchParams.append('exclude', 'retweets,replies');
         
-        const queryString = new URLSearchParams(params).toString();
-        const fullUrl = `${baseUrl}?${queryString}`;
-        
-        const oauthHeader = generateOAuthHeader(
-          "GET",
-          baseUrl,
-          params,
-          apiKey,
-          apiSecret,
-          accessToken,
-          accessTokenSecret
-        );
-        
-        console.log('Making request to Twitter API v1.1...');
-        const response = await fetch(fullUrl, {
-          method: "GET",
+        console.log('Making request to Twitter API v2...');
+        const response = await fetch(twitterUrl.toString(), {
+          method: 'GET',
           headers: {
-            "Authorization": oauthHeader,
-            "Content-Type": "application/json",
-          },
+            'Authorization': `Bearer ${bearerToken}`,
+          }
         });
 
         if (!response.ok) {
@@ -218,28 +204,25 @@ serve(async (req) => {
           continue;
         }
 
-        const tweets = await response.json();
-        console.log(`Got ${tweets.length} tweets for ${username}`);
+        const twitterData: TwitterAPIResponse = await response.json();
+        console.log(`Got ${twitterData.data?.length || 0} tweets for ${username}`);
         
-        if (tweets.length > 0) {
-          // Get user info from first tweet
-          const user = tweets[0].user;
-          
+        if (twitterData.data && twitterData.data.length > 0) {
           // Save tweets to database
-          const tweetsToInsert = tweets.map((tweet: any) => ({
-            tweet_id: tweet.id_str,
-            author_id: user.id_str,
-            author_username: user.screen_name,
+          const tweetsToInsert = twitterData.data.map((tweet: Tweet) => ({
+            tweet_id: tweet.id,
+            author_id: user.id,
+            author_username: user.username,
             author_name: user.name,
             author_verified: user.verified || false,
-            author_profile_image_url: user.profile_image_url_https,
-            tweet_text: tweet.full_text || tweet.text,
-            created_at: new Date(tweet.created_at).toISOString(),
+            author_profile_image_url: user.profile_image_url,
+            tweet_text: tweet.text,
+            created_at: tweet.created_at,
             metrics: {
-              likes: tweet.favorite_count || 0,
-              retweets: tweet.retweet_count || 0,
-              replies: tweet.reply_count || 0,
-              quotes: tweet.quote_count || 0
+              likes: tweet.public_metrics?.like_count || 0,
+              retweets: tweet.public_metrics?.retweet_count || 0,
+              replies: tweet.public_metrics?.reply_count || 0,
+              quotes: tweet.public_metrics?.quote_count || 0
             },
             agent_ids: agentId ? [agentId] : [],
             fetched_at: new Date().toISOString()
