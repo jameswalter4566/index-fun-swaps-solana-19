@@ -56,7 +56,72 @@ supabase secrets set VAPI_ASSISTANT_ID="your-assistant-id"
 supabase functions deploy smart-agent-speak
 ```
 
-## API Usage
+## Web SDK Setup (Recommended)
+
+### Install the SDK
+
+```bash
+npm install @vapi-ai/web
+```
+
+### Configure Environment Variables
+
+Create a `.env.local` file with:
+
+```bash
+# Required for SDK usage
+VITE_VAPI_PUBLIC_KEY="your-vapi-public-key"
+
+# Optional if using pre-configured assistant
+VITE_VAPI_ASSISTANT_ID="your-assistant-id"
+```
+
+### Using the SDK in React
+
+```javascript
+import Vapi from '@vapi-ai/web';
+
+// Initialize with public key
+const vapi = new Vapi(import.meta.env.VITE_VAPI_PUBLIC_KEY);
+
+// Start a call with assistant ID
+const call = await vapi.start(assistantId, {
+  transcriber: {
+    provider: "deepgram",
+    model: "nova-2",
+    language: "en-US",
+  },
+  model: {
+    provider: "openai",
+    model: "gpt-4-turbo",
+    temperature: 0.7,
+  },
+  voice: {
+    provider: "11labs",
+    voiceId: "21m00Tcm4TlvDq8ikWAM",
+  },
+  firstMessage: "Hello! How can I help you today?",
+  clientMessages: ["transcript", "function-call", "hang", "speech-start", "speech-end"],
+});
+
+// Set up event listeners
+vapi.on('message', (message) => {
+  console.log('Message:', message);
+});
+
+vapi.on('error', (error) => {
+  console.error('Error:', error);
+});
+
+vapi.on('call-end', () => {
+  console.log('Call ended');
+});
+
+// Stop the call
+vapi.stop();
+```
+
+## API Usage (Alternative - Web Call URL)
 
 ### Create a Web Call
 
