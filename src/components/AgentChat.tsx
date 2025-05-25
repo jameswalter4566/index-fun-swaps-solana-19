@@ -10,6 +10,13 @@ import { useToast } from '@/hooks/use-toast';
 // @ts-ignore - Package will be installed via npm
 import Vapi from '@vapi-ai/web';
 
+// Debug: Check if Vapi loaded
+if (typeof Vapi !== 'undefined') {
+  console.log('✅ Vapi SDK loaded successfully');
+} else {
+  console.error('❌ Vapi SDK failed to load! Check if @vapi-ai/web is installed');
+}
+
 interface Message {
   id: string;
   text: string;
@@ -141,19 +148,31 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
   }, [agentId]);
 
   const startVoiceCall = async () => {
+    console.log('🎯 startVoiceCall triggered!');
     try {
       // Initialize Vapi if not already done
       if (!vapiRef.current) {
         // Get public key from environment or use JWT from backend
         const publicKey = import.meta.env.VITE_VAPI_PUBLIC_KEY;
+        console.log('📝 Public key:', publicKey ? `${publicKey.substring(0, 8)}...` : 'NOT FOUND!');
+        
         if (!publicKey) {
-          throw new Error('VITE_VAPI_PUBLIC_KEY not configured');
+          const errorMsg = 'VITE_VAPI_PUBLIC_KEY not configured. Did you restart dev server after adding .env.local?';
+          console.error('❌', errorMsg);
+          toast({
+            title: 'Configuration Error',
+            description: errorMsg,
+            variant: 'destructive',
+          });
+          throw new Error(errorMsg);
         }
+        
+        console.log('🚀 Creating Vapi instance...');
         vapiRef.current = new Vapi(publicKey);
         
         // The SDK handles audio automatically via Daily.co
         // No need to manually create audio elements
-        console.log('Vapi SDK initialized - audio will be handled automatically');
+        console.log('✅ Vapi SDK initialized - audio will be handled automatically');
       }
 
       const vapi = vapiRef.current;
@@ -243,8 +262,10 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
 
       // Get assistant ID from environment or create inline
       const assistantId = import.meta.env.VITE_VAPI_ASSISTANT_ID;
+      console.log('📋 Assistant ID:', assistantId || 'Using inline configuration');
       
       let call;
+      console.log('📞 Starting Vapi call...');
       if (assistantId) {
         // Use pre-configured assistant with overrides
         call = await vapi.start(assistantId, {
@@ -645,6 +666,9 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
           </ScrollArea>
           
           <div className="p-4 border-t">
+            <div className="text-center text-xs text-gray-500 mb-2">
+              👆 Use GREEN phone button above for AI voice chat
+            </div>
             <div className="flex items-center justify-center">
               <Button
                 onClick={toggleListening}
@@ -656,6 +680,7 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
                   "flex items-center justify-center"
                 )}
                 disabled={isVoiceCallActive}
+                title="Speech-to-text only (no voice response) - Use green phone button for voice chat!"
               >
                 {isListening ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
               </Button>
@@ -720,7 +745,7 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
                   size="icon"
                   onClick={startVoiceCall}
                   className="h-8 w-8 bg-green-600 hover:bg-green-700"
-                  title="Start voice call"
+                  title="Start Vapi voice call - Click this for AI voice chat!"
                 >
                   <Phone className="h-4 w-4" />
                 </Button>
