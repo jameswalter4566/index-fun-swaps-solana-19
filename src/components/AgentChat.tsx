@@ -288,7 +288,7 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
             agentName: agentName,
             agentId: agentId,
           },
-          clientMessages: ["transcript", "assistant_response", "function-call", "hang", "speech-start", "speech-end"],
+          clientMessages: ["transcript", "function-call", "hang", "speech-update", "conversation-update"],
           firstMessageMode: "assistant-speaks-first",
         });
       } else {
@@ -317,7 +317,7 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
           name: agentName,
           firstMessage: `Hi! I'm ${agentName}, your AI trading assistant. I can help you analyze market trends and find trading opportunities. What would you like to know?`,
           firstMessageMode: "assistant-speaks-first",
-          clientMessages: ["transcript", "assistant_response", "function-call", "hang", "speech-start", "speech-end"],
+          clientMessages: ["transcript", "function-call", "hang", "speech-update", "conversation-update"],
         });
       }
 
