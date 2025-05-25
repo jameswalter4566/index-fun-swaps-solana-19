@@ -172,7 +172,57 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
         iframe.style.borderRadius = '12px';
         iframe.style.boxShadow = '0 10px 25px rgba(0,0,0,0.1)';
         iframe.style.zIndex = '9999';
-        iframe.allow = 'microphone';
+        iframe.allow = 'microphone; autoplay';
+        
+        // Wait for iframe to load and attach event listeners
+        iframe.onload = () => {
+          const iframeWindow = iframe.contentWindow;
+          if (iframeWindow && (iframeWindow as any).vapi) {
+            const vapi = (iframeWindow as any).vapi;
+            
+            // Add event listeners for debugging
+            vapi.on('message', (msg: any) => {
+              console.log('Vapi message:', msg);
+              
+              // Handle transcript messages
+              if (msg.type === 'transcript' && msg.role === 'assistant') {
+                const assistantMessage: Message = {
+                  id: Date.now().toString(),
+                  text: msg.transcript,
+                  sender: 'agent',
+                  timestamp: new Date(),
+                };
+                setMessages(prev => [...prev, assistantMessage]);
+              }
+            });
+            
+            vapi.on('error', (error: any) => {
+              console.error('Vapi error:', error);
+              toast({
+                title: 'Voice Call Error',
+                description: error.message || 'An error occurred during the voice call',
+                variant: 'destructive',
+              });
+            });
+            
+            vapi.on('speech-start', () => {
+              console.log('Assistant started speaking');
+            });
+            
+            vapi.on('speech-end', () => {
+              console.log('Assistant finished speaking');
+            });
+            
+            vapi.on('call-start', () => {
+              console.log('Call started successfully');
+            });
+            
+            vapi.on('call-end', () => {
+              console.log('Call ended');
+              endVoiceCall();
+            });
+          }
+        };
         
         document.body.appendChild(iframe);
         setVapiFrame(iframe);

@@ -22,6 +22,8 @@ interface VapiWebCallRequest {
     };
     recordingEnabled?: boolean;
     endCallFunctionEnabled?: boolean;
+    clientMessages?: string[];
+    firstMessageMode?: string;
   };
   metadata?: Record<string, any>;
 }
@@ -67,6 +69,8 @@ serve(async (req) => {
             },
             recordingEnabled: false,
             endCallFunctionEnabled: true,
+            clientMessages: ["assistant_response", "transcript", "function_call", "hang", "speech_start", "speech_end"],
+            firstMessageMode: "assistant-speaks-first",
           },
           metadata: {
             agentId: data.agentId,
