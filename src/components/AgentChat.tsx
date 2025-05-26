@@ -118,7 +118,7 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
       // Get Twitter usernames from indexTokens
       const twitterUsernames = indexTokens
         .filter(token => token.name?.startsWith('@'))
-        .map(token => token.name.substring(1)); // Remove @ symbol
+        .map(token => token.name); // Keep @ symbol for the edge function
 
       if (twitterUsernames.length === 0) {
         console.log('No Twitter accounts found in index');
@@ -127,11 +127,31 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
 
       console.log('Fetching tweets for:', twitterUsernames);
 
-      // Fetch tweets from database
+      // First, trigger the edge function to fetch fresh tweets
+      try {
+        const { data: fetchResult, error: fetchError } = await supabase.functions.invoke('retrieve-new-tweets', {
+          body: {
+            usernames: twitterUsernames,
+            agentId: agentId,
+            forceFresh: false
+          }
+        });
+
+        if (fetchError) {
+          console.error('Error fetching new tweets:', fetchError);
+        } else {
+          console.log('Tweet fetch result:', fetchResult);
+        }
+      } catch (err) {
+        console.error('Error calling retrieve-new-tweets:', err);
+      }
+
+      // Now fetch tweets from database
+      const cleanUsernames = twitterUsernames.map(u => u.replace('@', ''));
       const { data: tweets, error } = await supabase
-        .from('tweets')
+        .from('kol_tweets')
         .select('*')
-        .in('username', twitterUsernames)
+        .in('author_username', cleanUsernames)
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -139,18 +159,18 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
 
       // Convert tweets to messages
       const tweetMessages: Message[] = tweets?.map(tweet => ({
-        id: `tweet-${tweet.id}`,
+        id: `tweet-${tweet.tweet_id}`,
         sender: 'tweet' as const,
         timestamp: new Date(tweet.created_at),
         tweetData: {
-          id: tweet.id,
-          text: tweet.content,
-          author: `@${tweet.username}`,
-          authorImage: indexTokens.find(t => t.name === `@${tweet.username}`)?.image,
+          id: tweet.tweet_id,
+          text: tweet.tweet_text,
+          author: `@${tweet.author_username}`,
+          authorImage: indexTokens.find(t => t.name === `@${tweet.author_username}`)?.image || tweet.author_profile_image_url,
           createdAt: tweet.created_at,
-          likes: tweet.like_count,
-          retweets: tweet.retweet_count,
-          replies: tweet.reply_count,
+          likes: tweet.metrics?.likes || 0,
+          retweets: tweet.metrics?.retweets || 0,
+          replies: tweet.metrics?.replies || 0,
         },
         expandable: true,
         expanded: false,
@@ -174,33 +194,46 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
         return [];
       }
 
-      // Fetch mentions from database
+      // Fetch tweets that mention any of our tracked accounts
       const { data: mentions, error } = await supabase
-        .from('tweets')
+        .from('kol_tweets')
         .select('*')
-        .contains('mentioned_users', twitterUsernames)
+        .textSearch('tweet_text', twitterUsernames.map(u => `@${u}`).join(' | '))
         .order('created_at', { ascending: false })
         .limit(5);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching mentions:', error);
+        // Fallback: just return empty array for now
+        return [];
+      }
+
+      // Filter to only tweets that actually mention our accounts
+      const filteredMentions = mentions?.filter(tweet => {
+        const tweetLower = tweet.tweet_text.toLowerCase();
+        return twitterUsernames.some(username => 
+          tweetLower.includes(`@${username.toLowerCase()}`)
+        );
+      }) || [];
 
       // Convert mentions to messages
-      const mentionMessages: Message[] = mentions?.map(mention => ({
-        id: `mention-${mention.id}`,
+      const mentionMessages: Message[] = filteredMentions.map(mention => ({
+        id: `mention-${mention.tweet_id}`,
         sender: 'mention' as const,
         timestamp: new Date(mention.created_at),
         tweetData: {
-          id: mention.id,
-          text: mention.content,
-          author: `@${mention.username}`,
+          id: mention.tweet_id,
+          text: mention.tweet_text,
+          author: `@${mention.author_username}`,
+          authorImage: mention.author_profile_image_url,
           createdAt: mention.created_at,
-          likes: mention.like_count,
-          retweets: mention.retweet_count,
-          replies: mention.reply_count,
+          likes: mention.metrics?.likes || 0,
+          retweets: mention.metrics?.retweets || 0,
+          replies: mention.metrics?.replies || 0,
         },
         expandable: true,
         expanded: false,
-      })) || [];
+      }));
 
       return mentionMessages;
     } catch (error) {
