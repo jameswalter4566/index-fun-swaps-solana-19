@@ -285,56 +285,7 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
   const startVoiceCall = async () => {
     console.log('🎯 startVoiceCall triggered!');
     try {
-      // First, fetch all the data
-      const loadingMessage: Message = {
-        id: Date.now().toString(),
-        text: '🔄 Gathering latest tweets and analyzing coins...',
-        sender: 'agent',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, loadingMessage]);
-
-      // Fetch data in parallel
-      const [tweetMessages, mentionMessages, recommendationMessages] = await Promise.all([
-        fetchTweets(),
-        fetchMentions(),
-        fetchCoinRecommendations()
-      ]);
-
-      // Add tweets header if we have tweets
-      if (tweetMessages.length > 0) {
-        const tweetsHeader: Message = {
-          id: 'tweets-header',
-          text: `📱 Latest Tweets from Monitored Accounts (${tweetMessages.length})`,
-          sender: 'agent',
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, tweetsHeader, ...tweetMessages]);
-      }
-
-      // Add mentions header if we have mentions
-      if (mentionMessages.length > 0) {
-        const mentionsHeader: Message = {
-          id: 'mentions-header',
-          text: `💬 Recent Mentions (${mentionMessages.length})`,
-          sender: 'agent',
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, mentionsHeader, ...mentionMessages]);
-      }
-
-      // Add recommendations header if we have recommendations
-      if (recommendationMessages.length > 0) {
-        const recsHeader: Message = {
-          id: 'recs-header',
-          text: `🚀 Top 5 Coin Recommendations`,
-          sender: 'agent',
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, recsHeader, ...recommendationMessages]);
-      }
-
-      // Initialize Vapi if not already done
+      // Initialize Vapi FIRST for immediate voice response
       if (!vapiRef.current) {
         // HARDCODED PUBLIC KEY
         const publicKey = '098bd142-677b-40a8-ab39-11792cb7737b';
@@ -344,7 +295,6 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
         vapiRef.current = new Vapi(publicKey);
         
         // The SDK handles audio automatically via Daily.co
-        // No need to manually create audio elements
         console.log('✅ Vapi SDK initialized - audio will be handled automatically');
       }
 
@@ -404,14 +354,9 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
         });
       });
 
-      // Get assistant ID from environment or create inline
-      const assistantId = import.meta.env.VITE_VAPI_ASSISTANT_ID;
-      
-      let call;
+      // Start the Vapi call IMMEDIATELY
       console.log('📞 Starting Vapi call...');
-      
-      // Create inline assistant with DEGEN message
-      call = await vapi.start({
+      const call = await vapi.start({
         transcriber: {
           provider: "deepgram",
           model: "nova-2",
@@ -441,6 +386,59 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
       if (call?.id) {
         setCurrentCallId(call.id);
       }
+
+      // THEN fetch data in the background while Vapi is speaking
+      const loadingMessage: Message = {
+        id: Date.now().toString(),
+        text: '🔄 Gathering latest tweets and analyzing coins...',
+        sender: 'agent',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, loadingMessage]);
+
+      // Fetch data in parallel
+      const [tweetMessages, mentionMessages, recommendationMessages] = await Promise.all([
+        fetchTweets(),
+        fetchMentions(),
+        fetchCoinRecommendations()
+      ]);
+
+      // Remove loading message
+      setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id));
+
+      // Add tweets header if we have tweets
+      if (tweetMessages.length > 0) {
+        const tweetsHeader: Message = {
+          id: 'tweets-header',
+          text: `📱 Latest Tweets from Monitored Accounts (${tweetMessages.length})`,
+          sender: 'agent',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, tweetsHeader, ...tweetMessages]);
+      }
+
+      // Add mentions header if we have mentions
+      if (mentionMessages.length > 0) {
+        const mentionsHeader: Message = {
+          id: 'mentions-header',
+          text: `💬 Recent Mentions (${mentionMessages.length})`,
+          sender: 'agent',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, mentionsHeader, ...mentionMessages]);
+      }
+
+      // Add recommendations header if we have recommendations
+      if (recommendationMessages.length > 0) {
+        const recsHeader: Message = {
+          id: 'recs-header',
+          text: `🚀 Top 5 Coin Recommendations`,
+          sender: 'agent',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, recsHeader, ...recommendationMessages]);
+      }
+
     } catch (error) {
       console.error('Error starting voice call:', error);
       toast({
@@ -639,8 +637,8 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
                           <div className="flex-1">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold">{message.tweetData.author}</span>
-                                <span className="text-xs text-gray-500">
+                                <span className="font-semibold text-gray-900 dark:text-gray-100">{message.tweetData.author}</span>
+                                <span className="text-xs text-gray-600 dark:text-gray-400">
                                   {new Date(message.tweetData.createdAt).toLocaleString()}
                                 </span>
                               </div>
@@ -654,11 +652,11 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
                               </Button>
                             </div>
                             <p className={cn(
-                              "text-sm",
+                              "text-sm text-gray-800 dark:text-gray-200",
                               !message.expanded && "line-clamp-3"
                             )}>{message.tweetData.text}</p>
                             {message.tweetData.likes !== undefined && (
-                              <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                              <div className="flex gap-4 mt-2 text-xs text-gray-600 dark:text-gray-400">
                                 <span>❤️ {message.tweetData.likes}</span>
                                 <span>🔁 {message.tweetData.retweets || 0}</span>
                                 <span>💬 {message.tweetData.replies || 0}</span>
@@ -679,9 +677,9 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
                           <div className="flex-1">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <span className="text-xs bg-purple-200 dark:bg-purple-800 px-2 py-1 rounded">Mention</span>
-                                <span className="font-semibold">{message.tweetData.author}</span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs bg-purple-200 dark:bg-purple-800 px-2 py-1 rounded text-purple-900 dark:text-purple-100">Mention</span>
+                                <span className="font-semibold text-gray-900 dark:text-gray-100">{message.tweetData.author}</span>
+                                <span className="text-xs text-gray-600 dark:text-gray-400">
                                   {new Date(message.tweetData.createdAt).toLocaleString()}
                                 </span>
                               </div>
@@ -695,11 +693,11 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
                               </Button>
                             </div>
                             <p className={cn(
-                              "text-sm",
+                              "text-sm text-gray-800 dark:text-gray-200",
                               !message.expanded && "line-clamp-3"
                             )}>{message.tweetData.text}</p>
                             {message.tweetData.likes !== undefined && (
-                              <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                              <div className="flex gap-4 mt-2 text-xs text-gray-600 dark:text-gray-400">
                                 <span>❤️ {message.tweetData.likes}</span>
                                 <span>🔁 {message.tweetData.retweets || 0}</span>
                                 <span>💬 {message.tweetData.replies || 0}</span>
@@ -720,22 +718,22 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
                             <div className="flex-1">
                               <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-bold text-lg">{coin.symbol}</span>
-                                  <span className="text-sm text-gray-600">{coin.name}</span>
+                                  <span className="font-bold text-lg text-gray-900 dark:text-gray-100">{coin.symbol}</span>
+                                  <span className="text-sm text-gray-700 dark:text-gray-300">{coin.name}</span>
                                 </div>
                                 <span className={cn(
                                   "px-2 py-1 rounded text-xs font-semibold",
-                                  coin.confidence === 'high' && 'bg-green-500/20 text-green-700',
-                                  coin.confidence === 'medium' && 'bg-yellow-500/20 text-yellow-700',
-                                  coin.confidence === 'low' && 'bg-red-500/20 text-red-700'
+                                  coin.confidence === 'high' && 'bg-green-500/20 text-green-800 dark:text-green-200',
+                                  coin.confidence === 'medium' && 'bg-yellow-500/20 text-yellow-800 dark:text-yellow-200',
+                                  coin.confidence === 'low' && 'bg-red-500/20 text-red-800 dark:text-red-200'
                                 )}>
                                   {coin.confidence} confidence
                                 </span>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-sm mb-2">
                                 <div>
-                                  <span className="text-gray-600">Price:</span>
-                                  <span className="font-semibold ml-1">${formatPrice(coin.price)}</span>
+                                  <span className="text-gray-600 dark:text-gray-400">Price:</span>
+                                  <span className="font-semibold ml-1 text-gray-900 dark:text-gray-100">${formatPrice(coin.price)}</span>
                                   {coin.priceChange24h !== undefined && (
                                     <span className={cn(
                                       "ml-2 text-xs",
@@ -746,11 +744,11 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
                                   )}
                                 </div>
                                 <div>
-                                  <span className="text-gray-600">Market Cap:</span>
-                                  <span className="font-semibold ml-1">{formatMarketCap(coin.marketCap)}</span>
+                                  <span className="text-gray-600 dark:text-gray-400">Market Cap:</span>
+                                  <span className="font-semibold ml-1 text-gray-900 dark:text-gray-100">{formatMarketCap(coin.marketCap)}</span>
                                 </div>
                               </div>
-                              <p className="text-sm text-gray-700 italic">{coin.reason}</p>
+                              <p className="text-sm text-gray-700 dark:text-gray-300 italic">{coin.reason}</p>
                             </div>
                           </div>
                         ))}
