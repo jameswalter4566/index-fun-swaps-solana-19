@@ -88,20 +88,10 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { limit = 10, bypassFilters = false } = body;
 
-    // Fetch latest tokens from Solana Tracker
-    const response = await fetch('https://api.solanatracker.io/tokens/latest', {
-      headers: {
-        'x-api-key': solanaApiKey,
-        'Accept': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      console.error('Solana Tracker API error:', response.status, response.statusText);
-      
-      // If API fails, return some mock data for now
-      if (bypassFilters) {
-        const mockTokens = [
+    // TEMPORARY: Always return mock data since Solana Tracker API is down
+    if (bypassFilters) {
+      console.log('Returning mock token data for voice call');
+      const mockTokens = [
           {
             symbol: 'BONK',
             name: 'Bonk',
@@ -152,19 +142,29 @@ serve(async (req) => {
             logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3/logo.png',
             priceChange24h: -1.23,
           }
-        ];
+      ];
 
-        return new Response(
-          JSON.stringify({ 
-            success: true,
-            recommendations: mockTokens.slice(0, limit)
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          recommendations: mockTokens.slice(0, limit)
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Try to fetch from Solana Tracker API
+    const response = await fetch('https://api.solanatracker.io/tokens/latest', {
+      headers: {
+        'x-api-key': solanaApiKey,
+        'Accept': 'application/json'
       }
-      
+    });
+
+    if (!response.ok) {
+      console.error('Solana Tracker API error:', response.status, response.statusText);
       throw new Error(`Solana Tracker API error: ${response.status}`);
     }
 
