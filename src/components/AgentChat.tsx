@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Mic, MicOff, Send, X, Phone, PhoneOff } from 'lucide-react';
+import { Mic, MicOff, Send, X, Phone, PhoneOff, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import NodeVisualizer from '@/components/NodeVisualizer';
 // @ts-ignore - Package will be installed via npm
 import Vapi from '@vapi-ai/web';
 
@@ -19,10 +20,13 @@ if (typeof Vapi !== 'undefined') {
 
 interface Message {
   id: string;
-  text: string;
-  sender: 'user' | 'agent';
+  text?: string;
+  sender: 'user' | 'agent' | 'tweet' | 'mention' | 'recommendation';
   timestamp: Date;
   coinRecommendations?: CoinRecommendation[];
+  tweetData?: TweetData;
+  expandable?: boolean;
+  expanded?: boolean;
 }
 
 interface CoinRecommendation {
@@ -32,6 +36,27 @@ interface CoinRecommendation {
   marketCap: number;
   confidence: 'high' | 'medium' | 'low';
   reason: string;
+  logo?: string;
+  priceChange24h?: number;
+}
+
+interface TweetData {
+  id: string;
+  text: string;
+  author: string;
+  authorImage?: string;
+  createdAt: string;
+  likes?: number;
+  retweets?: number;
+  replies?: number;
+}
+
+interface Token {
+  address: string;
+  name: string;
+  symbol: string;
+  image: string;
+  metadata?: any;
 }
 
 // Define SpeechRecognition types
@@ -58,9 +83,10 @@ interface AgentChatProps {
   agentName: string;
   agentId: string;
   isPersistent?: boolean;
+  indexTokens?: Token[];
 }
 
-const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent = false }) => {
+const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent = false, indexTokens = [] }) => {
   const [isOpen, setIsOpen] = useState(isPersistent);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -68,10 +94,11 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
   const [isVoiceCallActive, setIsVoiceCallActive] = useState(false);
   const [currentCallId, setCurrentCallId] = useState<string | null>(null);
   const vapiRef = useRef<any>(null); // Will be Vapi instance when SDK is installed
+  const [showAgentMakeup, setShowAgentMakeup] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: `Hi! I'm your ${agentName} trading agent. I'm monitoring Twitter accounts and market data to find opportunities for you. How can I help?`,
+      text: `Hi! I'm your ${agentName} trading agent. Click the green phone button to hear my analysis of the latest tweets and coin recommendations!`,
       sender: 'agent',
       timestamp: new Date(),
     },
@@ -86,86 +113,199 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
     }
   }, [messages]);
 
-  // Fetch new recommendations periodically
-  useEffect(() => {
-    const fetchRecommendations = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('coin_recommendations')
-          .select('*')
-          .eq('agent_id', agentId)
-          .gte('created_at', lastRecommendationCheckRef.current.toISOString())
-          .order('created_at', { ascending: false })
-          .limit(5);
+  const fetchTweets = async () => {
+    try {
+      // Get Twitter usernames from indexTokens
+      const twitterUsernames = indexTokens
+        .filter(token => token.name?.startsWith('@'))
+        .map(token => token.name.substring(1)); // Remove @ symbol
 
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          const recommendations = data.map((rec: any) => {
-            const tokenData = rec.token_data;
-            const pool = tokenData.pools?.[0];
-            return {
-              symbol: tokenData.token.symbol,
-              name: tokenData.token.name,
-              price: pool?.price?.usd || 0,
-              marketCap: pool?.marketCap?.usd || 0,
-              confidence: rec.confidence_score > 0.7 ? 'high' : rec.confidence_score > 0.5 ? 'medium' : 'low',
-              reason: rec.recommendation_reason
-            };
-          });
-
-          const newMessage: Message = {
-            id: Date.now().toString(),
-            text: '🚨 New coin opportunities detected!',
-            sender: 'agent',
-            timestamp: new Date(),
-            coinRecommendations: recommendations
-          };
-
-          setMessages(prev => [...prev, newMessage]);
-          lastRecommendationCheckRef.current = new Date();
-
-          // Show notification if available
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('New Coin Recommendations', {
-              body: `Found ${data.length} new opportunities!`,
-              icon: '/imagelogo.jpg'
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching recommendations:', error);
+      if (twitterUsernames.length === 0) {
+        console.log('No Twitter accounts found in index');
+        return [];
       }
-    };
 
-    // Check for recommendations on mount
-    fetchRecommendations();
+      console.log('Fetching tweets for:', twitterUsernames);
 
-    // Set up polling interval (every 30 seconds)
-    const interval = setInterval(fetchRecommendations, 30000);
+      // Fetch tweets from database
+      const { data: tweets, error } = await supabase
+        .from('tweets')
+        .select('*')
+        .in('username', twitterUsernames)
+        .order('created_at', { ascending: false })
+        .limit(10);
 
-    return () => clearInterval(interval);
-  }, [agentId]);
+      if (error) throw error;
+
+      // Convert tweets to messages
+      const tweetMessages: Message[] = tweets?.map(tweet => ({
+        id: `tweet-${tweet.id}`,
+        sender: 'tweet' as const,
+        timestamp: new Date(tweet.created_at),
+        tweetData: {
+          id: tweet.id,
+          text: tweet.content,
+          author: `@${tweet.username}`,
+          authorImage: indexTokens.find(t => t.name === `@${tweet.username}`)?.image,
+          createdAt: tweet.created_at,
+          likes: tweet.like_count,
+          retweets: tweet.retweet_count,
+          replies: tweet.reply_count,
+        },
+        expandable: true,
+        expanded: false,
+      })) || [];
+
+      return tweetMessages;
+    } catch (error) {
+      console.error('Error fetching tweets:', error);
+      return [];
+    }
+  };
+
+  const fetchMentions = async () => {
+    try {
+      // Get Twitter usernames from indexTokens
+      const twitterUsernames = indexTokens
+        .filter(token => token.name?.startsWith('@'))
+        .map(token => token.name.substring(1));
+
+      if (twitterUsernames.length === 0) {
+        return [];
+      }
+
+      // Fetch mentions from database
+      const { data: mentions, error } = await supabase
+        .from('tweets')
+        .select('*')
+        .contains('mentioned_users', twitterUsernames)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+
+      // Convert mentions to messages
+      const mentionMessages: Message[] = mentions?.map(mention => ({
+        id: `mention-${mention.id}`,
+        sender: 'mention' as const,
+        timestamp: new Date(mention.created_at),
+        tweetData: {
+          id: mention.id,
+          text: mention.content,
+          author: `@${mention.username}`,
+          createdAt: mention.created_at,
+          likes: mention.like_count,
+          retweets: mention.retweet_count,
+          replies: mention.reply_count,
+        },
+        expandable: true,
+        expanded: false,
+      })) || [];
+
+      return mentionMessages;
+    } catch (error) {
+      console.error('Error fetching mentions:', error);
+      return [];
+    }
+  };
+
+  const fetchCoinRecommendations = async () => {
+    try {
+      // Call the coin-recommendations edge function without filters
+      const { data, error } = await supabase.functions.invoke('coin-recommendations', {
+        body: {
+          limit: 5,
+          bypassFilters: true // This tells the function to ignore user filters
+        }
+      });
+
+      if (error) throw error;
+
+      // Convert recommendations to messages
+      const recommendationMessages: Message[] = data?.recommendations?.map((rec: any) => {
+        const coinData = {
+          symbol: rec.symbol,
+          name: rec.name,
+          price: rec.price || 0,
+          marketCap: rec.marketCap || 0,
+          confidence: rec.confidence || 'medium',
+          reason: rec.reason || 'High potential based on market analysis',
+          logo: rec.logo,
+          priceChange24h: rec.priceChange24h,
+        };
+
+        return {
+          id: `rec-${Date.now()}-${rec.symbol}`,
+          sender: 'recommendation' as const,
+          timestamp: new Date(),
+          coinRecommendations: [coinData],
+        };
+      }) || [];
+
+      return recommendationMessages;
+    } catch (error) {
+      console.error('Error fetching coin recommendations:', error);
+      return [];
+    }
+  };
 
   const startVoiceCall = async () => {
     console.log('🎯 startVoiceCall triggered!');
     try {
+      // First, fetch all the data
+      const loadingMessage: Message = {
+        id: Date.now().toString(),
+        text: '🔄 Gathering latest tweets and analyzing coins...',
+        sender: 'agent',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, loadingMessage]);
+
+      // Fetch data in parallel
+      const [tweetMessages, mentionMessages, recommendationMessages] = await Promise.all([
+        fetchTweets(),
+        fetchMentions(),
+        fetchCoinRecommendations()
+      ]);
+
+      // Add tweets header if we have tweets
+      if (tweetMessages.length > 0) {
+        const tweetsHeader: Message = {
+          id: 'tweets-header',
+          text: `📱 Latest Tweets from Monitored Accounts (${tweetMessages.length})`,
+          sender: 'agent',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, tweetsHeader, ...tweetMessages]);
+      }
+
+      // Add mentions header if we have mentions
+      if (mentionMessages.length > 0) {
+        const mentionsHeader: Message = {
+          id: 'mentions-header',
+          text: `💬 Recent Mentions (${mentionMessages.length})`,
+          sender: 'agent',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, mentionsHeader, ...mentionMessages]);
+      }
+
+      // Add recommendations header if we have recommendations
+      if (recommendationMessages.length > 0) {
+        const recsHeader: Message = {
+          id: 'recs-header',
+          text: `🚀 Top 5 Coin Recommendations`,
+          sender: 'agent',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, recsHeader, ...recommendationMessages]);
+      }
+
       // Initialize Vapi if not already done
       if (!vapiRef.current) {
         // HARDCODED PUBLIC KEY
         const publicKey = '098bd142-677b-40a8-ab39-11792cb7737b';
         console.log('📝 Using hardcoded public key');
-        
-        if (!publicKey) {
-          const errorMsg = 'Public key not configured';
-          console.error('❌', errorMsg);
-          toast({
-            title: 'Configuration Error',
-            description: errorMsg,
-            variant: 'destructive',
-          });
-          throw new Error(errorMsg);
-        }
         
         console.log('🚀 Creating Vapi instance...');
         vapiRef.current = new Vapi(publicKey);
@@ -181,28 +321,12 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
       vapi.on('call-start', () => {
         console.log('Call started successfully');
         setIsVoiceCallActive(true);
-        
-        const voiceMessage: Message = {
-          id: Date.now().toString(),
-          text: '🎙️ Voice call started. Speak naturally with your agent!',
-          sender: 'agent',
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, voiceMessage]);
       });
 
       vapi.on('call-end', () => {
         console.log('Call ended');
         setIsVoiceCallActive(false);
         setCurrentCallId(null);
-        
-        const endMessage: Message = {
-          id: Date.now().toString(),
-          text: '📞 Voice call ended.',
-          sender: 'agent',
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, endMessage]);
       });
 
       vapi.on('speech-start', () => {
@@ -235,15 +359,6 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
             };
             setMessages(prev => [...prev, userMessage]);
           }
-        } else if (message.type === 'assistant_response' && message.response) {
-          // Handle final assistant response
-          const assistantMessage: Message = {
-            id: Date.now().toString(),
-            text: message.response,
-            sender: 'agent',
-            timestamp: new Date(),
-          };
-          setMessages(prev => [...prev, assistantMessage]);
         }
       });
 
@@ -256,123 +371,43 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
         });
       });
 
-      vapi.on('volume-level', (volume: number) => {
-        console.log(`Assistant volume: ${volume}`);
-      });
-
       // Get assistant ID from environment or create inline
       const assistantId = import.meta.env.VITE_VAPI_ASSISTANT_ID;
-      console.log('📋 Assistant ID:', assistantId || 'Using inline configuration');
       
       let call;
       console.log('📞 Starting Vapi call...');
-      if (assistantId) {
-        // Use pre-configured assistant with overrides
-        call = await vapi.start(assistantId, {
-          transcriber: {
-            provider: "deepgram",
-            model: "nova-2",
-            language: "en-US",
-          },
-          model: {
-            provider: "openai",
-            model: "gpt-4-turbo",
-            temperature: 0.7,
-          },
-          voice: {
-            provider: "openai",
-            voiceId: "nova", // OpenAI's nova voice - more reliable
-          },
-          firstMessage: `Hi! I'm ${agentName}, your AI trading assistant. I can help you analyze market trends and find trading opportunities. What would you like to know?`,
-          variableValues: {
-            agentName: agentName,
-            agentId: agentId,
-          },
-          clientMessages: ["transcript", "function-call", "hang", "speech-update", "conversation-update"],
-          firstMessageMode: "assistant-speaks-first",
-        });
-      } else {
-        // Create inline assistant
-        call = await vapi.start({
-          transcriber: {
-            provider: "deepgram",
-            model: "nova-2",
-            language: "en-US",
-          },
-          model: {
-            provider: "openai",
-            model: "gpt-4-turbo",
-            messages: [
-              {
-                role: "system",
-                content: `You are ${agentName}, an AI trading assistant. You help users analyze cryptocurrency markets and Twitter signals. You monitor Twitter accounts for trading opportunities and provide real-time market analysis. Be concise, professional, and focus on actionable trading insights.`,
-              },
-            ],
-            temperature: 0.7,
-          },
-          voice: {
-            provider: "openai",
-            voiceId: "nova", // OpenAI's nova voice - more reliable
-          },
-          name: agentName,
-          firstMessage: `Hi! I'm ${agentName}, your AI trading assistant. I can help you analyze market trends and find trading opportunities. What would you like to know?`,
-          firstMessageMode: "assistant-speaks-first",
-          clientMessages: ["transcript", "function-call", "hang", "speech-update", "conversation-update"],
-        });
-      }
+      
+      // Create inline assistant with DEGEN message
+      call = await vapi.start({
+        transcriber: {
+          provider: "deepgram",
+          model: "nova-2",
+          language: "en-US",
+        },
+        model: {
+          provider: "openai",
+          model: "gpt-4-turbo",
+          messages: [
+            {
+              role: "system",
+              content: `You are ${agentName}, a DEGEN crypto trading assistant. You help users analyze cryptocurrency markets and Twitter signals. Keep responses short and to the point. Be enthusiastic about crypto opportunities.`,
+            },
+          ],
+          temperature: 0.7,
+        },
+        voice: {
+          provider: "openai",
+          voiceId: "nova",
+        },
+        name: agentName,
+        firstMessage: "What's up fellow DEGEN! I have gathered all of the latest tweets from the KOLs you follow. I will continue to analyze and will let you know if anything comes back. Check your phone for messages!",
+        firstMessageMode: "assistant-speaks-first",
+        clientMessages: ["transcript", "function-call", "hang", "speech-update", "conversation-update"],
+      });
 
       if (call?.id) {
         setCurrentCallId(call.id);
       }
-
-      /* TEMPORARY: Use the current iframe approach until SDK is installed
-      const { data, error } = await supabase.functions.invoke('smart-agent-speak', {
-        body: {
-          action: 'create-web-call',
-          data: {
-            agentId,
-            agentName,
-            firstMessage: `Hi! I'm ${agentName}, your AI trading assistant. I can help you analyze market trends and find trading opportunities. What would you like to know?`,
-            metadata: {
-              chatHistory: messages.slice(-5),
-            },
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.data?.webCallUrl && data?.data?.callId) {
-        setCurrentCallId(data.data.callId);
-        setIsVoiceCallActive(true);
-
-        // Create iframe
-        const iframe = document.createElement('iframe');
-        iframe.src = data.data.webCallUrl;
-        iframe.style.position = 'fixed';
-        iframe.style.bottom = '20px';
-        iframe.style.right = '420px';
-        iframe.style.width = '350px';
-        iframe.style.height = '500px';
-        iframe.style.border = '1px solid #e5e7eb';
-        iframe.style.borderRadius = '12px';
-        iframe.style.boxShadow = '0 10px 25px rgba(0,0,0,0.1)';
-        iframe.style.zIndex = '9999';
-        iframe.allow = 'microphone; autoplay';
-        
-        document.body.appendChild(iframe);
-        
-        // Store iframe reference in vapiRef temporarily
-        vapiRef.current = iframe;
-
-        const voiceMessage: Message = {
-          id: Date.now().toString(),
-          text: '🎙️ Voice call started. Speak naturally with your agent!',
-          sender: 'agent',
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, voiceMessage]);
-      } */
     } catch (error) {
       console.error('Error starting voice call:', error);
       toast({
@@ -388,24 +423,6 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
       if (vapiRef.current && typeof vapiRef.current.stop === 'function') {
         vapiRef.current.stop();
       }
-
-      /* TEMPORARY: Handle iframe cleanup
-      if (currentCallId) {
-        await supabase.functions.invoke('smart-agent-speak', {
-          body: {
-            action: 'end-call',
-            data: {
-              callId: currentCallId,
-            },
-          },
-        });
-      }
-
-      // Remove iframe if it exists
-      if (vapiRef.current && vapiRef.current instanceof HTMLIFrameElement) {
-        vapiRef.current.remove();
-        vapiRef.current = null;
-      } */
 
       setIsVoiceCallActive(false);
       setCurrentCallId(null);
@@ -423,6 +440,15 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
     }
   };
 
+  const toggleMessageExpansion = (messageId: string) => {
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === messageId) {
+        return { ...msg, expanded: !msg.expanded };
+      }
+      return msg;
+    }));
+  };
+
   const handleSendMessage = (text?: string) => {
     const messageText = text || inputText.trim();
     if (!messageText) return;
@@ -437,78 +463,15 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
 
-    // Process user message and generate response
-    setTimeout(async () => {
-      let responseText = 'I\'m analyzing the market for you...';
-      
-      if (messageText.toLowerCase().includes('recommend') || messageText.toLowerCase().includes('opportunity')) {
-        // Fetch latest recommendations
-        try {
-          const { data, error } = await supabase
-            .from('coin_recommendations')
-            .select('*')
-            .eq('agent_id', agentId)
-            .order('created_at', { ascending: false })
-            .limit(3);
-
-          if (data && data.length > 0) {
-            responseText = 'Here are my latest recommendations based on your filters:';
-            const recommendations = data.map((rec: {
-              token_data: any;
-              confidence_score: number;
-              recommendation_reason: string;
-            }) => {
-              const tokenData = rec.token_data;
-              const pool = tokenData.pools?.[0];
-              return {
-                symbol: tokenData.token.symbol,
-                name: tokenData.token.name,
-                price: pool?.price?.usd || 0,
-                marketCap: pool?.marketCap?.usd || 0,
-                confidence: rec.confidence_score > 0.7 ? 'high' : rec.confidence_score > 0.5 ? 'medium' : 'low' as 'high' | 'medium' | 'low',
-                reason: rec.recommendation_reason
-              };
-            });
-
-            const agentResponse: Message = {
-              id: (Date.now() + 1).toString(),
-              text: responseText,
-              sender: 'agent',
-              timestamp: new Date(),
-              coinRecommendations: recommendations
-            };
-            setMessages(prev => [...prev, agentResponse]);
-          } else {
-            responseText = 'No recommendations found yet. Make sure you\'ve configured your filters in the Agent Configuration section.';
-            const agentResponse: Message = {
-              id: (Date.now() + 1).toString(),
-              text: responseText,
-              sender: 'agent',
-              timestamp: new Date()
-            };
-            setMessages(prev => [...prev, agentResponse]);
-          }
-        } catch (error) {
-          console.error('Error fetching recommendations:', error);
-          responseText = 'Sorry, I encountered an error while fetching recommendations.';
-          const agentResponse: Message = {
-            id: (Date.now() + 1).toString(),
-            text: responseText,
-            sender: 'agent',
-            timestamp: new Date()
-          };
-          setMessages(prev => [...prev, agentResponse]);
-        }
-      } else {
-        // General response
-        const agentResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          text: 'I\'m monitoring the market for opportunities based on your configured filters. Ask me for recommendations or wait for automatic alerts!',
-          sender: 'agent',
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, agentResponse]);
-      }
+    // Simple response for now
+    setTimeout(() => {
+      const agentResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'I\'m monitoring the market for opportunities based on your configured filters. Click the green phone button to hear my latest analysis!',
+        sender: 'agent',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, agentResponse]);
     }, 1000);
   };
 
@@ -581,6 +544,15 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
         <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
           <CardTitle className="text-lg">{agentName} Trading Agent</CardTitle>
           <div className="flex items-center gap-2">
+            <Button
+              variant={showAgentMakeup ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowAgentMakeup(!showAgentMakeup)}
+              className="text-xs"
+            >
+              {showAgentMakeup ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
+              View Agent Makeup
+            </Button>
             {isVoiceCallActive ? (
               <Button
                 variant="destructive"
@@ -597,7 +569,7 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
                 size="icon"
                 onClick={startVoiceCall}
                 className="h-8 w-8 bg-green-600 hover:bg-green-700"
-                title="Start voice call"
+                title="Start voice call - Fetches tweets and recommendations"
               >
                 <Phone className="h-4 w-4" />
               </Button>
@@ -605,105 +577,222 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
           </div>
         </CardHeader>
         
-        <CardContent className="p-0 flex flex-col flex-1">
+        <CardContent className="p-0 flex flex-col flex-1 overflow-hidden">
+          {showAgentMakeup && (
+            <div className="p-4 border-b bg-stake-darkbg">
+              <NodeVisualizer agentId={agentId} />
+            </div>
+          )}
+          
           <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
             <div className="space-y-4">
               {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn(
-                    "flex",
-                    message.sender === 'user' ? 'justify-end' : 'justify-start'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "max-w-[80%] rounded-lg px-4 py-2",
-                      message.sender === 'user'
-                        ? 'bg-stake-accent text-white'
-                        : 'bg-stake-card'
-                    )}
-                  >
-                    <p className="text-sm">{message.text}</p>
-                    
-                    {message.coinRecommendations && (
-                      <div className="mt-3 space-y-2">
-                        {message.coinRecommendations.map((coin) => (
-                          <div
-                            key={coin.symbol}
-                            className="bg-black/20 rounded-md p-3 text-xs"
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-bold">{coin.symbol}</span>
-                              <span
-                                className={cn(
-                                  "px-2 py-0.5 rounded text-xs",
-                                  coin.confidence === 'high' && 'bg-green-500/20 text-green-400',
-                                  coin.confidence === 'medium' && 'bg-yellow-500/20 text-yellow-400',
-                                  coin.confidence === 'low' && 'bg-red-500/20 text-red-400'
-                                )}
+                <div key={message.id}>
+                  {message.sender === 'tweet' && message.tweetData ? (
+                    <Card className={cn(
+                      "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800",
+                      "transition-all duration-300",
+                      message.expanded ? "max-w-full" : "max-w-lg"
+                    )}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          {message.tweetData.authorImage && (
+                            <img 
+                              src={message.tweetData.authorImage} 
+                              alt={message.tweetData.author}
+                              className="w-10 h-10 rounded-full"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold">{message.tweetData.author}</span>
+                                <span className="text-xs text-gray-500">
+                                  {new Date(message.tweetData.createdAt).toLocaleString()}
+                                </span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleMessageExpansion(message.id)}
+                                className="h-6 w-6 p-0"
                               >
-                                {coin.confidence} confidence
-                              </span>
+                                {message.expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              </Button>
                             </div>
-                            <div className="text-gray-400 space-y-0.5">
-                              <div>Price: ${formatPrice(coin.price)}</div>
-                              <div>Market Cap: {formatMarketCap(coin.marketCap)}</div>
-                              <div className="italic">{coin.reason}</div>
+                            <p className={cn(
+                              "text-sm",
+                              !message.expanded && "line-clamp-3"
+                            )}>{message.tweetData.text}</p>
+                            {message.tweetData.likes !== undefined && (
+                              <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                                <span>❤️ {message.tweetData.likes}</span>
+                                <span>🔁 {message.tweetData.retweets || 0}</span>
+                                <span>💬 {message.tweetData.replies || 0}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : message.sender === 'mention' && message.tweetData ? (
+                    <Card className={cn(
+                      "bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800",
+                      "transition-all duration-300",
+                      message.expanded ? "max-w-full" : "max-w-lg"
+                    )}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs bg-purple-200 dark:bg-purple-800 px-2 py-1 rounded">Mention</span>
+                                <span className="font-semibold">{message.tweetData.author}</span>
+                                <span className="text-xs text-gray-500">
+                                  {new Date(message.tweetData.createdAt).toLocaleString()}
+                                </span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleMessageExpansion(message.id)}
+                                className="h-6 w-6 p-0"
+                              >
+                                {message.expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                            <p className={cn(
+                              "text-sm",
+                              !message.expanded && "line-clamp-3"
+                            )}>{message.tweetData.text}</p>
+                            {message.tweetData.likes !== undefined && (
+                              <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                                <span>❤️ {message.tweetData.likes}</span>
+                                <span>🔁 {message.tweetData.retweets || 0}</span>
+                                <span>💬 {message.tweetData.replies || 0}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : message.sender === 'recommendation' && message.coinRecommendations ? (
+                    <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+                      <CardContent className="p-4">
+                        {message.coinRecommendations.map((coin) => (
+                          <div key={coin.symbol} className="flex items-center gap-4">
+                            {coin.logo && (
+                              <img src={coin.logo} alt={coin.name} className="w-12 h-12 rounded-full" />
+                            )}
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-lg">{coin.symbol}</span>
+                                  <span className="text-sm text-gray-600">{coin.name}</span>
+                                </div>
+                                <span className={cn(
+                                  "px-2 py-1 rounded text-xs font-semibold",
+                                  coin.confidence === 'high' && 'bg-green-500/20 text-green-700',
+                                  coin.confidence === 'medium' && 'bg-yellow-500/20 text-yellow-700',
+                                  coin.confidence === 'low' && 'bg-red-500/20 text-red-700'
+                                )}>
+                                  {coin.confidence} confidence
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                                <div>
+                                  <span className="text-gray-600">Price:</span>
+                                  <span className="font-semibold ml-1">${formatPrice(coin.price)}</span>
+                                  {coin.priceChange24h !== undefined && (
+                                    <span className={cn(
+                                      "ml-2 text-xs",
+                                      coin.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'
+                                    )}>
+                                      {coin.priceChange24h >= 0 ? '+' : ''}{coin.priceChange24h.toFixed(2)}%
+                                    </span>
+                                  )}
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Market Cap:</span>
+                                  <span className="font-semibold ml-1">{formatMarketCap(coin.marketCap)}</span>
+                                </div>
+                              </div>
+                              <p className="text-sm text-gray-700 italic">{coin.reason}</p>
                             </div>
                           </div>
                         ))}
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div
+                      className={cn(
+                        "flex",
+                        message.sender === 'user' ? 'justify-end' : 'justify-start'
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "max-w-[80%] rounded-lg px-4 py-2",
+                          message.sender === 'user'
+                            ? 'bg-stake-accent text-white'
+                            : 'bg-stake-card'
+                        )}
+                      >
+                        <p className="text-sm">{message.text}</p>
+                        <span className="text-xs opacity-60 mt-1 block">
+                          {message.timestamp.toLocaleTimeString()}
+                        </span>
                       </div>
-                    )}
-                    
-                    <span className="text-xs opacity-60 mt-1 block">
-                      {message.timestamp.toLocaleTimeString()}
-                    </span>
-                  </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           </ScrollArea>
           
           <div className="p-4 border-t">
-            <div className="text-center text-xs text-gray-500 mb-2">
-              👆 Use GREEN phone button above for AI voice chat
-            </div>
-            <div className="flex items-center justify-center">
+            <div className="flex gap-2">
+              <Input
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Ask about trading opportunities..."
+                className="flex-1"
+                disabled={isVoiceCallActive}
+              />
+              
+              <Button
+                size="icon"
+                onClick={() => handleSendMessage()}
+                disabled={!inputText.trim() || isVoiceCallActive}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+              
               <Button
                 onClick={toggleListening}
                 className={cn(
-                  "w-16 h-16 rounded-full transition-all",
-                  isListening 
-                    ? "bg-red-500 hover:bg-red-600 animate-pulse" 
-                    : "bg-stake-accent hover:bg-stake-highlight",
-                  "flex items-center justify-center"
+                  "px-3",
+                  isListening && "bg-red-500 hover:bg-red-600"
                 )}
                 disabled={isVoiceCallActive}
-                title="Speech-to-text only (no voice response) - Use green phone button for voice chat!"
               >
-                {isListening ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
               </Button>
             </div>
-            {isListening && (
-              <p className="text-center text-sm text-stake-muted mt-2">
-                Listening... speak now
-              </p>
-            )}
-          </div>
-          
-          {isVoiceCallActive && (
-            <div className="px-4 pb-4">
-              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-sm text-green-600">
+            
+            {isVoiceCallActive && (
+              <div className="mt-3 bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-sm text-green-600">
                 🎙️ Voice call active - Speak naturally with your agent
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </CardContent>
       </div>
     );
   }
 
+  // Non-persistent view (floating chat)
   return (
     <>
       {/* Microphone Button */}

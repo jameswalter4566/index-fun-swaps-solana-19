@@ -84,6 +84,10 @@ serve(async (req) => {
     const solanaApiKey = Deno.env.get('SOLANA_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Parse request body
+    const body = await req.json().catch(() => ({}));
+    const { limit = 10, bypassFilters = false } = body;
+
     // Fetch latest tokens from Solana Tracker
     const response = await fetch('https://api.solanatracker.io/tokens/latest?page=1', {
       headers: {
@@ -97,6 +101,46 @@ serve(async (req) => {
     }
 
     const tokens: SolanaTokenData[] = await response.json();
+
+    // If bypassFilters is true, return top tokens without filtering
+    if (bypassFilters) {
+      const topTokens = tokens
+        .filter(tokenData => tokenData.pools && tokenData.pools.length > 0)
+        .slice(0, limit)
+        .map(tokenData => {
+          const pool = tokenData.pools[0];
+          const priceChange1h = tokenData.events?.['1h']?.priceChangePercentage || 0;
+          
+          // Calculate confidence based on basic metrics
+          let confidence: 'high' | 'medium' | 'low' = 'medium';
+          if (pool.liquidity?.usd > 100000 && pool.lpBurn >= 100) {
+            confidence = 'high';
+          } else if (pool.liquidity?.usd < 10000) {
+            confidence = 'low';
+          }
+
+          return {
+            symbol: tokenData.token.symbol,
+            name: tokenData.token.name,
+            price: pool.price?.usd || 0,
+            marketCap: pool.marketCap?.usd || 0,
+            confidence,
+            reason: `New token with ${pool.liquidity?.usd > 50000 ? 'strong' : 'growing'} liquidity`,
+            logo: tokenData.token.image,
+            priceChange24h: priceChange1h,
+          };
+        });
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          recommendations: topTokens
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
 
     // Get all agent filters
     const { data: filterData, error: filterError } = await supabase

@@ -9,8 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, TrendingUp, TrendingDown, Users, DollarSign } from 'lucide-react';
 import NodeVisualizer from '@/components/NodeVisualizer';
 import AgentChat from '@/components/AgentChat';
-import KOLFeed from '@/components/KOLFeed';
-import KOLTweets from '@/components/KOLTweets';
 
 interface Token {
   address: string;
@@ -22,6 +20,7 @@ interface Token {
   liquidity: number;
   holders: number;
   priceChange24h: number;
+  metadata?: any;
 }
 
 interface IndexData {
@@ -114,140 +113,90 @@ const IndexDetail: React.FC = () => {
         Back to Indexes
       </Button>
 
-      <div className="mb-8">
+      <div className="mb-8 text-center">
         <h1 className="text-4xl font-bold mb-2">{index.name}</h1>
-        <div className="flex gap-4 text-sm text-gray-600">
+        <div className="flex gap-4 text-sm text-gray-600 justify-center">
           <span>Created {new Date(index.created_at).toLocaleDateString()}</span>
           <span>•</span>
           <span>{index.tokens.length} tokens</span>
         </div>
       </div>
 
-      <div className="flex gap-6">
-        {/* Agent Chat - Left Side (40% width) */}
-        <div className="w-[40%]">
-          <Card className="h-[calc(100vh-12rem)] sticky top-4 bg-stake-card border-stake-border">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-lg">AI Trading Assistant</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 h-[calc(100%-4rem)]">
+      <div className="flex gap-6 justify-center">
+        {/* Agent Chat - Center Screen */}
+        <div className="w-full max-w-4xl">
+          <Card className="h-[calc(100vh-12rem)] bg-stake-card border-stake-border">
+            <CardContent className="p-0 h-full">
               <AgentChat 
                 agentName={index.name} 
                 agentId={index.id} 
                 isPersistent={true}
+                indexTokens={index.tokens}
               />
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Content - Right Side (60% width) */}
-        <div className="flex-1 space-y-8">
-          {/* Agent Configuration */}
-          <Card className="bg-stake-card border-stake-border">
-            <CardHeader>
-              <CardTitle className="text-2xl">Agent Configuration</CardTitle>
-              <p className="text-sm text-stake-muted">
-                Configure your trading agent's parameters and filters
-              </p>
-            </CardHeader>
-            <CardContent>
-              <NodeVisualizer agentId={index.id} />
-            </CardContent>
-          </Card>
-
-          {/* KOL Feed */}
-          <KOLFeed tokens={index.tokens} agentId={index.id} />
-
-          {/* KOL Tweets */}
-          <KOLTweets tokens={index.tokens} agentId={index.id} />
-
-          {/* Twitter Accounts Being Monitored */}
-          <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Monitored Twitter Accounts</h2>
-        {index.tokens.map((token) => {
-          const metadata = token.metadata as any;
-          const isTwitterAccount = token.name?.startsWith('@');
-          
-          if (isTwitterAccount && metadata) {
-            return (
-              <Card key={token.address} className="overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="flex items-center gap-4 p-4">
-                    <img 
-                      src={token.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${token.name}`} 
-                      alt={token.name}
-                      className="w-16 h-16 rounded-full object-cover"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
+        {/* Twitter Accounts Being Monitored - Right Side */}
+        <div className="w-80 space-y-4">
+          <h2 className="text-xl font-bold">Monitored Accounts</h2>
+          <div className="space-y-3 max-h-[calc(100vh-16rem)] overflow-y-auto">
+            {index.tokens.map((token) => {
+              const metadata = token.metadata as any;
+              const isTwitterAccount = token.name?.startsWith('@');
+              
+              if (isTwitterAccount && metadata) {
+                return (
+                  <Card key={token.address} className="overflow-hidden bg-stake-card border-stake-border">
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={token.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${token.name}`} 
+                          alt={token.name}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-lg">{metadata.display_name || token.name}</h3>
+                            <h3 className="font-semibold text-sm truncate">{metadata.display_name || token.name}</h3>
                             {metadata.verified && (
-                              <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
                               </svg>
                             )}
                           </div>
-                          <p className="text-sm text-gray-600">{token.name}</p>
+                          <p className="text-xs text-gray-600 truncate">{token.name}</p>
+                          <div className="flex gap-4 text-xs mt-1">
+                            <span className="text-gray-600">
+                              <strong>{metadata.followers_count?.toLocaleString() || '0'}</strong> followers
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">{metadata.description}</p>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-600">Followers</p>
-                          <p className="font-semibold">{metadata.followers_count?.toLocaleString() || '0'}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Following</p>
-                          <p className="font-semibold">{metadata.following_count?.toLocaleString() || '0'}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          }
-          
-          // Fallback for old token data
-          return (
-            <Card key={token.address} className="overflow-hidden">
-              <CardContent className="p-0">
-                <div className="flex items-center gap-4 p-4">
-                  <img 
-                    src={token.image || '/placeholder.svg'} 
-                    alt={token.name}
-                    className="w-16 h-16 rounded-full object-cover"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <h3 className="font-bold text-lg">{token.name}</h3>
-                        <p className="text-sm text-gray-600">{token.symbol}</p>
+                    </CardContent>
+                  </Card>
+                );
+              }
+              
+              // Fallback for old token data
+              return (
+                <Card key={token.address} className="overflow-hidden bg-stake-card border-stake-border">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-3">
+                      <img 
+                        src={token.image || '/placeholder.svg'} 
+                        alt={token.name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm truncate">{token.name}</h3>
+                        <p className="text-xs text-gray-600">{token.symbol}</p>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
-
-          {/* Swap Button */}
-          <Button 
-        className="w-full h-16 text-lg font-bold bg-green-500 hover:bg-green-600 text-black shadow-[0_0_20px_rgba(34,197,94,0.5)] hover:shadow-[0_0_30px_rgba(34,197,94,0.7)] transition-all duration-300"
-        onClick={() => {
-          toast({
-            title: "429 Too Many Requests",
-            description: "Rate limit exceeded, retry in 17 seconds.",
-            variant: "destructive",
-          });
-        }}
-      >
-        SWAP INTO INDEX
-          </Button>
         </div>
       </div>
     </div>
