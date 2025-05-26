@@ -88,6 +88,9 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { limit = 10, bypassFilters = false } = body;
 
+    // Log API key status for debugging (without exposing the actual key)
+    console.log('SOLANA_KEY environment variable status:', solanaApiKey ? `Set (length: ${solanaApiKey.length})` : 'Not set');
+
     // Try to fetch from Solana Tracker API with correct base URL
     const response = await fetch('https://data.solanatracker.io/tokens/latest', {
       headers: {
