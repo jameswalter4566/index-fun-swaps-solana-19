@@ -39,7 +39,7 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
   const { publicKey, signTransaction, sendTransaction, connected } = useWallet();
   const { toast } = useToast();
   
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState('0.1'); // Default to 0.1 SOL or token
   const [slippage, setSlippage] = useState(10);
   const [loading, setLoading] = useState(false);
   const [swapQuote, setSwapQuote] = useState<any>(null);
@@ -71,6 +71,17 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
       setToTokenAddress(initialToToken.address);
     }
   }, [initialToToken, mode]);
+
+  // Auto-fetch quote when component mounts or when amount changes
+  useEffect(() => {
+    if (amount && toTokenAddress && publicKey && from) {
+      const timeoutId = setTimeout(() => {
+        getSwapQuote();
+      }, 500); // Debounce for 500ms
+      return () => clearTimeout(timeoutId);
+    }
+  }, [amount, toTokenAddress, publicKey, from?.address]);
+
 
   const connection = new Connection(
     'https://mainnet.helius-rpc.com/?api-key=9c6bbd13-8d15-4803-8c06-a08cf73ac3f8',
@@ -117,7 +128,7 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
     }
   };
 
-  const executeSwap = async () => {
+  const executeSwap = async (useExistingQuote = false) => {
     if (!connected || !publicKey || !signTransaction || !sendTransaction) {
       toast({
         title: 'Wallet not connected',
@@ -138,9 +149,12 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
 
     setLoading(true);
     try {
-      // Get fresh swap quote
-      const quote = await getSwapQuote();
-      if (!quote) return;
+      // Use existing quote or get fresh one
+      let quote = useExistingQuote ? swapQuote : null;
+      if (!quote) {
+        quote = await getSwapQuote();
+        if (!quote) return;
+      }
 
       // Deserialize the transaction
       const serializedTransactionBuffer = Buffer.from(quote.txn, "base64");
@@ -182,8 +196,8 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
         description: `Successfully swapped ${amount} ${from.symbol} for ${quote.rate.amountOut} ${toToken?.symbol || 'tokens'}`,
       });
 
-      // Reset form
-      setAmount('');
+      // Reset form but keep default amount
+      setAmount('0.1');
       setSwapQuote(null);
       
       if (onSwapComplete) {
@@ -362,36 +376,50 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
             <Button className="w-full" disabled>
               Connect Wallet to Swap
             </Button>
-          ) : !swapQuote ? (
-            <Button 
-              className="w-full" 
-              onClick={getSwapQuote}
-              disabled={!amount || !toTokenAddress || loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Getting Quote...
-                </>
-              ) : (
-                'Get Quote'
-              )}
-            </Button>
           ) : (
-            <Button 
-              className="w-full" 
-              onClick={executeSwap}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Swapping...
-                </>
-              ) : (
-                `Swap ${amount} ${from.symbol} for ${swapQuote.rate.amountOut.toFixed(6)} ${toToken?.symbol}`
+            <>
+              {/* Single Swap Now button that gets quote and executes */}
+              <Button 
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" 
+                onClick={() => {
+                  if (!swapQuote) {
+                    // Get quote first, then execute
+                    getSwapQuote().then((quote) => {
+                      if (quote) {
+                        executeSwap(false);
+                      }
+                    });
+                  } else {
+                    // Execute with existing quote
+                    executeSwap(true);
+                  }
+                }}
+                disabled={!amount || !toTokenAddress || loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {swapQuote ? 'Swapping...' : 'Getting Quote...'}
+                  </>
+                ) : swapQuote ? (
+                  `Swap ${amount} ${from.symbol} for ${swapQuote.rate.amountOut.toFixed(6)} ${toToken?.symbol}`
+                ) : (
+                  `Swap ${amount} ${from.symbol}`
+                )}
+              </Button>
+              
+              {/* Optional: Show quote details button */}
+              {!swapQuote && (
+                <Button 
+                  variant="outline"
+                  className="w-full" 
+                  onClick={getSwapQuote}
+                  disabled={!amount || !toTokenAddress || loading}
+                >
+                  Preview Quote
+                </Button>
               )}
-            </Button>
+            </>
           )}
         </div>
 
