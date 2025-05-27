@@ -15,6 +15,7 @@ import IndexDetail from "./pages/IndexDetail";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
+import Documentation from "./pages/Documentation";
 import { VapiDebug } from "./components/VapiDebug";
 import { VapiWebRTCDebug } from "./components/VapiWebRTCDebug";
 import { VapiWebSocketChat } from "./components/VapiWebSocketChat";
@@ -50,6 +51,7 @@ const App = () => {
                   <Route path="/index" element={<Index />} />
                   <Route path="/create-swap" element={<CreateSwap />} />
                   <Route path="/index/:id" element={<IndexDetail />} />
+                  <Route path="/documentation" element={<Documentation />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/debug" element={<VapiDebug />} />
                   <Route path="/debug-webrtc" element={<VapiWebRTCDebug />} />

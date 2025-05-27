@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
-import { Mic, MessageCircle, Plus, Compass, TrendingUp, Twitter } from "lucide-react";
+import { Mic, MessageCircle } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { format } from 'date-fns';
 import { toast } from "sonner";
@@ -276,41 +276,41 @@ const Landing = () => {
               <h2 className="text-2xl font-bold text-purple-500">in-dex.fun</h2>
             </div>
             
-            <nav className="flex items-center gap-6">
+            <nav className="flex items-center justify-center gap-4">
               <Button
-                variant="ghost"
                 onClick={() => navigate('/create-swap')}
-                className="text-white hover:text-purple-400 flex items-center gap-2"
+                className="bg-purple-600 text-purple-100 hover:bg-white hover:text-purple-600 px-6 py-2 rounded-full font-medium transition-all duration-200"
               >
-                <Plus className="w-4 h-4" />
                 Create Agent
               </Button>
               
               <Button
-                variant="ghost"
                 onClick={() => navigate('/index')}
-                className="text-white hover:text-purple-400 flex items-center gap-2"
+                className="bg-purple-600 text-purple-100 hover:bg-white hover:text-purple-600 px-6 py-2 rounded-full font-medium transition-all duration-200"
               >
-                <Compass className="w-4 h-4" />
                 Explore Agents
               </Button>
               
               <Button
-                variant="ghost"
                 onClick={() => navigate('/index')}
-                className="text-white hover:text-purple-400 flex items-center gap-2"
+                className="bg-purple-600 text-purple-100 hover:bg-white hover:text-purple-600 px-6 py-2 rounded-full font-medium transition-all duration-200"
               >
-                <TrendingUp className="w-4 h-4" />
                 Trade
+              </Button>
+              
+              <Button
+                onClick={() => navigate('/documentation')}
+                className="bg-purple-600 text-purple-100 hover:bg-white hover:text-purple-600 px-6 py-2 rounded-full font-medium transition-all duration-200"
+              >
+                Documentation
               </Button>
               
               <a
                 href="https://x.com/index_fun"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-purple-400 flex items-center gap-2"
+                className="bg-purple-600 text-purple-100 hover:bg-white hover:text-purple-600 px-6 py-2 rounded-full font-medium transition-all duration-200 inline-block"
               >
-                <Twitter className="w-4 h-4" />
                 Twitter
               </a>
             </nav>
@@ -486,17 +486,6 @@ const Landing = () => {
                   </div>
                 </div>
 
-                {/* Voice Chat Button */}
-                <div className="flex justify-center mt-6">
-                  <Button
-                    onClick={handleVapiClick}
-                    className={`bg-purple-600 hover:bg-purple-700 text-white px-8 py-8 rounded-full text-lg animate-pulse-glow flex items-center gap-3 ${isVapiListening ? 'ring-4 ring-purple-400' : ''}`}
-                    size="lg"
-                  >
-                    <Mic className={`w-8 h-8 ${isVapiListening ? 'animate-pulse' : ''}`} />
-                    <span>Click here to start chatting with a trading agent now</span>
-                  </Button>
-                </div>
               </div>
             </div>
           </GlassCard>
