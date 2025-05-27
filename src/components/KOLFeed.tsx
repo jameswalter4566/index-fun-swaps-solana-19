@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/glass-card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -121,13 +121,13 @@ const KOLFeed: React.FC<KOLFeedProps> = ({ tokens, agentId }) => {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between">
+    <GlassCard className="w-full" glow>
+      <div className="flex flex-row items-center justify-between mb-4">
         <div>
-          <CardTitle className="flex items-center gap-2">
+          <h3 className="flex items-center gap-2 text-lg font-semibold">
             <Twitter className="h-5 w-5" />
             KOL Feed
-          </CardTitle>
+          </h3>
           {lastRefreshed && (
             <p className="text-sm text-muted-foreground mt-1">
               Last updated {formatTimestamp(lastRefreshed.toISOString())}
@@ -143,9 +143,9 @@ const KOLFeed: React.FC<KOLFeedProps> = ({ tokens, agentId }) => {
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
-      </CardHeader>
+      </div>
       
-      <CardContent className="p-0">
+      <div className="p-0">
         {mentions.length === 0 && !loading && (
           <div className="text-center py-12 text-muted-foreground">
             <Twitter className="h-12 w-12 mx-auto mb-4 opacity-20" />
@@ -221,8 +221,8 @@ const KOLFeed: React.FC<KOLFeedProps> = ({ tokens, agentId }) => {
             </div>
           </ScrollArea>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </GlassCard>
   );
 };
 

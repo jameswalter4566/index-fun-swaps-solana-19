@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/glass-card';
 import { Heart } from 'lucide-react';
 
 interface Token {
@@ -38,16 +38,16 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
   const gainColor = gainPercentage >= 0 ? 'text-green-500' : 'text-red-500';
   
   return (
-    <Card className="overflow-hidden card-hover border border-stake-card bg-gray-800">
-      <CardHeader className="p-4 bg-stake-darkbg border-b border-stake-background">
+    <GlassCard className="overflow-hidden" glow>
+      <div className="p-4 bg-stake-darkbg/50 border-b border-stake-background/30">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-lg font-bold text-stake-text">{name}</CardTitle>
+          <h3 className="text-lg font-bold text-stake-text">{name}</h3>
           <span className={`font-bold ${gainColor}`}>
             {gainPercentage >= 0 ? '+' : ''}{gainPercentage}%
           </span>
         </div>
-      </CardHeader>
-      <CardContent className="p-4">
+      </div>
+      <div className="p-4">
         <div className="space-y-4">
           <div>
             <h4 className="text-sm font-medium text-stake-muted mb-2">Monitoring Twitter Accounts</h4>
@@ -136,8 +136,8 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
             </button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </GlassCard>
   );
 };
 

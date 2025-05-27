@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/glass-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -739,9 +739,9 @@ const AgentChat: React.FC<AgentChatProps> = ({
   // Persistent view
   const persistentView = (
     <div className="h-full flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
+      <div className="flex flex-row items-center justify-between p-4 border-b">
         <div className="flex items-center gap-2">
-          <CardTitle className="text-lg">{agentName} Trading Agent</CardTitle>
+          <h3 className="text-lg font-semibold">{agentName} Trading Agent</h3>
           {twitterAccounts.length > 0 && (
             <span className="text-xs text-gray-500">({twitterAccounts.length} accounts)</span>
           )}
@@ -778,9 +778,9 @@ const AgentChat: React.FC<AgentChatProps> = ({
             </Button>
           )}
         </div>
-      </CardHeader>
+      </div>
       
-      <CardContent className="p-0 flex flex-col flex-1 overflow-hidden">
+      <div className="p-0 flex flex-col flex-1 overflow-hidden">
         {showAgentMakeup && (
           <div className="p-4 border-b bg-stake-darkbg">
             <NodeVisualizer agentId={agentId} />
@@ -873,7 +873,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
             </div>
           )}
         </div>
-      </CardContent>
+      </div>
     </div>
   );
 
@@ -899,9 +899,9 @@ const AgentChat: React.FC<AgentChatProps> = ({
 
       {/* Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-24 right-8 w-96 h-[600px] z-50 shadow-2xl animate-in slide-in-from-bottom-5">
-          <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
-            <CardTitle className="text-lg">{agentName} Trading Agent</CardTitle>
+        <GlassCard className="fixed bottom-24 right-8 w-96 h-[600px] z-50 shadow-2xl animate-in slide-in-from-bottom-5" glow>
+          <div className="flex flex-row items-center justify-between p-4 border-b">
+            <h3 className="text-lg font-semibold">{agentName} Trading Agent</h3>
             <div className="flex items-center gap-2">
               {isVoiceCallActive ? (
                 <Button
@@ -933,9 +933,9 @@ const AgentChat: React.FC<AgentChatProps> = ({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-          </CardHeader>
+          </div>
           
-          <CardContent className="p-0 flex flex-col h-[calc(100%-73px)]">
+          <div className="p-0 flex flex-col h-[calc(100%-73px)]">
             <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
               <div className="space-y-4">
                 {messages.map((message) => (
@@ -972,8 +972,8 @@ const AgentChat: React.FC<AgentChatProps> = ({
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </GlassCard>
       )}
     </>
   );

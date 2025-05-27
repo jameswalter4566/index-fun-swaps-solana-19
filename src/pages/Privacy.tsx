@@ -1,16 +1,14 @@
 import React from 'react';
 import Layout from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/glass-card';
 
 const Privacy: React.FC = () => {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-3xl font-bold text-center">Privacy Policy</CardTitle>
-          </CardHeader>
-          <CardContent className="prose prose-sm max-w-none space-y-6">
+        <GlassCard glow>
+          <h1 className="text-3xl font-bold text-center mb-6">Privacy Policy</h1>
+          <div className="prose prose-sm max-w-none space-y-6">
             <section>
               <h2 className="text-xl font-semibold mb-3">1. Information We Collect</h2>
               <p className="text-stake-muted">
@@ -105,8 +103,8 @@ const Privacy: React.FC = () => {
                 Last updated: {new Date().toLocaleDateString()}
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </GlassCard>
       </div>
     </Layout>
   );

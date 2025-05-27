@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/glass-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, TrendingUp, TrendingDown, DollarSign, Users, Droplets, Activity, BarChart3, Trophy, Wallet, Eye, EyeOff } from 'lucide-react';
@@ -443,8 +443,8 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
   return (
     <div className="flex gap-4 h-full">
       {/* Chart Section */}
-      <Card className="flex-1 bg-gray-800 border-gray-700">
-        <CardHeader className="pb-2">
+      <GlassCard className="flex-1" glow>
+        <div className="pb-2">
           <div className="flex items-center gap-2 mb-2">
             <Input
               placeholder="Enter token address..."
@@ -505,9 +505,9 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
               </div>
             </div>
           )}
-        </CardHeader>
+        </div>
         
-        <CardContent>
+        <div>
           {displayCoin ? (
             <div className="h-[400px] flex items-center justify-center bg-black rounded-lg p-4">
               {loadingChart ? (
@@ -690,17 +690,17 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                 </TabsContent>
               </Tabs>
             </div>
-        </CardContent>
-      </Card>
+        </div>
+      </GlassCard>
 
       {/* Swap Panel - Always visible */}
-      <Card className="w-80 bg-gray-800 border-gray-700">
+      <GlassCard className="w-80" glow>
         {displayCoin ? (
           <>
-          <CardHeader>
-            <CardTitle className="text-lg">Coin Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold">Coin Details</h3>
+          </div>
+          <div className="space-y-4">
             {/* Coin Stats */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -806,7 +806,7 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                 </Button>
               </TabsContent>
             </Tabs>
-          </CardContent>
+          </div>
           </>
         ) : (
           <div className="h-full flex items-center justify-center">
@@ -816,7 +816,7 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
             </div>
           </div>
         )}
-      </Card>
+      </GlassCard>
     </div>
   );
 };

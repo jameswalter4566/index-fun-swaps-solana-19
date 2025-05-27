@@ -1,17 +1,22 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Mic } from "lucide-react";
+import { GlassCard } from "@/components/ui/glass-card";
+import { Mic, MessageCircle } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { format } from 'date-fns';
 import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
+import WebSocketService from '@/lib/websocket-service';
 
 const Landing = () => {
   const navigate = useNavigate();
   const [currentSection, setCurrentSection] = useState(0);
   const sectionsRef = useRef<(HTMLElement | null)[]>([]);
   const [isVapiListening, setIsVapiListening] = useState(false);
+  const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const wsServiceRef = useRef<WebSocketService | null>(null);
 
   // Hardcoded mock data
   const mockChartData = {
@@ -110,6 +115,66 @@ const Landing = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleStartChat = async () => {
+    if (isWebSocketConnected) {
+      // Disconnect
+      wsServiceRef.current?.disconnect();
+      setIsWebSocketConnected(false);
+      toast.info("Disconnected from agent");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Get WebSocket URL
+      const { data, error } = await supabase.functions.invoke('vapi-websocket-call');
+      
+      if (error) {
+        console.error('Error getting WebSocket URL:', error);
+        toast.error('Failed to connect to agent');
+        return;
+      }
+
+      if (!data?.url) {
+        console.error('No WebSocket URL returned');
+        toast.error('Failed to connect to agent');
+        return;
+      }
+
+      // Initialize WebSocket service
+      wsServiceRef.current = new WebSocketService();
+      
+      // Set up message handler
+      wsServiceRef.current.onMessage((message) => {
+        console.log('Received message:', message);
+        
+        if (message.type === 'transcript' && message.role === 'assistant') {
+          // You could show the transcript in a toast or update UI
+          toast(message.transcript, {
+            duration: 5000,
+            position: 'bottom-right',
+          });
+        }
+      });
+
+      // Connect to WebSocket
+      const connected = await wsServiceRef.current.connect(data.url);
+      
+      if (connected) {
+        setIsWebSocketConnected(true);
+        toast.success('Connected to agent! Start speaking...');
+      } else {
+        toast.error('Failed to establish connection');
+      }
+    } catch (error) {
+      console.error('Error in handleStartChat:', error);
+      toast.error('Failed to connect to agent');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleVapiClick = async () => {
     setIsVapiListening(true);
     
@@ -159,17 +224,29 @@ const Landing = () => {
           AI Trading Agents are here
         </h1>
         
-        <Button
-          onClick={() => navigate('/index')}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-6 rounded-full text-xl animate-pulse-glow mb-16"
-          size="lg"
-        >
-          Create Your Agent Now
-        </Button>
+        <div className="flex flex-col items-center gap-4 mb-16">
+          <Button
+            onClick={() => navigate('/index')}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-6 rounded-full text-xl animate-pulse-glow"
+            size="lg"
+          >
+            Create Your Agent Now
+          </Button>
+          
+          <Button
+            onClick={handleStartChat}
+            disabled={isLoading || isWebSocketConnected}
+            className="bg-green-600 hover:bg-green-700 text-white px-10 py-5 rounded-full text-lg flex items-center gap-3 transition-all duration-300"
+            size="lg"
+          >
+            <MessageCircle className={`w-6 h-6 ${isWebSocketConnected ? 'animate-pulse' : ''}`} />
+            {isWebSocketConnected ? 'Connected to Agent' : 'Start Chatting with Agent'}
+          </Button>
+        </div>
 
         {/* Mini Index Page Recreation */}
         <div className="w-full max-w-6xl mx-auto px-4">
-          <Card className="bg-gray-900/50 backdrop-blur-sm border-purple-500/20 p-6">
+          <GlassCard glow className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Chart Section */}
               <div className="space-y-4">
@@ -237,22 +314,22 @@ const Landing = () => {
 
                 {/* Token Stats */}
                 <div className="grid grid-cols-2 gap-4">
-                  <Card className="bg-gray-800/50 p-4">
+                  <GlassCard className="p-4">
                     <p className="text-sm text-gray-400">Market Cap</p>
                     <p className="text-xl font-mono">${(mockTokenStats.marketCap / 1000000).toFixed(2)}M</p>
-                  </Card>
-                  <Card className="bg-gray-800/50 p-4">
+                  </GlassCard>
+                  <GlassCard className="p-4">
                     <p className="text-sm text-gray-400">24h Volume</p>
                     <p className="text-xl font-mono">${(mockTokenStats.volume24h / 1000).toFixed(2)}K</p>
-                  </Card>
-                  <Card className="bg-gray-800/50 p-4">
+                  </GlassCard>
+                  <GlassCard className="p-4">
                     <p className="text-sm text-gray-400">Holders</p>
                     <p className="text-xl font-mono">{mockTokenStats.holders.toLocaleString()}</p>
-                  </Card>
-                  <Card className="bg-gray-800/50 p-4">
+                  </GlassCard>
+                  <GlassCard className="p-4">
                     <p className="text-sm text-gray-400">Liquidity</p>
                     <p className="text-xl font-mono">${(mockTokenStats.liquidity / 1000000).toFixed(2)}M</p>
-                  </Card>
+                  </GlassCard>
                 </div>
               </div>
 
@@ -262,7 +339,7 @@ const Landing = () => {
                   <h4 className="text-lg font-semibold mb-3">Top Traders</h4>
                   <div className="space-y-2 max-h-[200px] overflow-y-auto">
                     {mockTopTraders.slice(0, 5).map((trader) => (
-                      <Card key={trader.wallet} className="bg-gray-800/50 p-3">
+                      <GlassCard key={trader.wallet} className="p-3">
                         <div className="flex justify-between items-center">
                           <div>
                             <p className="text-sm font-mono">{trader.wallet.slice(0, 8)}...{trader.wallet.slice(-6)}</p>
@@ -277,7 +354,7 @@ const Landing = () => {
                             </p>
                           </div>
                         </div>
-                      </Card>
+                      </GlassCard>
                     ))}
                   </div>
                 </div>
@@ -286,7 +363,7 @@ const Landing = () => {
                   <h4 className="text-lg font-semibold mb-3">Top Holders</h4>
                   <div className="space-y-2 max-h-[200px] overflow-y-auto">
                     {mockTokenHolders.topHolders.slice(0, 5).map((holder) => (
-                      <Card key={holder.wallet} className="bg-gray-800/50 p-3">
+                      <GlassCard key={holder.wallet} className="p-3">
                         <div className="flex justify-between items-center">
                           <div>
                             <p className="text-sm font-mono">{holder.wallet.slice(0, 8)}...{holder.wallet.slice(-6)}</p>
@@ -297,7 +374,7 @@ const Landing = () => {
                             {holder.isWhale && <span className="text-xs text-yellow-400">🐋 Whale</span>}
                           </div>
                         </div>
-                      </Card>
+                      </GlassCard>
                     ))}
                   </div>
                 </div>
@@ -315,7 +392,7 @@ const Landing = () => {
                 </div>
               </div>
             </div>
-          </Card>
+          </GlassCard>
         </div>
       </section>
 

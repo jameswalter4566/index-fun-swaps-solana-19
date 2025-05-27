@@ -58,6 +58,8 @@ export default {
 					'dark-purple': '#7E69AB',
 					teal: '#0EA5E9'
 				},
+				solPurple: '#9945FF',
+				solGreen: '#14F195',
 				stake: {
 					background: '#000000',
 					darkbg: '#000000',
@@ -78,6 +80,12 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				}
+			},
+			backdropBlur: {
+				xs: '2px',
+				sm: '6px',
+				md: '12px',
+				lg: '20px',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -116,8 +124,24 @@ export default {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out',
+				'spin-slow': 'spin 14s linear infinite',
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		require("tailwindcss-animate"),
+		({ addUtilities }: any) =>
+			addUtilities({
+				'.glass': {
+					// translucent dark panel
+					background:
+						'linear-gradient( to bottom right, rgba(30,35,45,.55), rgba(15,18,25,.55) )',
+					backdropFilter: 'blur(20px) saturate(160%)',
+					border: '1px solid rgba(255,255,255,.08)',
+					boxShadow:
+						'0 1px 2px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.04)',
+					borderRadius: '12px',
+				},
+			}),
+	],
 } satisfies Config;

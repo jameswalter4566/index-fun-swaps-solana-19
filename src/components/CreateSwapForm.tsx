@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/glass-card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -137,14 +137,14 @@ const CreateSwapForm: React.FC = () => {
   };
 
   return (
-    <Card className="max-w-lg mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center">create a new agent</CardTitle>
-        <CardDescription className="text-center">
+    <GlassCard className="max-w-lg mx-auto" glow>
+      <div className="text-center mb-6">
+        <h2 className="text-2xl font-bold mb-2">create a new agent</h2>
+        <p className="text-muted-foreground">
           create an AI trading agent that monitors Twitter accounts for trading signals
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </p>
+      </div>
+      <div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="name">agent name</Label>
@@ -251,8 +251,8 @@ const CreateSwapForm: React.FC = () => {
             {isSubmitting ? 'creating...' : 'create agent'}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </GlassCard>
   );
 };
 
