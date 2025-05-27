@@ -116,24 +116,6 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
 
   const displayCoin = selectedCoin || searchedCoin;
 
-  // Simulated data fallback
-  const startSimulatedData = useCallback((coin: CoinData) => {
-    const interval = setInterval(() => {
-      setCurrentPrice(prev => {
-        const variation = (Math.random() - 0.5) * 0.002;
-        const newPrice = prev * (1 + variation) || coin.price;
-        setPriceHistory(prevHistory => {
-          const newHistory = [...prevHistory, { time: Date.now(), price: newPrice }];
-          return newHistory.slice(-100);
-        });
-        return newPrice;
-      });
-    }, 2000);
-
-    // Store interval ID for cleanup
-    (window as any).priceSimulationInterval = interval;
-  }, []);
-
   // Helper function to connect to WebSocket
   const connectToWebSocket = useCallback(async (coin: CoinData) => {
     // Close existing connection
@@ -182,7 +164,18 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
         console.error('WebSocket error:', error);
         setIsLiveData(false);
         // Fallback to simulated data
-        startSimulatedData(coin);
+        const interval = setInterval(() => {
+          setCurrentPrice(prev => {
+            const variation = (Math.random() - 0.5) * 0.002;
+            const newPrice = prev * (1 + variation) || coin.price;
+            setPriceHistory(prevHistory => {
+              const newHistory = [...prevHistory, { time: Date.now(), price: newPrice }];
+              return newHistory.slice(-100);
+            });
+            return newPrice;
+          });
+        }, 2000);
+        (window as any).priceSimulationInterval = interval;
       };
 
       wsRef.current.onclose = () => {
@@ -198,9 +191,20 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
         variant: 'destructive',
       });
       // Fallback to simulated data
-      startSimulatedData(coin);
+      const interval = setInterval(() => {
+        setCurrentPrice(prev => {
+          const variation = (Math.random() - 0.5) * 0.002;
+          const newPrice = prev * (1 + variation) || coin.price;
+          setPriceHistory(prevHistory => {
+            const newHistory = [...prevHistory, { time: Date.now(), price: newPrice }];
+            return newHistory.slice(-100);
+          });
+          return newPrice;
+        });
+      }, 2000);
+      (window as any).priceSimulationInterval = interval;
     }
-  }, [startSimulatedData, toast]);
+  }, [toast]);
 
   // Simple line chart rendering
   const renderChart = () => {
