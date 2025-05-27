@@ -84,9 +84,11 @@ interface AgentChatProps {
   agentId: string;
   isPersistent?: boolean;
   indexTokens?: Token[];
+  twitterAccounts?: Token[];
+  onCoinSelect?: (coin: any) => void;
 }
 
-const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent = false, indexTokens = [] }) => {
+const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent = false, indexTokens = [], twitterAccounts = [], onCoinSelect }) => {
   const [isOpen, setIsOpen] = useState(isPersistent);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
