@@ -229,7 +229,16 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
         if (balance < requiredLamports) {
           const requiredSOL = requiredLamports / 1e9;
           const currentSOL = balance / 1e9;
-          throw new Error(`Insufficient SOL balance. Required: ${requiredSOL.toFixed(4)} SOL, Available: ${currentSOL.toFixed(4)} SOL`);
+          const shortfall = requiredSOL - currentSOL;
+          
+          toast({
+            title: '❌ Insufficient SOL Balance',
+            description: `You need ${shortfall.toFixed(4)} more SOL to complete this swap.\n\nCurrent: ${currentSOL.toFixed(4)} SOL\nRequired: ${requiredSOL.toFixed(4)} SOL (includes fees)`,
+            variant: 'destructive',
+            duration: 8000,
+          });
+          
+          throw new Error('Insufficient balance');
         }
         console.log(`Balance check passed. Available: ${(balance / 1e9).toFixed(4)} SOL`);
       }
