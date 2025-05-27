@@ -36,14 +36,15 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
   const [searchedCoin, setSearchedCoin] = useState<CoinData | null>(null);
   const [priceHistory, setPriceHistory] = useState<PriceDataPoint[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number>(0);
-  const wsRef = useRef<WebSocket | null>(null);
+  const [isLiveData, setIsLiveData] = useState(false);
+  const eventSourceRef = useRef<EventSource | null>(null);
   const { toast } = useToast();
 
-  // Clean up WebSocket on unmount
+  // Clean up EventSource on unmount
   useEffect(() => {
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
       }
     };
   }, []);
@@ -53,26 +54,100 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
     if (!selectedCoin) return;
 
     // Close existing connection
-    if (wsRef.current) {
-      wsRef.current.close();
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
     }
 
-    // For now, simulate price updates with random data
-    // In production, this would connect to Solana Tracker WebSocket
-    const interval = setInterval(() => {
-      const variation = (Math.random() - 0.5) * 0.002; // ±0.2% variation
-      const newPrice = currentPrice * (1 + variation) || selectedCoin.price;
-      
-      setCurrentPrice(newPrice);
-      setPriceHistory(prev => {
-        const newHistory = [...prev, { time: Date.now(), price: newPrice }];
-        // Keep only last 100 data points
-        return newHistory.slice(-100);
-      });
-    }, 2000);
+    // Initialize price from selected coin
+    setCurrentPrice(selectedCoin.price);
+    setPriceHistory([{ time: Date.now(), price: selectedCoin.price }]);
 
-    return () => clearInterval(interval);
-  }, [selectedCoin, currentPrice]);
+    // Connect to price stream edge function
+    const connectToPriceStream = async () => {
+      try {
+        // Get the current session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        // Create Server-Sent Events connection
+        const response = await fetch(`${window.location.origin}/functions/v1/websocket-price-stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+          },
+          body: JSON.stringify({
+            tokenAddress: selectedCoin.address,
+            interval: 3000 // Update every 3 seconds
+          })
+        });
+
+        if (!response.ok) throw new Error('Failed to connect to price stream');
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+
+        if (!reader) throw new Error('No reader available');
+
+        // Read the stream
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const text = decoder.decode(value);
+          const lines = text.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.type === 'price' && data.data) {
+                  const newPrice = data.data.price;
+                  setCurrentPrice(newPrice);
+                  setIsLiveData(true);
+                  setPriceHistory(prev => {
+                    const newHistory = [...prev, { time: data.data.timestamp, price: newPrice }];
+                    return newHistory.slice(-100); // Keep last 100 points
+                  });
+                }
+              } catch (e) {
+                console.error('Error parsing SSE data:', e);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error connecting to price stream:', error);
+        toast({
+          title: 'Connection Error',
+          description: 'Failed to connect to live price data. Using simulated data.',
+          variant: 'destructive',
+        });
+
+        // Fallback to simulated data
+        const interval = setInterval(() => {
+          const variation = (Math.random() - 0.5) * 0.002;
+          const newPrice = currentPrice * (1 + variation) || selectedCoin.price;
+          
+          setCurrentPrice(newPrice);
+          setPriceHistory(prev => {
+            const newHistory = [...prev, { time: Date.now(), price: newPrice }];
+            return newHistory.slice(-100);
+          });
+        }, 2000);
+
+        return () => clearInterval(interval);
+      }
+    };
+
+    connectToPriceStream();
+
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, [selectedCoin?.address]); // Only depend on address to avoid infinite loops
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -198,7 +273,14 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                   <img src={displayCoin.logo} alt={displayCoin.name} className="w-8 h-8 rounded-full" />
                 )}
                 <div>
-                  <h3 className="font-semibold">{displayCoin.symbol}</h3>
+                  <h3 className="font-semibold flex items-center gap-2">
+                    {displayCoin.symbol}
+                    {isLiveData && (
+                      <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full animate-pulse">
+                        LIVE
+                      </span>
+                    )}
+                  </h3>
                   <p className="text-sm text-gray-500">{displayCoin.name}</p>
                 </div>
               </div>

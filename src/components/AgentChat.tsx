@@ -653,56 +653,57 @@ const AgentChat: React.FC<AgentChatProps> = ({
     if (message.sender === 'recommendation' && message.coinRecommendations) {
       return (
         <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
-          <CardContent className="p-4">
+          <CardContent className="p-4 space-y-3">
             {message.coinRecommendations.map((coin) => (
-              <div key={coin.symbol} className="flex items-center gap-4">
-                {coin.logo && (
-                  <img src={coin.logo} alt={coin.name} className="w-12 h-12 rounded-full" />
-                )}
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-lg text-gray-900 dark:text-gray-100">{coin.symbol}</span>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{coin.name}</span>
-                    </div>
-                    <span className={cn(
-                      "px-2 py-1 rounded text-xs font-semibold",
-                      coin.confidence === 'high' && 'bg-green-500/20 text-green-800 dark:text-green-200',
-                      coin.confidence === 'medium' && 'bg-yellow-500/20 text-yellow-800 dark:text-yellow-200',
-                      coin.confidence === 'low' && 'bg-red-500/20 text-red-800 dark:text-red-200'
-                    )}>
-                      {coin.confidence} confidence
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm mb-2">
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Price:</span>
-                      <span className="font-semibold ml-1 text-gray-900 dark:text-gray-100">${formatPrice(coin.price)}</span>
-                      {coin.priceChange24h !== undefined && (
-                        <span className={cn(
-                          "ml-2 text-xs",
-                          coin.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'
-                        )}>
-                          {coin.priceChange24h >= 0 ? '+' : ''}{coin.priceChange24h.toFixed(2)}%
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Market Cap:</span>
-                      <span className="font-semibold ml-1 text-gray-900 dark:text-gray-100">{formatMarketCap(coin.marketCap)}</span>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 italic">{coin.reason}</p>
-                  {onCoinSelect && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-2 w-full"
-                      onClick={() => onCoinSelect(coin)}
-                    >
-                      View Chart
-                    </Button>
+              <div 
+                key={coin.symbol} 
+                className="cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg p-3 transition-colors"
+                onClick={() => onCoinSelect && onCoinSelect(coin)}
+              >
+                <div className="flex items-center gap-4">
+                  {coin.logo && (
+                    <img src={coin.logo} alt={coin.name} className="w-12 h-12 rounded-full" />
                   )}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-lg text-gray-900 dark:text-gray-100">{coin.symbol}</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{coin.name}</span>
+                      </div>
+                      <span className={cn(
+                        "px-2 py-1 rounded text-xs font-semibold",
+                        coin.confidence === 'high' && 'bg-green-500/20 text-green-800 dark:text-green-200',
+                        coin.confidence === 'medium' && 'bg-yellow-500/20 text-yellow-800 dark:text-yellow-200',
+                        coin.confidence === 'low' && 'bg-red-500/20 text-red-800 dark:text-red-200'
+                      )}>
+                        {coin.confidence} confidence
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">Price:</span>
+                        <span className="font-semibold ml-1 text-gray-900 dark:text-gray-100">${formatPrice(coin.price)}</span>
+                        {coin.priceChange24h !== undefined && (
+                          <span className={cn(
+                            "ml-2 text-xs",
+                            coin.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'
+                          )}>
+                            {coin.priceChange24h >= 0 ? '+' : ''}{coin.priceChange24h.toFixed(2)}%
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">Market Cap:</span>
+                        <span className="font-semibold ml-1 text-gray-900 dark:text-gray-100">{formatMarketCap(coin.marketCap)}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 italic mb-2">{coin.reason}</p>
+                    {onCoinSelect && (
+                      <div className="bg-stake-accent text-white text-center py-2 rounded-md font-medium text-sm">
+                        📊 Click to View Live Chart
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
