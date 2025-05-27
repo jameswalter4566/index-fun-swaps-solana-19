@@ -820,7 +820,13 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                     className="mt-1"
                   />
                 </div>
-                <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                <Button 
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                  onClick={() => {
+                    setSwapMode('buy');
+                    setShowSwapDialog(true);
+                  }}
+                >
                   Buy {displayCoin.symbol}
                 </Button>
               </TabsContent>
@@ -831,7 +837,13 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                   <Button variant="outline" size="sm">50%</Button>
                   <Button variant="outline" size="sm">100%</Button>
                 </div>
-                <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                <Button 
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                  onClick={() => {
+                    setSwapMode('sell');
+                    setShowSwapDialog(true);
+                  }}
+                >
                   Sell {displayCoin.symbol}
                 </Button>
               </TabsContent>
