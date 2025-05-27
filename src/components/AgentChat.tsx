@@ -807,7 +807,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
 
   // Persistent view
   const persistentView = (
-    <div className="absolute inset-0 flex flex-col overflow-hidden rounded-lg">
+    <div className="absolute inset-0 flex flex-col overflow-hidden rounded-lg z-20 bg-gray-900/95">
       {/* Header - Fixed height */}
       <div className="flex-shrink-0 flex flex-col gap-2 p-3 border-b border-gray-700">
         <div className="w-full text-center">
@@ -821,7 +821,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
             variant={showAgentMakeup ? "default" : "outline"}
             size="sm"
             onClick={() => setShowAgentMakeup(!showAgentMakeup)}
-            className="text-xs h-7"
+            className="text-xs h-7 bg-purple-600 hover:bg-purple-700 text-white border-purple-600"
           >
             {showAgentMakeup ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
             Agent Makeup

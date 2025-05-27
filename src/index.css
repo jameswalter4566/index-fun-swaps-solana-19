@@ -303,10 +303,10 @@
   font-size: 0.75rem;
   font-weight: 600;
   color: white;
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(16, 185, 129, 0.8);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.9);
   border-radius: 9999px;
   transition: all 0.3s ease;
   overflow: hidden;
@@ -314,6 +314,7 @@
   align-items: center;
   justify-content: center;
   height: 1.75rem;
+  z-index: 50;
 }
 
 .glass-button-call-small::before {
