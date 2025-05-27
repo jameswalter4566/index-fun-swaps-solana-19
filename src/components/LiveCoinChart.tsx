@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -55,115 +55,23 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
   useEffect(() => {
     if (!selectedCoin) return;
 
-    // Initialize price from selected coin
-    setCurrentPrice(selectedCoin.price);
-    setPriceHistory([{ time: Date.now(), price: selectedCoin.price }]);
-    setIsLiveData(false);
-
-    // Connect to WebSocket for real-time updates
-    const connectToWebSocket = async () => {
-      try {
-        // Option 1: Use the WebSocket proxy edge function
-        const { data: { session } } = await supabase.auth.getSession();
-        const wsUrl = `${window.location.origin.replace('http', 'ws')}/functions/v1/websocket-proxy?token=${selectedCoin.address}`;
-        
-        // WebSocket constructor doesn't accept headers in browser
-        wsRef.current = new WebSocket(wsUrl);
-
-        wsRef.current.onopen = () => {
-          console.log('Connected to WebSocket proxy');
-          setIsLiveData(true);
-        };
-
-        wsRef.current.onmessage = (event) => {
-          try {
-            const message = JSON.parse(event.data);
-            if (message.type === 'price' && message.data) {
-              const newPrice = message.data.price;
-              setCurrentPrice(newPrice);
-              setPriceHistory(prev => {
-                const newHistory = [...prev, { time: message.data.timestamp, price: newPrice }];
-                return newHistory.slice(-100);
-              });
-            }
-          } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
-          }
-        };
-
-        wsRef.current.onerror = (error) => {
-          console.error('WebSocket error:', error);
-          setIsLiveData(false);
-        };
-
-        wsRef.current.onclose = () => {
-          console.log('WebSocket closed');
-          setIsLiveData(false);
-        };
-
-      } catch (error) {
-        console.error('Error connecting to WebSocket:', error);
-        
-        // Option 2: Direct connection with WebSocketService (requires API key)
-        try {
-          // Get API key from environment or edge function
-          const apiKey = import.meta.env.VITE_SOLANA_TRACKER_API_KEY;
-          
-          if (apiKey) {
-            wsServiceRef.current = getWebSocketService(apiKey);
-            
-            // Join token room for updates
-            wsServiceRef.current.joinRoom(`token:${selectedCoin.address}`);
-            
-            // Listen for price updates
-            wsServiceRef.current.on(`token:${selectedCoin.address}`, (data: any) => {
-              const newPrice = data.price?.usd || 0;
-              setCurrentPrice(newPrice);
-              setIsLiveData(true);
-              setPriceHistory(prev => {
-                const newHistory = [...prev, { time: data.lastUpdated || Date.now(), price: newPrice }];
-                return newHistory.slice(-100);
-              });
-            });
-          } else {
-            throw new Error('No API key available');
-          }
-        } catch (wsError) {
-          console.error('WebSocketService error:', wsError);
-          toast({
-            title: 'Connection Error',
-            description: 'Failed to connect to live price data. Using simulated data.',
-            variant: 'destructive',
-          });
-
-          // Fallback to simulated data
-          const interval = setInterval(() => {
-            const variation = (Math.random() - 0.5) * 0.002;
-            const newPrice = currentPrice * (1 + variation) || selectedCoin.price;
-            
-            setCurrentPrice(newPrice);
-            setPriceHistory(prev => {
-              const newHistory = [...prev, { time: Date.now(), price: newPrice }];
-              return newHistory.slice(-100);
-            });
-          }, 2000);
-
-          return () => clearInterval(interval);
-        }
-      }
-    };
-
-    connectToWebSocket();
+    // Connect to WebSocket for the selected coin
+    connectToWebSocket(selectedCoin);
 
     return () => {
+      // Cleanup
       if (wsRef.current) {
         wsRef.current.close();
       }
-      if (wsServiceRef.current) {
+      if (wsServiceRef.current && selectedCoin) {
         wsServiceRef.current.leaveRoom(`token:${selectedCoin.address}`);
       }
+      // Clear any simulation interval
+      if ((window as any).priceSimulationInterval) {
+        clearInterval((window as any).priceSimulationInterval);
+      }
     };
-  }, [selectedCoin?.address, toast, currentPrice]); // Include necessary deps
+  }, [selectedCoin, connectToWebSocket]); // Depend on selectedCoin and connectToWebSocket
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -191,8 +99,8 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
 
         setSearchedCoin(coinData);
         onCoinSelect(coinData);
-        setCurrentPrice(coinData.price);
-        setPriceHistory([{ time: Date.now(), price: coinData.price }]);
+        // Immediately connect to WebSocket for live data
+        connectToWebSocket(coinData);
       }
     } catch (error) {
       console.error('Error searching coin:', error);
@@ -207,6 +115,92 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
   };
 
   const displayCoin = selectedCoin || searchedCoin;
+
+  // Simulated data fallback
+  const startSimulatedData = useCallback((coin: CoinData) => {
+    const interval = setInterval(() => {
+      setCurrentPrice(prev => {
+        const variation = (Math.random() - 0.5) * 0.002;
+        const newPrice = prev * (1 + variation) || coin.price;
+        setPriceHistory(prevHistory => {
+          const newHistory = [...prevHistory, { time: Date.now(), price: newPrice }];
+          return newHistory.slice(-100);
+        });
+        return newPrice;
+      });
+    }, 2000);
+
+    // Store interval ID for cleanup
+    (window as any).priceSimulationInterval = interval;
+  }, []);
+
+  // Helper function to connect to WebSocket
+  const connectToWebSocket = useCallback(async (coin: CoinData) => {
+    // Close existing connection
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
+    if (wsServiceRef.current) {
+      wsServiceRef.current.leaveRoom(`token:${coin.address}`);
+    }
+
+    // Initialize price history
+    setCurrentPrice(coin.price);
+    setPriceHistory([{ time: Date.now(), price: coin.price }]);
+    setIsLiveData(false);
+
+    try {
+      // Use the WebSocket proxy edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      const wsUrl = `${window.location.origin.replace('http', 'ws')}/functions/v1/websocket-proxy?token=${coin.address}`;
+      
+      // WebSocket constructor doesn't accept headers in browser
+      wsRef.current = new WebSocket(wsUrl);
+
+      wsRef.current.onopen = () => {
+        console.log('Connected to WebSocket proxy for', coin.symbol);
+        setIsLiveData(true);
+      };
+
+      wsRef.current.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          if (message.type === 'price' && message.data) {
+            const newPrice = message.data.price;
+            setCurrentPrice(newPrice);
+            setPriceHistory(prev => {
+              const newHistory = [...prev, { time: message.data.timestamp, price: newPrice }];
+              return newHistory.slice(-100);
+            });
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
+
+      wsRef.current.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setIsLiveData(false);
+        // Fallback to simulated data
+        startSimulatedData(coin);
+      };
+
+      wsRef.current.onclose = () => {
+        console.log('WebSocket closed');
+        setIsLiveData(false);
+      };
+
+    } catch (error) {
+      console.error('Error connecting to WebSocket:', error);
+      toast({
+        title: 'Connection Error',
+        description: 'Failed to connect to live price data. Using simulated data.',
+        variant: 'destructive',
+      });
+      // Fallback to simulated data
+      startSimulatedData(coin);
+    }
+  }, [startSimulatedData, toast]);
 
   // Simple line chart rendering
   const renderChart = () => {
