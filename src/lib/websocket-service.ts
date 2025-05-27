@@ -146,13 +146,44 @@ class WebSocketService {
 // Create singleton instance
 let wsInstance: WebSocketService | null = null;
 
-export const getWebSocketService = () => {
+export const getWebSocketService = (apiKey?: string) => {
   if (!wsInstance) {
-    // We'll need to get the actual WebSocket URL from Solana Tracker
-    // For now, using a placeholder that will need to be configured
-    wsInstance = new WebSocketService("wss://websocket.solanatracker.io");
+    // Connect to Solana Tracker WebSocket with API key
+    wsInstance = new WebSocketService("wss://websocket.solanatracker.io", apiKey);
   }
   return wsInstance;
 };
+
+// Add API key support
+export class SolanaTrackerWebSocket extends WebSocketService {
+  private apiKey?: string;
+
+  constructor(wsUrl: string, apiKey?: string) {
+    super(wsUrl);
+    this.apiKey = apiKey;
+  }
+
+  async connect() {
+    if (this.socket && this.transactionSocket) {
+      return;
+    }
+
+    try {
+      // Connect with API key in headers
+      this.socket = new WebSocket(this.wsUrl, {
+        headers: this.apiKey ? { 'x-api-key': this.apiKey } : {}
+      });
+      this.transactionSocket = new WebSocket(this.wsUrl, {
+        headers: this.apiKey ? { 'x-api-key': this.apiKey } : {}
+      });
+      
+      this.setupSocketListeners(this.socket, "main");
+      this.setupSocketListeners(this.transactionSocket, "transaction");
+    } catch (e) {
+      console.error("Error connecting to WebSocket:", e);
+      this.reconnect();
+    }
+  }
+}
 
 export default WebSocketService;

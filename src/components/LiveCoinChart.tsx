@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { getWebSocketService } from '@/lib/websocket-service';
 
 interface CoinData {
   address: string;
@@ -37,14 +38,15 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
   const [priceHistory, setPriceHistory] = useState<PriceDataPoint[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number>(0);
   const [isLiveData, setIsLiveData] = useState(false);
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const wsServiceRef = useRef<any>(null);
+  const wsRef = useRef<WebSocket | null>(null);
   const { toast } = useToast();
 
-  // Clean up EventSource on unmount
+  // Clean up WebSocket on unmount
   useEffect(() => {
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
+      if (wsRef.current) {
+        wsRef.current.close();
       }
     };
   }, []);
@@ -53,101 +55,115 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
   useEffect(() => {
     if (!selectedCoin) return;
 
-    // Close existing connection
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
-
     // Initialize price from selected coin
     setCurrentPrice(selectedCoin.price);
     setPriceHistory([{ time: Date.now(), price: selectedCoin.price }]);
+    setIsLiveData(false);
 
-    // Connect to price stream edge function
-    const connectToPriceStream = async () => {
+    // Connect to WebSocket for real-time updates
+    const connectToWebSocket = async () => {
       try {
-        // Get the current session
+        // Option 1: Use the WebSocket proxy edge function
         const { data: { session } } = await supabase.auth.getSession();
+        const wsUrl = `${window.location.origin.replace('http', 'ws')}/functions/v1/websocket-proxy?token=${selectedCoin.address}`;
         
-        // Create Server-Sent Events connection
-        const response = await fetch(`${window.location.origin}/functions/v1/websocket-price-stream`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token || ''}`,
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
-          },
-          body: JSON.stringify({
-            tokenAddress: selectedCoin.address,
-            interval: 3000 // Update every 3 seconds
-          })
-        });
+        // WebSocket constructor doesn't accept headers in browser
+        wsRef.current = new WebSocket(wsUrl);
 
-        if (!response.ok) throw new Error('Failed to connect to price stream');
+        wsRef.current.onopen = () => {
+          console.log('Connected to WebSocket proxy');
+          setIsLiveData(true);
+        };
 
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-
-        if (!reader) throw new Error('No reader available');
-
-        // Read the stream
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const text = decoder.decode(value);
-          const lines = text.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.type === 'price' && data.data) {
-                  const newPrice = data.data.price;
-                  setCurrentPrice(newPrice);
-                  setIsLiveData(true);
-                  setPriceHistory(prev => {
-                    const newHistory = [...prev, { time: data.data.timestamp, price: newPrice }];
-                    return newHistory.slice(-100); // Keep last 100 points
-                  });
-                }
-              } catch (e) {
-                console.error('Error parsing SSE data:', e);
-              }
+        wsRef.current.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'price' && message.data) {
+              const newPrice = message.data.price;
+              setCurrentPrice(newPrice);
+              setPriceHistory(prev => {
+                const newHistory = [...prev, { time: message.data.timestamp, price: newPrice }];
+                return newHistory.slice(-100);
+              });
             }
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
           }
-        }
+        };
+
+        wsRef.current.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          setIsLiveData(false);
+        };
+
+        wsRef.current.onclose = () => {
+          console.log('WebSocket closed');
+          setIsLiveData(false);
+        };
+
       } catch (error) {
-        console.error('Error connecting to price stream:', error);
-        toast({
-          title: 'Connection Error',
-          description: 'Failed to connect to live price data. Using simulated data.',
-          variant: 'destructive',
-        });
-
-        // Fallback to simulated data
-        const interval = setInterval(() => {
-          const variation = (Math.random() - 0.5) * 0.002;
-          const newPrice = currentPrice * (1 + variation) || selectedCoin.price;
+        console.error('Error connecting to WebSocket:', error);
+        
+        // Option 2: Direct connection with WebSocketService (requires API key)
+        try {
+          // Get API key from environment or edge function
+          const apiKey = import.meta.env.VITE_SOLANA_TRACKER_API_KEY;
           
-          setCurrentPrice(newPrice);
-          setPriceHistory(prev => {
-            const newHistory = [...prev, { time: Date.now(), price: newPrice }];
-            return newHistory.slice(-100);
+          if (apiKey) {
+            wsServiceRef.current = getWebSocketService(apiKey);
+            
+            // Join token room for updates
+            wsServiceRef.current.joinRoom(`token:${selectedCoin.address}`);
+            
+            // Listen for price updates
+            wsServiceRef.current.on(`token:${selectedCoin.address}`, (data: any) => {
+              const newPrice = data.price?.usd || 0;
+              setCurrentPrice(newPrice);
+              setIsLiveData(true);
+              setPriceHistory(prev => {
+                const newHistory = [...prev, { time: data.lastUpdated || Date.now(), price: newPrice }];
+                return newHistory.slice(-100);
+              });
+            });
+          } else {
+            throw new Error('No API key available');
+          }
+        } catch (wsError) {
+          console.error('WebSocketService error:', wsError);
+          toast({
+            title: 'Connection Error',
+            description: 'Failed to connect to live price data. Using simulated data.',
+            variant: 'destructive',
           });
-        }, 2000);
 
-        return () => clearInterval(interval);
+          // Fallback to simulated data
+          const interval = setInterval(() => {
+            const variation = (Math.random() - 0.5) * 0.002;
+            const newPrice = currentPrice * (1 + variation) || selectedCoin.price;
+            
+            setCurrentPrice(newPrice);
+            setPriceHistory(prev => {
+              const newHistory = [...prev, { time: Date.now(), price: newPrice }];
+              return newHistory.slice(-100);
+            });
+          }, 2000);
+
+          return () => clearInterval(interval);
+        }
       }
     };
 
-    connectToPriceStream();
+    connectToWebSocket();
 
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      if (wsServiceRef.current) {
+        wsServiceRef.current.leaveRoom(`token:${selectedCoin.address}`);
       }
     };
-  }, [selectedCoin?.address]); // Only depend on address to avoid infinite loops
+  }, [selectedCoin?.address, toast, currentPrice]); // Include necessary deps
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
