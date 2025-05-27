@@ -126,6 +126,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
   const { toast } = useToast();
 
   useEffect(() => {
+    // Scroll to bottom when messages change
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
@@ -807,8 +808,9 @@ const AgentChat: React.FC<AgentChatProps> = ({
 
   // Persistent view
   const persistentView = (
-    <div className="h-full flex flex-col">
-      <div className="flex flex-col gap-2 p-3 border-b">
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Header - Fixed height */}
+      <div className="flex-shrink-0 flex flex-col gap-2 p-3 border-b">
         <div className="w-full text-center">
           <h3 className="text-lg font-bold tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 animate-pulse">
             {agentName.toUpperCase()}
@@ -849,42 +851,42 @@ const AgentChat: React.FC<AgentChatProps> = ({
         </div>
       </div>
       
-      <div className="p-0 flex flex-col flex-1 overflow-hidden">
+      {/* Main content area - Flex grow */}
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {showAgentMakeup && (
-          <div className="p-4 border-b bg-stake-darkbg">
+          <div className="flex-shrink-0 p-4 border-b bg-stake-darkbg">
             <NodeVisualizer agentId={agentId} />
           </div>
         )}
         
-        <div className="flex-1 overflow-hidden relative">
-          <ScrollArea ref={scrollAreaRef} className="h-full">
-            <div className="p-4 space-y-2">
-              {messages.map((message) => (
-                <div key={message.id}>
-                  {renderMessageContent(message)}
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
+        {/* Messages area - Takes remaining space */}
+        <div className="flex-1 overflow-y-auto min-h-0 agent-chat-messages" ref={scrollAreaRef}>
+          <div className="p-4 space-y-2">
+            {messages.map((message) => (
+              <div key={message.id}>
+                {renderMessageContent(message)}
+              </div>
+            ))}
+          </div>
         </div>
         
-        {/* Monitored Accounts Section */}
+        {/* Monitored Accounts Section - Fixed height */}
         {twitterAccounts.length > 0 && (
-          <div className="border-t border-gray-700">
-            <div className="p-3 border-b border-gray-700 bg-stake-darkbg">
-              <h4 className="text-sm font-semibold">Monitored Accounts</h4>
+          <div className="flex-shrink-0 border-t border-gray-700">
+            <div className="p-2 border-b border-gray-700 bg-stake-darkbg">
+              <h4 className="text-xs font-semibold">Monitored Accounts</h4>
             </div>
-            <div className="max-h-32 overflow-y-auto">
+            <div className="max-h-24 overflow-y-auto">
               {twitterAccounts.map((token) => {
                 const metadata = token.metadata as any;
                 
                 return (
-                  <div key={token.address} className="p-1.5 border-b border-gray-700 hover:bg-stake-darkbg transition-colors">
-                    <div className="flex items-center gap-2">
+                  <div key={token.address} className="p-1 border-b border-gray-700 hover:bg-stake-darkbg transition-colors">
+                    <div className="flex items-center gap-1.5">
                       <img 
                         src={token.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${token.name}`} 
                         alt={token.name}
-                        className="w-6 h-6 rounded-full object-cover"
+                        className="w-5 h-5 rounded-full object-cover"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1">
@@ -892,12 +894,11 @@ const AgentChat: React.FC<AgentChatProps> = ({
                             {metadata?.display_name || token.name}
                           </p>
                           {metadata?.verified && (
-                            <svg className="w-3 h-3 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-2.5 h-2.5 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
                             </svg>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 truncate">{token.name}</p>
                       </div>
                     </div>
                   </div>
@@ -907,39 +908,42 @@ const AgentChat: React.FC<AgentChatProps> = ({
           </div>
         )}
         
-        <div className="p-4 border-t">
-          <div className="flex gap-2">
+        {/* Input area - Fixed height */}
+        <div className="flex-shrink-0 p-3 border-t">
+          <div className="flex gap-1.5">
             <Input
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Ask about trading opportunities..."
-              className="flex-1"
+              placeholder="Ask about trading..."
+              className="flex-1 h-8 text-sm"
               disabled={isVoiceCallActive}
             />
             
             <Button
-              size="icon"
+              size="sm"
               onClick={() => handleSendMessage()}
               disabled={!inputText.trim() || isVoiceCallActive}
+              className="h-8 w-8 p-0"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-3 w-3" />
             </Button>
             
             <Button
+              size="sm"
               onClick={toggleListening}
               className={cn(
-                "px-3",
+                "h-8 px-2",
                 isListening && "bg-red-500 hover:bg-red-600"
               )}
               disabled={isVoiceCallActive}
             >
-              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              {isListening ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
             </Button>
           </div>
           
           {isVoiceCallActive && (
-            <div className="mt-3 bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-sm text-green-600">
+            <div className="mt-2 bg-green-500/10 border border-green-500/20 rounded-lg p-2 text-xs text-green-600">
               🎙️ Voice call active - Speak naturally with your agent
             </div>
           )}
