@@ -338,12 +338,13 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              className="flex-1"
+              className="flex-1 border-purple-500/50 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 neon-glow-input"
             />
             <Button
               onClick={handleSearch}
               disabled={loading}
               size="icon"
+              className="bg-purple-600 hover:bg-purple-700 border-purple-500"
             >
               <Search className="h-4 w-4" />
             </Button>
@@ -406,19 +407,21 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
               )}
             </div>
           ) : (
-            <div className="h-[400px] flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <Activity className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>Search for a token or select from recommendations</p>
+            <div className="h-[400px] flex items-center justify-center text-gray-400 bg-black/50 rounded-lg">
+              <div className="text-center px-8">
+                <BarChart3 className="h-16 w-16 mx-auto mb-4 opacity-50 text-purple-500" />
+                <p className="text-lg font-medium mb-2">Chart Will Display Here!</p>
+                <p className="text-sm text-gray-500">Search coin now or click a recommendation from the AI agent!</p>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Swap Panel */}
-      {displayCoin && (
-        <Card className="w-80 bg-stake-card border-stake-border">
+      {/* Swap Panel - Always visible */}
+      <Card className="w-80 bg-stake-card border-stake-border">
+        {displayCoin ? (
+          <>
           <CardHeader>
             <CardTitle className="text-lg">Coin Details</CardTitle>
           </CardHeader>
@@ -486,8 +489,16 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
               </TabsContent>
             </Tabs>
           </CardContent>
-        </Card>
-      )}
+          </>
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center p-8">
+              <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-30 text-purple-500" />
+              <p className="text-sm text-gray-500">Select a coin to view details</p>
+            </div>
+          </div>
+        )}
+      </Card>
     </div>
   );
 };
