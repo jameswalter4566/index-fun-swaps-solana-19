@@ -387,7 +387,7 @@ const Landing = () => {
       {/* Section 1: Hero */}
       <section 
         ref={el => sectionsRef.current[0] = el}
-        className="h-screen flex flex-col items-center justify-center relative pt-16"
+        className="min-h-screen flex flex-col items-center justify-center relative py-20 px-4 overflow-hidden"
         style={{
           opacity: currentSection === 0 ? 1 : 0,
           transform: currentSection === 0 ? 'translateY(0)' : 'translateY(100px)',
@@ -395,41 +395,41 @@ const Landing = () => {
         }}
       >
         {/* Logo and Branding */}
-        <div className="flex flex-col items-center mb-12 animate-fade-in">
+        <div className="flex flex-col items-center mb-8 md:mb-12 animate-fade-in">
           <img 
             src="/GUARDIANLOGO.jpg" 
             alt="Guardian Logo" 
-            className="w-32 h-32 md:w-48 md:h-48 rounded-full mb-6 shadow-2xl animate-pulse-glow"
+            className="w-24 h-24 sm:w-32 sm:h-32 md:w-48 md:h-48 rounded-full mb-4 md:mb-6 shadow-2xl animate-pulse-glow"
           />
-          <h1 className="text-6xl md:text-8xl font-bold mb-2 text-center">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold mb-2 text-center">
             GUARDIAN
           </h1>
-          <p className="text-2xl md:text-3xl text-purple-400">
+          <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-purple-400">
             ai trading guardians
           </p>
         </div>
         
-        <div className="flex flex-col items-center gap-8 mb-16">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-8 md:mb-16">
           <button
             onClick={() => navigate('/guardian')}
-            className="glass-button-large animate-pulse-glow"
+            className="glass-button-large animate-pulse-glow text-sm sm:text-base"
           >
             Create Your Guardian Now
           </button>
           
           <button
             onClick={handleStartChat}
-            className={`glass-button-large flex items-center gap-3 ${isVoiceCallActive ? 'ring-2 ring-red-500' : 'ring-2 ring-green-500'}`}
+            className={`glass-button-large flex items-center gap-3 ${isVoiceCallActive ? 'ring-2 ring-red-500' : 'ring-2 ring-green-500'} text-sm sm:text-base`}
           >
-            <MessageCircle className={`w-6 h-6 ${isVoiceCallActive ? 'animate-pulse' : ''}`} />
+            <MessageCircle className={`w-5 h-5 sm:w-6 sm:h-6 ${isVoiceCallActive ? 'animate-pulse' : ''}`} />
             {isVoiceCallActive ? 'End Voice Chat' : 'Test Guardian Voice Chat'}
           </button>
         </div>
 
         {/* Featured Guardians */}
-        <div className="w-full max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-8">Featured Guardians</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="w-full max-w-7xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 md:mb-8">Featured Guardians</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {featuredGuardians.length > 0 ? (
               featuredGuardians.map((guardian) => (
                 <GuardianCard
