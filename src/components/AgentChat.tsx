@@ -724,7 +724,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
             "max-w-[80%] rounded-lg px-4 py-2",
             message.sender === 'user'
               ? 'bg-stake-accent text-white'
-              : 'bg-stake-card'
+              : 'bg-gray-800'
           )}
         >
           <p className="text-sm">{message.text}</p>
@@ -799,8 +799,8 @@ const AgentChat: React.FC<AgentChatProps> = ({
         
         {/* Monitored Accounts Section */}
         {twitterAccounts.length > 0 && (
-          <div className="border-t border-stake-border">
-            <div className="p-3 border-b border-stake-border bg-stake-darkbg">
+          <div className="border-t border-gray-700">
+            <div className="p-3 border-b border-gray-700 bg-stake-darkbg">
               <h4 className="text-sm font-semibold">Monitored Accounts</h4>
             </div>
             <div className="max-h-48 overflow-y-auto">
@@ -808,7 +808,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
                 const metadata = token.metadata as any;
                 
                 return (
-                  <div key={token.address} className="p-2 border-b border-stake-border hover:bg-stake-darkbg transition-colors">
+                  <div key={token.address} className="p-2 border-b border-gray-700 hover:bg-stake-darkbg transition-colors">
                     <div className="flex items-center gap-2">
                       <img 
                         src={token.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${token.name}`} 

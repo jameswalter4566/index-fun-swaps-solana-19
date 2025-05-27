@@ -527,7 +527,7 @@ const NodeVisualizer: React.FC<NodeVisualizerProps> = ({ agentId }) => {
             <Dialog key={node.id} open={selectedNode === node.id} onOpenChange={(open) => !open && setSelectedNode(null)}>
               <DialogTrigger asChild>
                 <button
-                  className="absolute transform -translate-x-1/2 -translate-y-1/2 bg-stake-card hover:bg-stake-accent/20 border-2 border-stake-accent rounded-lg p-4 transition-all hover:scale-105 cursor-pointer"
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 bg-gray-800 hover:bg-stake-accent/20 border-2 border-stake-accent rounded-lg p-4 transition-all hover:scale-105 cursor-pointer"
                   style={{ left: node.x, top: node.y }}
                   onClick={() => handleNodeClick(node.id)}
                 >

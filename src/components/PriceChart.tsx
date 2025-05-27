@@ -96,7 +96,7 @@ const PriceChart: React.FC<Props> = ({ tokens, title = 'market cap history', hei
     if (active && payload && payload[0]) {
       const data = payload[0].payload;
       return (
-        <div className="bg-stake-card p-3 rounded-lg border border-stake-border shadow-lg">
+        <div className="bg-gray-800 p-3 rounded-lg border border-gray-700 shadow-lg">
           <p className="text-stake-muted text-xs mb-1">{data.displayTime}</p>
           <p className="text-stake-text font-semibold">{formatValue(data.value)}</p>
         </div>
@@ -119,7 +119,7 @@ const PriceChart: React.FC<Props> = ({ tokens, title = 'market cap history', hei
               className={`px-3 py-1 rounded text-sm transition-colors ${
                 timeframe === tf
                   ? 'bg-stake-accent text-white'
-                  : 'bg-stake-card text-stake-muted hover:text-stake-text hover:bg-stake-darkbg'
+                  : 'bg-gray-800 text-stake-muted hover:text-stake-text hover:bg-stake-darkbg'
               }`}
             >
               {tf}

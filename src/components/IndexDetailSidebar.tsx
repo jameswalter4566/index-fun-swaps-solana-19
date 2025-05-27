@@ -132,7 +132,7 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
               </div>
 
               {/* Market Cap Summary */}
-              <Card className="bg-stake-card border-stake-accent">
+              <Card className="bg-gray-800 border-stake-accent">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg text-stake-text">market cap</CardTitle>
                 </CardHeader>
@@ -151,7 +151,7 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
               </Card>
 
               {/* Chart */}
-              <Card className="bg-stake-card border-stake-accent">
+              <Card className="bg-gray-800 border-stake-accent">
                 <CardContent className="pt-4">
                   <PriceChart 
                     tokens={index.tokens.filter(t => !t.error)} 
@@ -165,7 +165,7 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
                 <h3 className="text-xl font-bold text-stake-text">tokens in this index</h3>
                 <div className="grid gap-4">
                   {index.tokens.map((token) => (
-                    <Card key={token.address} className="overflow-hidden bg-stake-card border-stake-accent hover:border-stake-highlight transition-colors">
+                    <Card key={token.address} className="overflow-hidden bg-gray-800 border-stake-accent hover:border-stake-highlight transition-colors">
                       <CardContent className="p-4">
                         <div className="flex items-center gap-4">
                           <img 

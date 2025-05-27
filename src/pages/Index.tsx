@@ -83,7 +83,7 @@ const Index: React.FC = () => {
           <Input 
             type="text" 
             placeholder="search by index name or token" 
-            className="pl-10 rounded-md bg-stake-card border-stake-card text-stake-text" 
+            className="pl-10 rounded-md bg-gray-800 border-stake-card text-stake-text" 
             value={searchQuery} 
             onChange={e => setSearchQuery(e.target.value)} 
           />

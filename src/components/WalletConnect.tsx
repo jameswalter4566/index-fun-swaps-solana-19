@@ -192,7 +192,7 @@ This request will not trigger a blockchain transaction or cost any gas fees.`;
     return (
       <Button
         disabled
-        className="bg-stake-card border border-stake-accent text-stake-text rounded-md opacity-75"
+        className="bg-gray-800 border border-stake-accent text-stake-text rounded-md opacity-75"
       >
         {connecting ? 'Connecting...' : 'Authenticating...'}
       </Button>
@@ -204,7 +204,7 @@ This request will not trigger a blockchain transaction or cost any gas fees.`;
       {connected && publicKey ? (
         <Button
           onClick={disconnectWallet}
-          className="bg-stake-card border border-stake-accent text-stake-text hover:bg-stake-darkbg rounded-md transition-colors"
+          className="bg-gray-800 border border-stake-accent text-stake-text hover:bg-stake-darkbg rounded-md transition-colors"
         >
           {publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}
         </Button>

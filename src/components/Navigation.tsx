@@ -7,12 +7,12 @@ import HowItWorksModal from './HowItWorksModal';
 
 const Navigation: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  return <header className="border-b border-stake-card">
+  return <header className="border-b border-gray-800">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <span className="text-2xl font-bold text-stake-accent">in-dex.fun</span>
+              <span className="text-2xl font-bold text-purple-500">in-dex.fun</span>
             </Link>
           </div>
           
@@ -21,7 +21,7 @@ const Navigation: React.FC = () => {
               href="https://x.com/index_fun"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center w-10 h-10 bg-black hover:bg-gray-900 text-white rounded-full transition-all hover:scale-110"
+              className="flex items-center justify-center w-10 h-10 bg-gray-800 hover:bg-gray-700 text-white rounded-full transition-all hover:scale-110"
               aria-label="Follow us on X"
             >
               <svg
@@ -34,10 +34,10 @@ const Navigation: React.FC = () => {
             </a>
             
             <Link to="/create-swap">
-              <Button className="bg-stake-accent hover:bg-stake-highlight text-white rounded-md">create agent</Button>
+              <Button className="bg-purple-600 hover:bg-purple-700 text-white rounded-md">create agent</Button>
             </Link>
             
-            <Button variant="ghost" className="hover:bg-stake-card rounded-md text-stake-muted hover:text-stake-text" onClick={() => setIsModalOpen(true)}>
+            <Button variant="ghost" className="hover:bg-gray-800 rounded-md text-gray-400 hover:text-white" onClick={() => setIsModalOpen(true)}>
               how it works
             </Button>
             

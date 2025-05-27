@@ -38,7 +38,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
   const gainColor = gainPercentage >= 0 ? 'text-green-500' : 'text-red-500';
   
   return (
-    <Card className="overflow-hidden card-hover border border-stake-card bg-stake-card">
+    <Card className="overflow-hidden card-hover border border-stake-card bg-gray-800">
       <CardHeader className="p-4 bg-stake-darkbg border-b border-stake-background">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg font-bold text-stake-text">{name}</CardTitle>

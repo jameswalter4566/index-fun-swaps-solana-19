@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, TrendingUp, TrendingDown, DollarSign, Users, Droplets, Activity, BarChart3, Trophy, Wallet } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, DollarSign, Users, Droplets, Activity, BarChart3, Trophy, Wallet, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -83,10 +83,24 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
   const [loadingTraders, setLoadingTraders] = useState(false);
   const [loadingHolders, setLoadingHolders] = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [revealedWallets, setRevealedWallets] = useState<Set<string>>(new Set());
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   const displayCoin = selectedCoin || searchedCoin;
+
+  // Toggle wallet reveal
+  const toggleWalletReveal = (wallet: string) => {
+    setRevealedWallets(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(wallet)) {
+        newSet.delete(wallet);
+      } else {
+        newSet.add(wallet);
+      }
+      return newSet;
+    });
+  };
 
   // Timeframe options
   const timeframes = [
@@ -271,9 +285,9 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
     const width = 800;
     const height = 400;
     const padding = 60;
-    const candleSpacing = 3; // Space between candles
-    const maxCandleWidth = 12; // Maximum candle width
-    const candleWidth = Math.min(maxCandleWidth, Math.max(1, ((width - 2 * padding) / chartData.length) - candleSpacing));
+    const candleSpacing = 0; // No space between candles - they should touch
+    const maxCandleWidth = 20; // Increased max candle width
+    const candleWidth = Math.min(maxCandleWidth, Math.max(1, (width - 2 * padding) / chartData.length));
 
     // Calculate price range
     const prices = chartData.flatMap(c => [c.high, c.low]);
@@ -328,8 +342,7 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
         {/* Candlesticks */}
         {chartData.map((candle, index) => {
           const totalWidth = width - 2 * padding;
-          const xSpacing = totalWidth / chartData.length;
-          const x = padding + (index * xSpacing) + (xSpacing / 2);
+          const x = padding + (index * candleWidth) + (candleWidth / 2);
           const isGreen = candle.close >= candle.open;
           const color = isGreen ? '#10b981' : '#ef4444';
           
@@ -346,7 +359,7 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                 x2={x}
                 y2={priceToY(candle.low)}
                 stroke={color}
-                strokeWidth="0.5"
+                strokeWidth="1"
                 opacity="0.8"
               />
               {/* Body */}
@@ -357,8 +370,8 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                 height={bodyHeight}
                 fill={color}
                 stroke={color}
-                strokeWidth="0.5"
-                rx="0.5"
+                strokeWidth="0"
+                rx="0"
               />
             </g>
           );
@@ -368,11 +381,9 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
         {chartData.length > 0 && (() => {
           const maxVolume = Math.max(...chartData.map(c => c.volume));
           const volumeHeight = 40;
-          const totalWidth = width - 2 * padding;
-          const xSpacing = totalWidth / chartData.length;
           
           return chartData.map((candle, index) => {
-            const x = padding + (index * xSpacing) + (xSpacing / 2);
+            const x = padding + (index * candleWidth) + (candleWidth / 2);
             const barHeight = (candle.volume / maxVolume) * volumeHeight;
             const isGreen = candle.close >= candle.open;
             
@@ -432,7 +443,7 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
   return (
     <div className="flex gap-4 h-full">
       {/* Chart Section */}
-      <Card className="flex-1 bg-stake-card border-stake-border">
+      <Card className="flex-1 bg-gray-800 border-gray-700">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2 mb-2">
             <Input
@@ -518,29 +529,33 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
             </div>
           )}
           
-          {/* Data Tabs - Only show when coin is selected */}
-          {displayCoin && (
-            <div className="mt-6">
-              <Tabs defaultValue="traders" className="w-full">
-                <TabsList className="w-full justify-start bg-purple-900/20 border border-purple-500/20 rounded-full p-1">
-                  <TabsTrigger 
-                    value="traders" 
-                    className="rounded-full data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2"
-                  >
-                    <Trophy className="h-4 w-4" />
-                    Top Traders
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="holders" 
-                    className="rounded-full data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2"
-                  >
-                    <Wallet className="h-4 w-4" />
-                    Holders
-                  </TabsTrigger>
-                </TabsList>
+          {/* Data Tabs - Always visible */}
+          <div className="mt-6">
+            <Tabs defaultValue="traders" className="w-full">
+              <TabsList className="w-full justify-start bg-gray-800 border border-gray-700 rounded-full p-1">
+                <TabsTrigger 
+                  value="traders" 
+                  className="rounded-full data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2"
+                >
+                  <Trophy className="h-4 w-4" />
+                  Top Traders
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="holders" 
+                  className="rounded-full data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2"
+                >
+                  <Wallet className="h-4 w-4" />
+                  Holders
+                </TabsTrigger>
+              </TabsList>
                 
                 <TabsContent value="traders" className="mt-4">
-                  {loadingTraders ? (
+                  {!displayCoin ? (
+                    <div className="text-center py-8">
+                      <Trophy className="h-12 w-12 mx-auto mb-3 opacity-20 text-purple-500" />
+                      <p className="text-gray-400">Our AI will populate this with trader information once available</p>
+                    </div>
+                  ) : loadingTraders ? (
                     <div className="text-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-2"></div>
                       <p className="text-sm text-gray-500">Loading top traders...</p>
@@ -549,7 +564,7 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                     <div className="max-h-[300px] overflow-auto">
                       <Table>
                         <TableHeader>
-                          <TableRow>
+                          <TableRow className="border-gray-700">
                             <TableHead>Rank</TableHead>
                             <TableHead>Wallet</TableHead>
                             <TableHead>Total PnL</TableHead>
@@ -559,10 +574,28 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                         </TableHeader>
                         <TableBody>
                           {topTraders.slice(0, 10).map((trader) => (
-                            <TableRow key={trader.wallet}>
+                            <TableRow key={trader.wallet} className="border-gray-700">
                               <TableCell className="font-medium">#{trader.rank}</TableCell>
                               <TableCell className="font-mono text-xs">
-                                {trader.wallet.slice(0, 4)}...{trader.wallet.slice(-4)}
+                                <div className="flex items-center gap-2">
+                                  <span>
+                                    {revealedWallets.has(trader.wallet) 
+                                      ? trader.wallet 
+                                      : `${trader.wallet.slice(0, 4)}...${trader.wallet.slice(-4)}`}
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => toggleWalletReveal(trader.wallet)}
+                                  >
+                                    {revealedWallets.has(trader.wallet) ? (
+                                      <EyeOff className="h-3 w-3" />
+                                    ) : (
+                                      <Eye className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                </div>
                               </TableCell>
                               <TableCell className={trader.totalPnL >= 0 ? "text-green-600" : "text-red-600"}>
                                 ${trader.totalPnL.toFixed(2)}
@@ -591,7 +624,12 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                 </TabsContent>
                 
                 <TabsContent value="holders" className="mt-4">
-                  {loadingHolders ? (
+                  {!displayCoin ? (
+                    <div className="text-center py-8">
+                      <Wallet className="h-12 w-12 mx-auto mb-3 opacity-20 text-purple-500" />
+                      <p className="text-gray-400">Our AI will populate this with holder information once available</p>
+                    </div>
+                  ) : loadingHolders ? (
                     <div className="text-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-2"></div>
                       <p className="text-sm text-gray-500">Loading holders...</p>
@@ -600,7 +638,7 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                     <div className="max-h-[300px] overflow-auto">
                       <Table>
                         <TableHeader>
-                          <TableRow>
+                          <TableRow className="border-gray-700">
                             <TableHead>Rank</TableHead>
                             <TableHead>Wallet</TableHead>
                             <TableHead>Amount</TableHead>
@@ -610,13 +648,31 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                         </TableHeader>
                         <TableBody>
                           {tokenHolders.slice(0, 10).map((holder) => (
-                            <TableRow key={holder.wallet}>
+                            <TableRow key={holder.wallet} className="border-gray-700">
                               <TableCell className="font-medium">
                                 #{holder.rank}
                                 {holder.isWhale && <span className="ml-1 text-yellow-500">🐋</span>}
                               </TableCell>
                               <TableCell className="font-mono text-xs">
-                                {holder.wallet.slice(0, 4)}...{holder.wallet.slice(-4)}
+                                <div className="flex items-center gap-2">
+                                  <span>
+                                    {revealedWallets.has(holder.wallet) 
+                                      ? holder.wallet 
+                                      : `${holder.wallet.slice(0, 4)}...${holder.wallet.slice(-4)}`}
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => toggleWalletReveal(holder.wallet)}
+                                  >
+                                    {revealedWallets.has(holder.wallet) ? (
+                                      <EyeOff className="h-3 w-3" />
+                                    ) : (
+                                      <Eye className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                </div>
                               </TableCell>
                               <TableCell>{(holder.amount / 1e9).toFixed(2)}B</TableCell>
                               <TableCell>${(holder.valueUSD / 1e3).toFixed(1)}K</TableCell>
@@ -634,12 +690,11 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                 </TabsContent>
               </Tabs>
             </div>
-          )}
         </CardContent>
       </Card>
 
       {/* Swap Panel - Always visible */}
-      <Card className="w-80 bg-stake-card border-stake-border">
+      <Card className="w-80 bg-gray-800 border-gray-700">
         {displayCoin ? (
           <>
           <CardHeader>
@@ -677,7 +732,7 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
             {/* Token Stats from API */}
             {tokenStats && (
               <>
-                <hr className="border-stake-border" />
+                <hr className="border-gray-700" />
                 <div className="space-y-3">
                   <h4 className="text-sm font-semibold flex items-center gap-2">
                     <Activity className="h-4 w-4" />
@@ -717,7 +772,7 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
               </>
             )}
 
-            <hr className="border-stake-border" />
+            <hr className="border-gray-700" />
 
             {/* Buy/Sell Tabs */}
             <Tabs defaultValue="buy" className="w-full">
@@ -735,7 +790,7 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                     className="mt-1"
                   />
                 </div>
-                <Button className="w-full bg-green-600 hover:bg-green-700">
+                <Button className="w-full bg-purple-600 hover:bg-purple-700">
                   Buy {displayCoin.symbol}
                 </Button>
               </TabsContent>
@@ -746,7 +801,7 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                   <Button variant="outline" size="sm">50%</Button>
                   <Button variant="outline" size="sm">100%</Button>
                 </div>
-                <Button className="w-full bg-red-600 hover:bg-red-700">
+                <Button className="w-full bg-purple-600 hover:bg-purple-700">
                   Sell {displayCoin.symbol}
                 </Button>
               </TabsContent>

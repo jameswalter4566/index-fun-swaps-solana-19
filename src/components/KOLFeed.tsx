@@ -179,7 +179,7 @@ const KOLFeed: React.FC<KOLFeedProps> = ({ tokens, agentId }) => {
                     {account.mentions.map((mention) => (
                       <div
                         key={mention.id}
-                        className="bg-stake-card rounded-lg p-4 hover:bg-stake-darkbg transition-colors"
+                        className="bg-gray-800 rounded-lg p-4 hover:bg-stake-darkbg transition-colors"
                       >
                         <div className="flex items-start gap-3">
                           <Avatar className="h-10 w-10">

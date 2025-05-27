@@ -98,7 +98,7 @@ const IndexDetail: React.FC = () => {
   return (
     <div className="h-screen flex flex-col bg-stake-background">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-stake-border flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
         <Button
           onClick={() => navigate('/')}
           variant="ghost"
@@ -116,7 +116,7 @@ const IndexDetail: React.FC = () => {
       <div className="flex-1 flex gap-4 p-4 overflow-hidden">
         {/* Left Side - Agent Chat with Monitored Accounts */}
         <div className="w-96 flex-shrink-0">
-          <Card className="h-full bg-stake-card border-stake-border">
+          <Card className="h-full bg-gray-800 border-gray-700">
             <CardContent className="p-0 h-full">
               <AgentChat 
                 agentName={index.name} 

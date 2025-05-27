@@ -59,13 +59,14 @@ export default {
 					teal: '#0EA5E9'
 				},
 				stake: {
-					background: '#1A1F2C',
-					darkbg: '#161B27',
-					card: '#222A3A',
-					accent: '#3898FF',
-					highlight: '#4F66FF',
+					background: '#000000',
+					darkbg: '#000000',
+					card: '#1a1a1a',
+					accent: '#9b87f5',
+					highlight: '#b794f4',
 					text: '#FFFFFF',
-					muted: '#A0AEC0'
+					muted: '#6b7280',
+					border: '#374151'
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
