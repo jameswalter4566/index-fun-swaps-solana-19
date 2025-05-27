@@ -14,6 +14,7 @@ import CreateSwap from "./pages/CreateSwap";
 import IndexDetail from "./pages/IndexDetail";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
+import Landing from "./pages/Landing";
 import { VapiDebug } from "./components/VapiDebug";
 import { VapiWebRTCDebug } from "./components/VapiWebRTCDebug";
 import { VapiWebSocketChat } from "./components/VapiWebSocketChat";
@@ -45,7 +46,8 @@ const App = () => {
               <Sonner />
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<Index />} />
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/index" element={<Index />} />
                   <Route path="/create-swap" element={<CreateSwap />} />
                   <Route path="/index/:id" element={<IndexDetail />} />
                   <Route path="/privacy" element={<Privacy />} />

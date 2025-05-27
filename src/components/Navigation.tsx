@@ -11,7 +11,7 @@ const Navigation: React.FC = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center">
+            <Link to="/index" className="flex items-center">
               <span className="text-2xl font-bold text-purple-500">in-dex.fun</span>
             </Link>
           </div>
