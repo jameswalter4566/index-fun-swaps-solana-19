@@ -158,6 +158,7 @@ serve(async (req) => {
           return {
             symbol: tokenData.token.symbol,
             name: tokenData.token.name,
+            address: tokenData.token.mint,
             price: pool.price?.usd || 0,
             marketCap: pool.marketCap?.usd || 0,
             confidence,
