@@ -36,8 +36,10 @@ const IndexDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  // All hooks must be defined before any conditional returns
   const [index, setIndex] = useState<IndexData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedCoin, setSelectedCoin] = useState<any>(null);
 
   useEffect(() => {
     fetchIndexData();
@@ -92,7 +94,6 @@ const IndexDetail: React.FC = () => {
 
   // Filter only Twitter accounts
   const twitterAccounts = index.tokens.filter(token => token.name?.startsWith('@'));
-  const [selectedCoin, setSelectedCoin] = useState<any>(null);
 
   return (
     <div className="h-screen flex flex-col bg-stake-background">
