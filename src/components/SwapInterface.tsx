@@ -42,7 +42,7 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
   const { toast } = useToast();
   
   const [amount, setAmount] = useState('0.1'); // Default to 0.1 SOL or token
-  const [slippage, setSlippage] = useState(10);
+  const [slippage, setSlippage] = useState(15); // Increased default slippage to 15%
   const [loading, setLoading] = useState(false);
   const [swapQuote, setSwapQuote] = useState<any>(null);
   const [priorityFee, setPriorityFee] = useState('auto');
@@ -111,6 +111,9 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
     setLoading(true);
     try {
       // Use URL params for GET request
+      // Log the amount being sent
+      console.log('Sending swap request with amount:', amount, 'SOL');
+      
       const params = new URLSearchParams({
         from: from.address,
         to: toTokenAddress,

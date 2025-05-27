@@ -64,6 +64,14 @@ serve(async (req) => {
     }
 
     console.log('Requesting swap from Solana Tracker API...');
+    console.log('Swap parameters:', {
+      from,
+      to,
+      fromAmount: amount,
+      slippage,
+      payer,
+      url: `https://swap-v2.solanatracker.io/swap?${swapParams.toString()}`
+    });
     
     // Make request to Solana Tracker Swap API
     const response = await fetch(`https://swap-v2.solanatracker.io/swap?${swapParams.toString()}`, {
@@ -94,6 +102,13 @@ serve(async (req) => {
     }
 
     const swapData = await response.json();
+
+    console.log('Swap response received:', {
+      success: swapData.success,
+      hasTransaction: !!swapData.txn,
+      type: swapData.type,
+      rate: swapData.rate
+    });
 
     // Return the swap transaction data
     return new Response(
