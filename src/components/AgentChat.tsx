@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GlassCard } from '@/components/ui/glass-card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -105,6 +106,13 @@ const AgentChat: React.FC<AgentChatProps> = ({
   const [currentCallId, setCurrentCallId] = useState<string | null>(null);
   const vapiRef = useRef<any>(null);
   const [showAgentMakeup, setShowAgentMakeup] = useState(false);
+  
+  // Transcript accumulation state
+  const [currentUserTranscript, setCurrentUserTranscript] = useState('');
+  const [currentAssistantTranscript, setCurrentAssistantTranscript] = useState('');
+  const userTranscriptTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const assistantTranscriptTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -122,6 +130,33 @@ const AgentChat: React.FC<AgentChatProps> = ({
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Helper function to finalize accumulated transcripts
+  const finalizeUserTranscript = () => {
+    if (currentUserTranscript.trim()) {
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        text: currentUserTranscript.trim(),
+        sender: 'user',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, userMessage]);
+      setCurrentUserTranscript('');
+    }
+  };
+
+  const finalizeAssistantTranscript = () => {
+    if (currentAssistantTranscript.trim()) {
+      const assistantMessage: Message = {
+        id: Date.now().toString(),
+        text: currentAssistantTranscript.trim(),
+        sender: 'agent',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, assistantMessage]);
+      setCurrentAssistantTranscript('');
+    }
+  };
 
   const fetchTweets = async () => {
     try {
@@ -320,21 +355,37 @@ const AgentChat: React.FC<AgentChatProps> = ({
         
         if (message.type === 'transcript') {
           if (message.role === 'assistant' && message.transcript) {
-            const assistantMessage: Message = {
-              id: Date.now().toString(),
-              text: message.transcript,
-              sender: 'agent',
-              timestamp: new Date(),
-            };
-            setMessages(prev => [...prev, assistantMessage]);
+            // Clear any existing timer
+            if (assistantTranscriptTimerRef.current) {
+              clearTimeout(assistantTranscriptTimerRef.current);
+            }
+            
+            // Accumulate the transcript
+            setCurrentAssistantTranscript(prev => {
+              const updated = prev ? `${prev} ${message.transcript}` : message.transcript;
+              return updated;
+            });
+            
+            // Set a timer to finalize after 2 seconds of no new transcripts
+            assistantTranscriptTimerRef.current = setTimeout(() => {
+              finalizeAssistantTranscript();
+            }, 2000);
           } else if (message.role === 'user' && message.transcript) {
-            const userMessage: Message = {
-              id: Date.now().toString(),
-              text: message.transcript,
-              sender: 'user',
-              timestamp: new Date(),
-            };
-            setMessages(prev => [...prev, userMessage]);
+            // Clear any existing timer
+            if (userTranscriptTimerRef.current) {
+              clearTimeout(userTranscriptTimerRef.current);
+            }
+            
+            // Accumulate the transcript
+            setCurrentUserTranscript(prev => {
+              const updated = prev ? `${prev} ${message.transcript}` : message.transcript;
+              return updated;
+            });
+            
+            // Set a timer to finalize after 2 seconds of no new transcripts
+            userTranscriptTimerRef.current = setTimeout(() => {
+              finalizeUserTranscript();
+            }, 2000);
           }
         }
       });
@@ -438,6 +489,16 @@ const AgentChat: React.FC<AgentChatProps> = ({
 
   const endVoiceCall = async () => {
     try {
+      // Finalize any pending transcripts
+      if (userTranscriptTimerRef.current) {
+        clearTimeout(userTranscriptTimerRef.current);
+        finalizeUserTranscript();
+      }
+      if (assistantTranscriptTimerRef.current) {
+        clearTimeout(assistantTranscriptTimerRef.current);
+        finalizeAssistantTranscript();
+      }
+
       if (vapiRef.current && typeof vapiRef.current.stop === 'function') {
         vapiRef.current.stop();
       }
@@ -536,6 +597,14 @@ const AgentChat: React.FC<AgentChatProps> = ({
     }
 
     return () => {
+      // Clean up timers
+      if (userTranscriptTimerRef.current) {
+        clearTimeout(userTranscriptTimerRef.current);
+      }
+      if (assistantTranscriptTimerRef.current) {
+        clearTimeout(assistantTranscriptTimerRef.current);
+      }
+      
       if (vapiRef.current && typeof vapiRef.current.stop === 'function') {
         vapiRef.current.stop();
       }
@@ -767,15 +836,14 @@ const AgentChat: React.FC<AgentChatProps> = ({
               <PhoneOff className="h-4 w-4" />
             </Button>
           ) : (
-            <Button
-              variant="default"
-              size="icon"
+            <button
               onClick={startVoiceCall}
-              className="h-8 w-8 bg-green-600 hover:bg-green-700"
+              className="glass-button-call animate-pulse-glow"
               title="Start voice call - Fetches tweets and recommendations"
             >
-              <Phone className="h-4 w-4" />
-            </Button>
+              <Phone className="h-5 w-5 mr-2" />
+              Start Call with Agent Now
+            </button>
           )}
         </div>
       </div>
