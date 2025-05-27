@@ -220,33 +220,30 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
 
       console.log('Transaction deserialized successfully');
 
+      // Check wallet balance first
+      if (mode === 'buy' || from.symbol === 'SOL') {
+        console.log('Checking SOL balance...');
+        const balance = await connection.getBalance(publicKey);
+        const requiredLamports = parseFloat(amount) * 1e9 + 0.01 * 1e9; // Amount + 0.01 SOL for fees
+        
+        if (balance < requiredLamports) {
+          const requiredSOL = requiredLamports / 1e9;
+          const currentSOL = balance / 1e9;
+          throw new Error(`Insufficient SOL balance. Required: ${requiredSOL.toFixed(4)} SOL, Available: ${currentSOL.toFixed(4)} SOL`);
+        }
+        console.log(`Balance check passed. Available: ${(balance / 1e9).toFixed(4)} SOL`);
+      }
+
       // Sign the transaction - DO NOT modify the transaction from Solana Tracker
       // It already has the correct blockhash and all necessary data
       console.log('Signing transaction...');
       const signedTxn = await signTransaction(txn);
       console.log('Transaction signed');
 
-      // Simulate the transaction first
-      console.log('Simulating transaction...');
-      try {
-        const simulation = await connection.simulateTransaction(signedTxn, {
-          commitment: 'confirmed',
-        });
-        console.log('Simulation result:', simulation);
-        
-        if (simulation.value.err) {
-          console.error('Simulation failed:', simulation.value.err);
-          throw new Error(`Transaction simulation failed: ${JSON.stringify(simulation.value.err)}`);
-        }
-      } catch (simError) {
-        console.error('Simulation error:', simError);
-        // Continue anyway as simulation might fail but transaction could still succeed
-      }
-
-      // Send the transaction
+      // Send the transaction - NO SIMULATION as requested
       console.log('Sending transaction...');
       const txid = await sendTransaction(signedTxn, connection, {
-        skipPreflight: true, // Skip preflight since we already simulated
+        skipPreflight: true, // Skip preflight checks
         preflightCommitment: 'confirmed',
         maxRetries: 3,
       });
