@@ -28,7 +28,7 @@ const queryClient = new QueryClient();
 const App = () => {
   // Configure Solana network and wallets
   const network = 'mainnet-beta'; // or 'devnet' for testing
-  const endpoint = useMemo(() => clusterApiUrl(network), []);
+  const endpoint = useMemo(() => 'https://mainnet.helius-rpc.com/?api-key=9c6bbd13-8d15-4803-8c06-a08cf73ac3f8', []);
   
   const wallets = useMemo(
     () => [

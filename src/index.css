@@ -371,3 +371,36 @@
 .agent-chat-messages::-webkit-scrollbar-thumb:hover {
   background: rgba(153, 69, 255, 0.7);
 }
+
+/* Ensure wallet modal is properly clickable */
+.wallet-adapter-modal-wrapper {
+  z-index: 9999 !important;
+}
+
+.wallet-adapter-modal {
+  z-index: 9999 !important;
+}
+
+.wallet-adapter-modal-list {
+  z-index: 9999 !important;
+}
+
+.wallet-adapter-modal-list li {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+.wallet-adapter-modal-list-item {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+.wallet-adapter-button {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+/* Fix any potential overlay issues */
+.wallet-adapter-modal-overlay {
+  z-index: 9998 !important;
+}
