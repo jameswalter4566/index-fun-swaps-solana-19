@@ -88,6 +88,7 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
   const [loadingStats, setLoadingStats] = useState(false);
   const [revealedWallets, setRevealedWallets] = useState<Set<string>>(new Set());
   const [showSwapDialog, setShowSwapDialog] = useState(false);
+  const [swapMode, setSwapMode] = useState<'buy' | 'sell'>('buy');
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const { connected } = useWallet();
@@ -483,15 +484,30 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                {/* Swap Button */}
-                <Button
-                  onClick={() => setShowSwapDialog(true)}
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <ArrowRightLeft className="h-4 w-4 mr-1" />
-                  Swap
-                </Button>
+                {/* Buy/Sell Buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => {
+                      setSwapMode('buy');
+                      setShowSwapDialog(true);
+                    }}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Buy
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setSwapMode('sell');
+                      setShowSwapDialog(true);
+                    }}
+                    size="sm"
+                    variant="outline"
+                    className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                  >
+                    Sell
+                  </Button>
+                </div>
                 {/* Timeframe selector */}
                 <div className="flex gap-1">
                   {timeframes.map(tf => (
@@ -836,15 +852,24 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
       <Dialog open={showSwapDialog} onOpenChange={setShowSwapDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Swap Tokens</DialogTitle>
+            <DialogTitle>
+              {swapMode === 'buy' ? `Buy ${displayCoin?.symbol || 'Token'}` : `Sell ${displayCoin?.symbol || 'Token'}`}
+            </DialogTitle>
           </DialogHeader>
           <SwapInterface 
-            toToken={displayCoin ? {
+            fromToken={swapMode === 'sell' && displayCoin ? {
               address: displayCoin.address,
               symbol: displayCoin.symbol,
               name: displayCoin.name,
               logo: displayCoin.logo
             } : undefined}
+            toToken={swapMode === 'buy' && displayCoin ? {
+              address: displayCoin.address,
+              symbol: displayCoin.symbol,
+              name: displayCoin.name,
+              logo: displayCoin.logo
+            } : undefined}
+            mode={swapMode}
             onSwapComplete={() => {
               setShowSwapDialog(false);
               // Optionally refresh data

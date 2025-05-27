@@ -26,12 +26,14 @@ interface SwapInterfaceProps {
     logo?: string;
     decimals?: number;
   };
+  mode?: 'buy' | 'sell';
   onSwapComplete?: () => void;
 }
 
 const SwapInterface: React.FC<SwapInterfaceProps> = ({ 
   fromToken, 
   toToken: initialToToken,
+  mode = 'buy',
   onSwapComplete 
 }) => {
   const { publicKey, signTransaction, sendTransaction, connected } = useWallet();
@@ -39,29 +41,36 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
   
   const [amount, setAmount] = useState('');
   const [slippage, setSlippage] = useState(10);
-  const [toToken, setToToken] = useState(initialToToken);
-  const [toTokenAddress, setToTokenAddress] = useState(initialToToken?.address || '');
   const [loading, setLoading] = useState(false);
   const [swapQuote, setSwapQuote] = useState<any>(null);
   const [priorityFee, setPriorityFee] = useState('auto');
   const [priorityFeeLevel, setPriorityFeeLevel] = useState('medium');
 
-  // Default SOL as from token if not provided
-  const defaultFromToken = {
+  // Default SOL token
+  const solToken = {
     address: 'So11111111111111111111111111111111111111112',
     symbol: 'SOL',
     name: 'Solana',
     decimals: 9
   };
 
-  const from = fromToken || defaultFromToken;
+  // For sell mode, swap from the token to SOL
+  // For buy mode, swap from SOL to the token
+  const from = mode === 'sell' ? fromToken : (fromToken || solToken);
+  const [toToken, setToToken] = useState(mode === 'sell' ? solToken : initialToToken);
+  const [toTokenAddress, setToTokenAddress] = useState(
+    mode === 'sell' ? solToken.address : (initialToToken?.address || '')
+  );
 
   useEffect(() => {
-    if (initialToToken) {
+    if (mode === 'sell') {
+      setToToken(solToken);
+      setToTokenAddress(solToken.address);
+    } else if (initialToToken) {
       setToToken(initialToToken);
       setToTokenAddress(initialToToken.address);
     }
-  }, [initialToToken]);
+  }, [initialToToken, mode]);
 
   const connection = new Connection(
     'https://mainnet.helius-rpc.com/?api-key=9c6bbd13-8d15-4803-8c06-a08cf73ac3f8',
