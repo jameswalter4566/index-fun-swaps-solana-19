@@ -7,6 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { Connection, VersionedTransaction, Transaction } from '@solana/web3.js';
 import { ArrowDownUp, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -37,6 +38,7 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
   onSwapComplete 
 }) => {
   const { publicKey, signTransaction, sendTransaction, connected } = useWallet();
+  const { setVisible } = useWalletModal();
   const { toast } = useToast();
   
   const [amount, setAmount] = useState('0.1'); // Default to 0.1 SOL or token
@@ -373,7 +375,10 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
         {/* Action Buttons */}
         <div className="space-y-2">
           {!connected ? (
-            <Button className="w-full" disabled>
+            <Button 
+              className="w-full" 
+              onClick={() => setVisible(true)}
+            >
               Connect Wallet to Swap
             </Button>
           ) : (
