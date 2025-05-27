@@ -131,8 +131,12 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
         { method: 'GET' }  // Explicitly specify GET method
       );
 
-      if (error) throw error;
+      if (error) {
+        console.error('Quote error:', error);
+        throw error;
+      }
 
+      console.log('Swap quote received:', data);
       setSwapQuote(data);
       return data;
     } catch (error) {
@@ -176,6 +180,18 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
         if (!quote) return;
       }
 
+      console.log('Using swap quote:', {
+        hasTransaction: !!quote.txn,
+        type: quote.type,
+        rate: quote.rate,
+        success: quote.success
+      });
+
+      // Check if the quote has the expected structure
+      if (!quote.txn) {
+        throw new Error('Quote does not contain transaction data');
+      }
+
       // Deserialize the transaction
       // Convert base64 to Uint8Array (browser-compatible)
       const base64ToUint8Array = (base64: string) => {
@@ -201,13 +217,22 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
       }
 
       // Sign the transaction
+      console.log('Signing transaction...');
       const signedTxn = await signTransaction(txn);
+      console.log('Transaction signed');
 
       // Send the transaction
+      console.log('Sending transaction...');
       const txid = await sendTransaction(signedTxn, connection, {
-        skipPreflight: true,
-        maxRetries: 4,
+        skipPreflight: false, // Enable preflight to catch errors
+        preflightCommitment: 'confirmed',
+        maxRetries: 3,
       });
+      console.log('Transaction sent:', txid);
+      
+      // Check if transaction exists immediately
+      const initialStatus = await connection.getSignatureStatus(txid);
+      console.log('Initial transaction status:', initialStatus);
 
       toast({
         title: 'Swap initiated',
@@ -257,11 +282,26 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
         onSwapComplete();
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Swap error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        logs: error.logs,
+        error: error.error,
+        code: error.code
+      });
+      
+      // Extract more specific error message
+      let errorMessage = 'Failed to complete swap';
+      if (error.logs && error.logs.length > 0) {
+        errorMessage = error.logs.join(' ');
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: 'Swap failed',
-        description: error.message || 'Failed to complete swap',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -375,9 +415,9 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
             <Button
               variant={priorityFee !== 'auto' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setPriorityFee('0.0001')}
+              onClick={() => setPriorityFee('0.001')}
             >
-              Custom
+              Custom (0.001 SOL)
             </Button>
           </div>
           {priorityFee === 'auto' && (
