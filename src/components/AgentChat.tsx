@@ -872,7 +872,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         {/* Monitored Accounts Section - Fixed height */}
         {twitterAccounts.length > 0 && (
           <div className="flex-shrink-0 border-t border-gray-700">
-            <div className="p-2 border-b border-gray-700 bg-stake-darkbg">
+            <div className="p-2 border-b border-gray-700 bg-gray-800/50">
               <h4 className="text-xs font-semibold">Monitored Accounts</h4>
             </div>
             <div className="max-h-24 overflow-y-auto">
@@ -880,7 +880,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
                 const metadata = token.metadata as any;
                 
                 return (
-                  <div key={token.address} className="p-1 border-b border-gray-700 hover:bg-stake-darkbg transition-colors">
+                  <div key={token.address} className="p-1 border-b border-gray-700 hover:bg-gray-800/30 transition-colors">
                     <div className="flex items-center gap-1.5">
                       <img 
                         src={token.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${token.name}`} 
