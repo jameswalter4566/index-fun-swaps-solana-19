@@ -32,6 +32,7 @@ interface Message {
 interface CoinRecommendation {
   symbol: string;
   name: string;
+  address: string;
   price: number;
   marketCap: number;
   confidence: 'high' | 'medium' | 'low';
@@ -293,6 +294,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         const coinData = {
           symbol: rec.symbol,
           name: rec.name,
+          address: rec.address || rec.mint || rec.token_address || '',
           price: rec.price || 0,
           marketCap: rec.marketCap || 0,
           confidence: rec.confidence || 'medium',
