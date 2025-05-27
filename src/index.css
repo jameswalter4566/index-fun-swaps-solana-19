@@ -295,3 +295,55 @@
 .glass-button-call:hover::before {
   opacity: 1;
 }
+
+/* Small Glass Call Button for containers */
+.glass-button-call-small {
+  position: relative;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  background: rgba(16, 185, 129, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.75rem;
+}
+
+.glass-button-call-small::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(45deg, rgba(16, 185, 129, 0.4), rgba(34, 197, 94, 0.4), rgba(16, 185, 129, 0.4));
+  background-size: 200% 200%;
+  animation: gradient-shift 2s ease infinite;
+  border-radius: 9999px;
+  opacity: 0.6;
+  z-index: -1;
+}
+
+.glass-button-call-small:hover {
+  background: rgba(16, 185, 129, 0.2);
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.glass-button-call-small:hover::before {
+  opacity: 0.8;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+  }
+}

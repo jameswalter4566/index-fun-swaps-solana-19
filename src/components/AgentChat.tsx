@@ -630,35 +630,35 @@ const AgentChat: React.FC<AgentChatProps> = ({
           "transition-all duration-300",
           message.expanded ? "max-w-full" : "max-w-lg"
         )}>
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
+          <CardContent className="p-2">
+            <div className="flex items-start gap-2">
               {message.tweetData.authorImage && (
                 <img 
                   src={message.tweetData.authorImage} 
                   alt={message.tweetData.author}
-                  className="w-10 h-10 rounded-full"
+                  className="w-6 h-6 rounded-full"
                 />
               )}
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">{message.tweetData.author}</span>
+                    <span className="font-semibold text-xs text-gray-900 dark:text-gray-100">{message.tweetData.author}</span>
                     <span className="text-xs text-gray-600 dark:text-gray-400">
-                      {new Date(message.tweetData.createdAt).toLocaleString()}
+                      {new Date(message.tweetData.createdAt).toLocaleTimeString()}
                     </span>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleMessageExpansion(message.id)}
-                    className="h-6 w-6 p-0"
+                    className="h-4 w-4 p-0"
                   >
-                    {message.expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {message.expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                   </Button>
                 </div>
                 <p className={cn(
-                  "text-sm text-gray-800 dark:text-gray-200",
-                  !message.expanded && "line-clamp-3"
+                  "text-xs text-gray-800 dark:text-gray-200",
+                  !message.expanded && "line-clamp-2"
                 )}>{message.tweetData.text}</p>
                 {message.tweetData.likes !== undefined && (
                   <div className="flex gap-4 mt-2 text-xs text-gray-600 dark:text-gray-400">
@@ -681,29 +681,29 @@ const AgentChat: React.FC<AgentChatProps> = ({
           "transition-all duration-300",
           message.expanded ? "max-w-full" : "max-w-lg"
         )}>
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
+          <CardContent className="p-2">
+            <div className="flex items-start gap-2">
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs bg-purple-200 dark:bg-purple-800 px-2 py-1 rounded text-purple-900 dark:text-purple-100">Mention</span>
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">{message.tweetData.author}</span>
+                    <span className="text-xs bg-purple-200 dark:bg-purple-800 px-1.5 py-0.5 rounded text-purple-900 dark:text-purple-100">Mention</span>
+                    <span className="font-semibold text-xs text-gray-900 dark:text-gray-100">{message.tweetData.author}</span>
                     <span className="text-xs text-gray-600 dark:text-gray-400">
-                      {new Date(message.tweetData.createdAt).toLocaleString()}
+                      {new Date(message.tweetData.createdAt).toLocaleTimeString()}
                     </span>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleMessageExpansion(message.id)}
-                    className="h-6 w-6 p-0"
+                    className="h-4 w-4 p-0"
                   >
-                    {message.expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {message.expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                   </Button>
                 </div>
                 <p className={cn(
-                  "text-sm text-gray-800 dark:text-gray-200",
-                  !message.expanded && "line-clamp-3"
+                  "text-xs text-gray-800 dark:text-gray-200",
+                  !message.expanded && "line-clamp-2"
                 )}>{message.tweetData.text}</p>
                 {message.tweetData.likes !== undefined && (
                   <div className="flex gap-4 mt-2 text-xs text-gray-600 dark:text-gray-400">
@@ -722,22 +722,22 @@ const AgentChat: React.FC<AgentChatProps> = ({
     if (message.sender === 'recommendation' && message.coinRecommendations) {
       return (
         <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
-          <CardContent className="p-4 space-y-3">
+          <CardContent className="p-3 space-y-2">
             {message.coinRecommendations.map((coin) => (
               <div 
                 key={coin.symbol} 
-                className="cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg p-3 transition-colors"
+                className="cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg p-2 transition-colors"
                 onClick={() => onCoinSelect && onCoinSelect(coin)}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   {coin.logo && (
-                    <img src={coin.logo} alt={coin.name} className="w-12 h-12 rounded-full" />
+                    <img src={coin.logo} alt={coin.name} className="w-10 h-10 rounded-full" />
                   )}
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-lg text-gray-900 dark:text-gray-100">{coin.symbol}</span>
-                        <span className="text-sm text-gray-700 dark:text-gray-300">{coin.name}</span>
+                        <span className="font-bold text-base text-gray-900 dark:text-gray-100">{coin.symbol}</span>
+                        <span className="text-xs text-gray-700 dark:text-gray-300">{coin.name}</span>
                       </div>
                       <span className={cn(
                         "px-2 py-1 rounded text-xs font-semibold",
@@ -748,7 +748,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
                         {coin.confidence} confidence
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                    <div className="grid grid-cols-2 gap-2 text-xs mb-2">
                       <div>
                         <span className="text-gray-600 dark:text-gray-400">Price:</span>
                         <span className="font-semibold ml-1 text-gray-900 dark:text-gray-100">${formatPrice(coin.price)}</span>
@@ -766,9 +766,9 @@ const AgentChat: React.FC<AgentChatProps> = ({
                         <span className="font-semibold ml-1 text-gray-900 dark:text-gray-100">{formatMarketCap(coin.marketCap)}</span>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 italic mb-2">{coin.reason}</p>
+                    <p className="text-xs text-gray-700 dark:text-gray-300 italic mb-2">{coin.reason}</p>
                     {onCoinSelect && (
-                      <div className="bg-stake-accent text-white text-center py-2 rounded-md font-medium text-sm">
+                      <div className="bg-stake-accent text-white text-center py-2 rounded-md font-medium text-xs">
                         📊 Click to View Live Chart
                       </div>
                     )}
@@ -808,41 +808,42 @@ const AgentChat: React.FC<AgentChatProps> = ({
   // Persistent view
   const persistentView = (
     <div className="h-full flex flex-col">
-      <div className="flex flex-row items-center justify-between p-4 border-b">
-        <div className="flex items-center gap-2">
-          <h3 className="text-lg font-semibold">{agentName} Trading Agent</h3>
-          {twitterAccounts.length > 0 && (
-            <span className="text-xs text-gray-500">({twitterAccounts.length} accounts)</span>
-          )}
+      <div className="flex flex-col gap-2 p-3 border-b">
+        <div className="w-full text-center">
+          <h3 className="text-lg font-bold tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 animate-pulse">
+            {agentName.toUpperCase()}
+          </h3>
+          <span className="text-xs text-gray-500">Trading Agent {twitterAccounts.length > 0 && `(${twitterAccounts.length} accounts)`}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-center">
           <Button
             variant={showAgentMakeup ? "default" : "outline"}
             size="sm"
             onClick={() => setShowAgentMakeup(!showAgentMakeup)}
-            className="text-xs"
+            className="text-xs h-7"
           >
             {showAgentMakeup ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
-            View Agent Makeup
+            Agent Makeup
           </Button>
           {isVoiceCallActive ? (
             <Button
               variant="destructive"
-              size="icon"
+              size="sm"
               onClick={endVoiceCall}
-              className="h-8 w-8"
+              className="h-7"
               title="End voice call"
             >
-              <PhoneOff className="h-4 w-4" />
+              <PhoneOff className="h-3 w-3 mr-1" />
+              End Call
             </Button>
           ) : (
             <button
               onClick={startVoiceCall}
-              className="glass-button-call animate-pulse-glow"
+              className="glass-button-call-small animate-pulse-glow"
               title="Start voice call - Fetches tweets and recommendations"
             >
-              <Phone className="h-5 w-5 mr-2" />
-              Start Call with Agent Now
+              <Phone className="h-3 w-3 mr-1" />
+              <span className="text-xs">Start Call</span>
             </button>
           )}
         </div>
@@ -855,15 +856,17 @@ const AgentChat: React.FC<AgentChatProps> = ({
           </div>
         )}
         
-        <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div key={message.id}>
-                {renderMessageContent(message)}
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
+        <div className="flex-1 overflow-hidden relative">
+          <ScrollArea ref={scrollAreaRef} className="h-full">
+            <div className="p-4 space-y-2">
+              {messages.map((message) => (
+                <div key={message.id}>
+                  {renderMessageContent(message)}
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
         
         {/* Monitored Accounts Section */}
         {twitterAccounts.length > 0 && (
@@ -871,17 +874,17 @@ const AgentChat: React.FC<AgentChatProps> = ({
             <div className="p-3 border-b border-gray-700 bg-stake-darkbg">
               <h4 className="text-sm font-semibold">Monitored Accounts</h4>
             </div>
-            <div className="max-h-48 overflow-y-auto">
+            <div className="max-h-32 overflow-y-auto">
               {twitterAccounts.map((token) => {
                 const metadata = token.metadata as any;
                 
                 return (
-                  <div key={token.address} className="p-2 border-b border-gray-700 hover:bg-stake-darkbg transition-colors">
+                  <div key={token.address} className="p-1.5 border-b border-gray-700 hover:bg-stake-darkbg transition-colors">
                     <div className="flex items-center gap-2">
                       <img 
                         src={token.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${token.name}`} 
                         alt={token.name}
-                        className="w-8 h-8 rounded-full object-cover"
+                        className="w-6 h-6 rounded-full object-cover"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1">
