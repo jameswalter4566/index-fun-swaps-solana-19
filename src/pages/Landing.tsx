@@ -332,7 +332,7 @@ const Landing = () => {
           AI Trading Agents are here
         </h1>
         
-        <div className="flex flex-col items-center gap-4 mb-16">
+        <div className="flex flex-col items-center gap-8 mb-16">
           <button
             onClick={() => navigate('/index')}
             className="glass-button-large animate-pulse-glow"
