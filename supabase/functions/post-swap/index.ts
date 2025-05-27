@@ -50,10 +50,10 @@ serve(async (req) => {
     console.log('Requesting swap from Solana Tracker API...');
     
     // Build request body for Solana Tracker API
-    const swapBody = {
+    const swapBody: any = {
       from,
       to,
-      amount: amount.toString(), // Ensure amount is a string
+      fromAmount: amount.toString(), // Use fromAmount per Solana Tracker API docs
       slippage: Number(slippage),
       payer
     };

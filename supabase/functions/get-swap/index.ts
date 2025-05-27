@@ -41,7 +41,7 @@ serve(async (req) => {
     const swapParams = new URLSearchParams({
       from,
       to,
-      amount,
+      fromAmount: amount,  // Use fromAmount per Solana Tracker API docs
       slippage,
       payer
     });

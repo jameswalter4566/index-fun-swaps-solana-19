@@ -47,6 +47,7 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
   const [swapQuote, setSwapQuote] = useState<any>(null);
   const [priorityFee, setPriorityFee] = useState('auto');
   const [priorityFeeLevel, setPriorityFeeLevel] = useState('medium');
+  const [pendingSwap, setPendingSwap] = useState(false);
 
   // Default SOL token
   const solToken = {
@@ -84,6 +85,17 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
     }
   }, [amount, toTokenAddress, publicKey, from?.address]);
 
+  // Auto-execute swap when wallet connects if there's a pending swap
+  useEffect(() => {
+    if (connected && publicKey && pendingSwap) {
+      setPendingSwap(false);
+      // Give the wallet a moment to fully connect
+      setTimeout(() => {
+        executeSwap(false);
+      }, 500);
+    }
+  }, [connected, publicKey, pendingSwap]);
+
 
   const connection = new Connection(
     'https://mainnet.helius-rpc.com/?api-key=9c6bbd13-8d15-4803-8c06-a08cf73ac3f8',
@@ -111,7 +123,10 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
         params.append('priorityFeeLevel', priorityFeeLevel);
       }
 
-      const { data, error } = await supabase.functions.invoke(`get-swap?${params.toString()}`);
+      const { data, error } = await supabase.functions.invoke(
+        `get-swap?${params.toString()}`,
+        { method: 'GET' }  // Explicitly specify GET method
+      );
 
       if (error) throw error;
 
@@ -379,9 +394,11 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 cursor-pointer" 
               onClick={() => {
                 console.log('Connect wallet button clicked');
+                setPendingSwap(true);
                 setVisible(true);
               }}
               type="button"
+              disabled={!amount || !toTokenAddress || loading}
             >
               Connect Wallet to Swap
             </Button>
