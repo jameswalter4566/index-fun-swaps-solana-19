@@ -206,6 +206,8 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
       const serializedTransactionBuffer = base64ToUint8Array(quote.txn);
       let txn;
 
+      console.log('Deserializing transaction, type:', quote.type);
+      
       if (quote.type === 'v0') {
         txn = VersionedTransaction.deserialize(serializedTransactionBuffer);
       } else {
@@ -216,20 +218,10 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
         throw new Error('Failed to deserialize transaction');
       }
 
-      // Get a fresh blockhash to ensure transaction isn't expired
-      console.log('Getting fresh blockhash...');
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
-      
-      // Update transaction with fresh blockhash
-      if ('message' in txn) {
-        // Legacy transaction
-        txn.recentBlockhash = blockhash;
-      } else {
-        // Versioned transaction
-        txn.message.recentBlockhash = blockhash;
-      }
+      console.log('Transaction deserialized successfully');
 
-      // Sign the transaction
+      // Sign the transaction - DO NOT modify the transaction from Solana Tracker
+      // It already has the correct blockhash and all necessary data
       console.log('Signing transaction...');
       const signedTxn = await signTransaction(txn);
       console.log('Transaction signed');
