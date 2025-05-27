@@ -277,39 +277,39 @@ const Landing = () => {
             </div>
             
             <nav className="flex items-center justify-center gap-4">
-              <Button
+              <button
                 onClick={() => navigate('/create-swap')}
-                className="bg-purple-600 text-purple-100 hover:bg-white hover:text-purple-600 px-6 py-2 rounded-full font-medium transition-all duration-200"
+                className="glass-button"
               >
                 Create Agent
-              </Button>
+              </button>
               
-              <Button
+              <button
                 onClick={() => navigate('/index')}
-                className="bg-purple-600 text-purple-100 hover:bg-white hover:text-purple-600 px-6 py-2 rounded-full font-medium transition-all duration-200"
+                className="glass-button"
               >
                 Explore Agents
-              </Button>
+              </button>
               
-              <Button
+              <button
                 onClick={() => navigate('/index')}
-                className="bg-purple-600 text-purple-100 hover:bg-white hover:text-purple-600 px-6 py-2 rounded-full font-medium transition-all duration-200"
+                className="glass-button"
               >
                 Trade
-              </Button>
+              </button>
               
-              <Button
+              <button
                 onClick={() => navigate('/documentation')}
-                className="bg-purple-600 text-purple-100 hover:bg-white hover:text-purple-600 px-6 py-2 rounded-full font-medium transition-all duration-200"
+                className="glass-button"
               >
                 Documentation
-              </Button>
+              </button>
               
               <a
                 href="https://x.com/index_fun"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-purple-600 text-purple-100 hover:bg-white hover:text-purple-600 px-6 py-2 rounded-full font-medium transition-all duration-200 inline-block"
+                className="glass-button inline-block"
               >
                 Twitter
               </a>
@@ -333,22 +333,20 @@ const Landing = () => {
         </h1>
         
         <div className="flex flex-col items-center gap-4 mb-16">
-          <Button
+          <button
             onClick={() => navigate('/index')}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-6 rounded-full text-xl animate-pulse-glow"
-            size="lg"
+            className="glass-button-large animate-pulse-glow"
           >
             Create Your Agent Now
-          </Button>
+          </button>
           
-          <Button
+          <button
             onClick={handleStartChat}
-            className={`${isVoiceCallActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white px-10 py-5 rounded-full text-lg flex items-center gap-3 transition-all duration-300`}
-            size="lg"
+            className={`glass-button-large flex items-center gap-3 ${isVoiceCallActive ? 'ring-2 ring-red-500' : 'ring-2 ring-green-500'}`}
           >
             <MessageCircle className={`w-6 h-6 ${isVoiceCallActive ? 'animate-pulse' : ''}`} />
             {isVoiceCallActive ? 'End Voice Chat' : 'Start Chatting with Agent'}
-          </Button>
+          </button>
         </div>
 
         {/* Mini Index Page Recreation */}
