@@ -750,6 +750,17 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
                               </div>
                               <p className="text-sm text-gray-700 dark:text-gray-300 italic">{coin.reason}</p>
                             </div>
+                            {/* Add View Chart button */}
+                            {onCoinSelect && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="mt-2 w-full"
+                                onClick={() => onCoinSelect(coin)}
+                              >
+                                View Chart
+                              </Button>
+                            )}
                           </div>
                         ))}
                       </CardContent>
@@ -780,6 +791,45 @@ const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent 
               ))}
             </div>
           </ScrollArea>
+          
+          {/* Monitored Accounts Section */}
+          {twitterAccounts.length > 0 && (
+            <div className="border-t border-stake-border">
+              <div className="p-3 border-b border-stake-border bg-stake-darkbg">
+                <h4 className="text-sm font-semibold">Monitored Accounts</h4>
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                {twitterAccounts.map((token) => {
+                  const metadata = token.metadata as any;
+                  
+                  return (
+                    <div key={token.address} className="p-2 border-b border-stake-border hover:bg-stake-darkbg transition-colors">
+                      <div className="flex items-center gap-2">
+                        <img 
+                          src={token.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${token.name}`} 
+                          alt={token.name}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1">
+                            <p className="font-medium text-xs truncate">
+                              {metadata?.display_name || token.name}
+                            </p>
+                            {metadata?.verified && (
+                              <svg className="w-3 h-3 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                              </svg>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 truncate">{token.name}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           
           <div className="p-4 border-t">
             <div className="flex gap-2">
