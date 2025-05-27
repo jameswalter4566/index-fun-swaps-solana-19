@@ -174,7 +174,17 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
       }
 
       // Deserialize the transaction
-      const serializedTransactionBuffer = Buffer.from(quote.txn, "base64");
+      // Convert base64 to Uint8Array (browser-compatible)
+      const base64ToUint8Array = (base64: string) => {
+        const binaryString = atob(base64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes;
+      };
+
+      const serializedTransactionBuffer = base64ToUint8Array(quote.txn);
       let txn;
 
       if (quote.type === 'v0') {
