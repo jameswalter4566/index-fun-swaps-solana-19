@@ -807,9 +807,9 @@ const AgentChat: React.FC<AgentChatProps> = ({
 
   // Persistent view
   const persistentView = (
-    <div className="absolute inset-0 flex flex-col overflow-hidden bg-gray-900 rounded-lg">
+    <div className="absolute inset-0 flex flex-col overflow-hidden rounded-lg">
       {/* Header - Fixed height */}
-      <div className="flex-shrink-0 flex flex-col gap-2 p-3 border-b">
+      <div className="flex-shrink-0 flex flex-col gap-2 p-3 border-b border-gray-700">
         <div className="w-full text-center">
           <h3 className="text-lg font-bold tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 animate-pulse">
             {agentName.toUpperCase()}
@@ -853,7 +853,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
       {/* Main content area - Flex grow */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {showAgentMakeup && (
-          <div className="flex-shrink-0 p-4 border-b bg-stake-darkbg">
+          <div className="flex-shrink-0 p-4 border-b bg-gray-800/50">
             <NodeVisualizer agentId={agentId} />
           </div>
         )}
@@ -872,7 +872,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         {/* Monitored Accounts Section - Fixed height */}
         {twitterAccounts.length > 0 && (
           <div className="flex-shrink-0 border-t border-gray-700">
-            <div className="p-2 border-b border-gray-700 bg-stake-darkbg">
+            <div className="p-2 border-b border-gray-700 bg-gray-800/50">
               <h4 className="text-xs font-semibold">Monitored Accounts</h4>
             </div>
             <div className="max-h-24 overflow-y-auto">
@@ -880,7 +880,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
                 const metadata = token.metadata as any;
                 
                 return (
-                  <div key={token.address} className="p-1 border-b border-gray-700 hover:bg-stake-darkbg transition-colors">
+                  <div key={token.address} className="p-1 border-b border-gray-700 hover:bg-gray-800/30 transition-colors">
                     <div className="flex items-center gap-1.5">
                       <img 
                         src={token.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${token.name}`} 
@@ -908,7 +908,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         )}
         
         {/* Input area - Fixed height */}
-        <div className="flex-shrink-0 p-3 border-t">
+        <div className="flex-shrink-0 p-3 border-t border-gray-700">
           <div className="flex gap-1.5">
             <Input
               value={inputText}
