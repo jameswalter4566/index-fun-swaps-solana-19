@@ -99,7 +99,10 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
 
   const connection = new Connection(
     'https://mainnet.helius-rpc.com/?api-key=9c6bbd13-8d15-4803-8c06-a08cf73ac3f8',
-    'confirmed'
+    {
+      commitment: 'confirmed',
+      wsEndpoint: undefined // Disable WebSocket to avoid connection errors
+    }
   );
 
   const getSwapQuote = async () => {
@@ -211,11 +214,34 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
         description: `Transaction ID: ${txid.slice(0, 8)}...${txid.slice(-8)}`,
       });
 
-      // Wait for confirmation
-      const confirmation = await connection.confirmTransaction(txid, 'confirmed');
+      // Wait for confirmation using polling instead of WebSocket
+      let confirmed = false;
+      let retries = 0;
+      const maxRetries = 30; // 30 seconds timeout
       
-      if (confirmation.value.err) {
-        throw new Error('Transaction failed');
+      while (!confirmed && retries < maxRetries) {
+        try {
+          const status = await connection.getSignatureStatus(txid);
+          
+          if (status?.value?.confirmationStatus === 'confirmed' || 
+              status?.value?.confirmationStatus === 'finalized') {
+            confirmed = true;
+            if (status.value.err) {
+              throw new Error('Transaction failed');
+            }
+          }
+        } catch (error) {
+          console.log('Checking transaction status...', error);
+        }
+        
+        if (!confirmed) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+          retries++;
+        }
+      }
+      
+      if (!confirmed) {
+        throw new Error(`Transaction confirmation timeout. Check transaction ${txid} on Solana Explorer`);
       }
 
       toast({
