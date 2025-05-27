@@ -21,7 +21,7 @@ if (typeof Vapi !== 'undefined') {
 interface Message {
   id: string;
   text?: string;
-  sender: 'user' | 'agent' | 'tweet' | 'mention' | 'recommendation';
+  sender: 'user' | 'guardian' | 'tweet' | 'mention' | 'recommendation';
   timestamp: Date;
   coinRecommendations?: CoinRecommendation[];
   tweetData?: TweetData;
@@ -80,7 +80,7 @@ interface SpeechRecognition extends EventTarget {
   stop: () => void;
 }
 
-interface AgentChatProps {
+interface GuardianChatProps {
   agentName: string;
   agentId: string;
   isPersistent?: boolean;
@@ -89,7 +89,7 @@ interface AgentChatProps {
   onCoinSelect?: (coin: any) => void;
 }
 
-const AgentChat: React.FC<AgentChatProps> = ({ 
+const GuardianChat: React.FC<GuardianChatProps> = ({ 
   agentName, 
   agentId, 
   isPersistent = false, 
@@ -116,8 +116,8 @@ const AgentChat: React.FC<AgentChatProps> = ({
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: `Hi! I'm your ${agentName} trading agent. Click the green phone button to hear my analysis of the latest tweets and coin recommendations!`,
-      sender: 'agent',
+      text: `Hi! I'm your ${agentName} trading guardian. Click the green phone button to hear my analysis of the latest tweets and coin recommendations!`,
+      sender: 'guardian',
       timestamp: new Date(),
     },
   ]);
@@ -151,7 +151,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
       const assistantMessage: Message = {
         id: Date.now().toString(),
         text: currentAssistantTranscript.trim(),
-        sender: 'agent',
+        sender: 'guardian',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, assistantMessage]);
@@ -436,7 +436,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
       const loadingMessage: Message = {
         id: Date.now().toString(),
         text: '🔄 Gathering latest tweets and analyzing coins...',
-        sender: 'agent',
+        sender: 'guardian',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, loadingMessage]);
@@ -453,7 +453,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         const tweetsHeader: Message = {
           id: 'tweets-header',
           text: `📱 Latest Tweets from Monitored Accounts (${tweetMessages.length})`,
-          sender: 'agent',
+          sender: 'guardian',
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, tweetsHeader, ...tweetMessages]);
@@ -463,7 +463,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         const mentionsHeader: Message = {
           id: 'mentions-header',
           text: `💬 Recent Mentions (${mentionMessages.length})`,
-          sender: 'agent',
+          sender: 'guardian',
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, mentionsHeader, ...mentionMessages]);
@@ -473,7 +473,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         const recsHeader: Message = {
           id: 'recs-header',
           text: `🚀 Top 5 Coin Recommendations`,
-          sender: 'agent',
+          sender: 'guardian',
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, recsHeader, ...recommendationMessages]);
@@ -511,7 +511,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
       const endMessage: Message = {
         id: Date.now().toString(),
         text: '📞 Voice call ended.',
-        sender: 'agent',
+        sender: 'guardian',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, endMessage]);
@@ -547,7 +547,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
       const agentResponse: Message = {
         id: (Date.now() + 1).toString(),
         text: 'I\'m monitoring the market for opportunities based on your configured filters. Click the green phone button to hear my latest analysis!',
-        sender: 'agent',
+        sender: 'guardian',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, agentResponse]);
@@ -816,7 +816,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
           <h3 className="text-lg font-bold tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 animate-pulse">
             {agentName.toUpperCase()}
           </h3>
-          <span className="text-xs text-gray-500">Trading Agent {twitterAccounts.length > 0 && `(${twitterAccounts.length} accounts)`}</span>
+          <span className="text-xs text-gray-500">Trading Guardian {twitterAccounts.length > 0 && `(${twitterAccounts.length} accounts)`}</span>
         </div>
         <div className="flex items-center gap-2 justify-center">
           <Button
@@ -826,7 +826,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
             className="text-xs h-7"
           >
             {showAgentMakeup ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
-            Agent Makeup
+            Guardian Makeup
           </Button>
           {isVoiceCallActive ? (
             <Button
@@ -945,7 +945,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
           
           {isVoiceCallActive && (
             <div className="mt-2 bg-green-500/10 border border-green-500/20 rounded-lg p-2 text-xs text-green-600">
-              🎙️ Voice call active - Speak naturally with your agent
+              🎙️ Voice call active - Speak naturally with your guardian
             </div>
           )}
         </div>
@@ -969,7 +969,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
           <Mic className="w-6 h-6" />
         </Button>
         <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm bg-black/80 text-white px-2 py-1 rounded">
-          Talk with Agent
+          Talk with Guardian
         </span>
       </div>
 
@@ -977,7 +977,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
       {isOpen && (
         <GlassCard className="fixed bottom-24 right-8 w-96 h-[600px] z-50 shadow-2xl animate-in slide-in-from-bottom-5" glow>
           <div className="flex flex-row items-center justify-between p-4 border-b">
-            <h3 className="text-lg font-semibold">{agentName} Trading Agent</h3>
+            <h3 className="text-lg font-semibold">{agentName} Trading Guardian</h3>
             <div className="flex items-center gap-2">
               {isVoiceCallActive ? (
                 <Button
@@ -1044,7 +1044,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
             {isVoiceCallActive && (
               <div className="px-4 pb-4">
                 <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-sm text-green-600">
-                  🎙️ Voice call active - Speak naturally with your agent
+                  🎙️ Voice call active - Speak naturally with your guardian
                 </div>
               </div>
             )}
@@ -1058,4 +1058,4 @@ const AgentChat: React.FC<AgentChatProps> = ({
   return isPersistent ? persistentView : floatingView;
 };
 
-export default AgentChat;
+export default GuardianChat;

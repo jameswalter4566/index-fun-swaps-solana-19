@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
-import AgentChat from '@/components/AgentChat';
+import GuardianChat from '@/components/GuardianChat';
 import LiveCoinChart from '@/components/LiveCoinChart';
 
 interface Token {
@@ -21,7 +21,7 @@ interface Token {
   metadata?: any;
 }
 
-interface IndexData {
+interface GuardianData {
   id: string;
   name: string;
   tokens: Token[];
@@ -31,20 +31,20 @@ interface IndexData {
   created_at: string;
 }
 
-const IndexDetail: React.FC = () => {
+const GuardianDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   // All hooks must be defined before any conditional returns
-  const [index, setIndex] = useState<IndexData | null>(null);
+  const [guardian, setGuardian] = useState<GuardianData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCoin, setSelectedCoin] = useState<any>(null);
 
   useEffect(() => {
-    fetchIndexData();
+    fetchGuardianData();
   }, [id]);
 
-  const fetchIndexData = async () => {
+  const fetchGuardianData = async () => {
     try {
       const { data, error } = await supabase
         .from('indexes')
@@ -54,12 +54,12 @@ const IndexDetail: React.FC = () => {
 
       if (error) throw error;
 
-      setIndex(data);
+      setGuardian(data);
     } catch (error) {
-      console.error('Error fetching index:', error);
+      console.error('Error fetching guardian:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load index data',
+        description: 'Failed to load guardian data',
         variant: 'destructive',
       });
     } finally {
@@ -80,10 +80,10 @@ const IndexDetail: React.FC = () => {
     );
   }
 
-  if (!index) {
+  if (!guardian) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <p className="text-xl text-gray-600">Index not found</p>
+        <p className="text-xl text-gray-600">Guardian not found</p>
         <Button onClick={() => navigate('/')} className="mt-4">
           Go Home
         </Button>
@@ -92,7 +92,7 @@ const IndexDetail: React.FC = () => {
   }
 
   // Filter only Twitter accounts
-  const twitterAccounts = index.tokens.filter(token => token.name?.startsWith('@'));
+  const twitterAccounts = guardian.tokens.filter(token => token.name?.startsWith('@'));
 
   return (
     <div className="h-screen flex flex-col bg-stake-background">
@@ -107,20 +107,20 @@ const IndexDetail: React.FC = () => {
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        <h1 className="text-xl font-bold">{index.name}</h1>
+        <h1 className="text-xl font-bold">{guardian.name}</h1>
         <div className="w-20" /> {/* Spacer for centering */}
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex gap-4 p-4 overflow-hidden">
-        {/* Left Side - Agent Chat with Monitored Accounts */}
+        {/* Left Side - Guardian Chat with Monitored Accounts */}
         <div className="w-96 flex-shrink-0 h-full">
           <div className="h-full bg-gray-800/30 backdrop-blur-xl rounded-lg border border-gray-700 relative overflow-hidden">
-            <AgentChat 
-              agentName={index.name} 
-              agentId={index.id} 
+            <GuardianChat 
+              agentName={guardian.name} 
+              agentId={guardian.id} 
               isPersistent={true}
-              indexTokens={index.tokens}
+              indexTokens={guardian.tokens}
               twitterAccounts={twitterAccounts}
               onCoinSelect={setSelectedCoin}
             />
@@ -139,4 +139,4 @@ const IndexDetail: React.FC = () => {
   );
 };
 
-export default IndexDetail;
+export default GuardianDetail;

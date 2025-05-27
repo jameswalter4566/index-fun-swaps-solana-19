@@ -57,7 +57,7 @@ serve(async (req) => {
         const requestData: VapiWebCallRequest = {
           assistantId: data.assistantId || Deno.env.get("VAPI_ASSISTANT_ID"),
           assistantOverrides: {
-            firstMessage: data.firstMessage || `Hi! I'm your SMART trading agent. I can help you analyze market trends, monitor Twitter accounts, and find trading opportunities. What would you like to know?`,
+            firstMessage: data.firstMessage || `Hi! I'm your Guardian trading assistant. I can help you analyze market trends, monitor Twitter accounts, and find trading opportunities. What would you like to know?`,
             model: {
               provider: "openai",
               model: "gpt-4-turbo",
@@ -73,8 +73,8 @@ serve(async (req) => {
             firstMessageMode: "assistant-speaks-first",
           },
           metadata: {
-            agentId: data.agentId,
-            agentName: data.agentName,
+            guardianId: data.guardianId || data.agentId,
+            guardianName: data.guardianName || data.agentName,
             userId: data.userId,
             ...data.metadata,
           },
@@ -183,7 +183,7 @@ serve(async (req) => {
         throw new Error(`Unknown action: ${action}`);
     }
   } catch (error) {
-    console.error("Error in smart-agent-speak function:", error);
+    console.error("Error in smart-guardian-speak function:", error);
     return new Response(
       JSON.stringify({ 
         success: false,

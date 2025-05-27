@@ -34,7 +34,7 @@ const CreateSwapForm: React.FC = () => {
     if (!formData.name || !formData.twitter1 || !formData.twitter2 || !formData.twitter3 || !formData.twitter4) {
       toast({
         title: "Form Validation Error",
-        description: "Agent name and all 4 Twitter accounts are required.",
+        description: "Guardian name and all 4 Twitter accounts are required.",
         variant: "destructive",
       });
       return;
@@ -105,8 +105,8 @@ const CreateSwapForm: React.FC = () => {
 
       console.log('Data to insert:', JSON.stringify(indexData, null, 2));
 
-      // Save agent data with Twitter user information
-      const { data: agent, error: insertError } = await supabase
+      // Save guardian data with Twitter user information
+      const { data: guardian, error: insertError } = await supabase
         .from('indexes')
         .insert(indexData)
         .select()
@@ -118,17 +118,17 @@ const CreateSwapForm: React.FC = () => {
       
       // Show success message
       toast({
-        title: "Agent Created!",
-        description: `Your ${formData.name} agent has been created successfully.`,
+        title: "Guardian Created!",
+        description: `Your ${formData.name} guardian has been created successfully.`,
       });
       
-      // Navigate to the new agent page
-      navigate(`/index/${agent.id}`);
+      // Navigate to the new guardian page
+      navigate(`/guardian/${guardian.id}`);
     } catch (error) {
-      console.error("Error creating agent:", error);
+      console.error("Error creating guardian:", error);
       toast({
-        title: "Error Creating Agent",
-        description: error instanceof Error ? error.message : "There was an error creating your agent. Please try again.",
+        title: "Error Creating Guardian",
+        description: error instanceof Error ? error.message : "There was an error creating your guardian. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -139,15 +139,15 @@ const CreateSwapForm: React.FC = () => {
   return (
     <GlassCard className="max-w-lg mx-auto" glow>
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold mb-2">create a new agent</h2>
+        <h2 className="text-2xl font-bold mb-2">create a new guardian</h2>
         <p className="text-muted-foreground">
-          create an AI trading agent that monitors Twitter accounts for trading signals
+          create an AI trading guardian that monitors Twitter accounts for trading signals
         </p>
       </div>
       <div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="name">agent name</Label>
+            <Label htmlFor="name">guardian name</Label>
             <Input
               id="name"
               name="name"
@@ -232,7 +232,7 @@ const CreateSwapForm: React.FC = () => {
             />
             <div className="space-y-1">
               <Label htmlFor="smsOptIn" className="text-sm font-normal cursor-pointer">
-                I consent to receive SMS notifications about my agent's trading activities
+                I consent to receive SMS notifications about my guardian's trading activities
               </Label>
               <p className="text-xs text-muted-foreground">
                 Message and data rates may apply. Text STOP to unsubscribe. View our{' '}
@@ -248,7 +248,7 @@ const CreateSwapForm: React.FC = () => {
             className="w-full btn-solana"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'creating...' : 'create agent'}
+            {isSubmitting ? 'creating...' : 'create guardian'}
           </Button>
         </form>
       </div>

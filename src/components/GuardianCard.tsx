@@ -11,7 +11,7 @@ interface Token {
   image?: string;
 }
 
-interface IndexCardProps {
+interface GuardianCardProps {
   id: string;
   name: string;
   tokens: Token[];
@@ -20,7 +20,7 @@ interface IndexCardProps {
   onClick?: () => void;
 }
 
-const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage, upvotes, onClick }) => {
+const GuardianCard: React.FC<GuardianCardProps> = ({ id, name, tokens, gainPercentage, upvotes, onClick }) => {
   const navigate = useNavigate();
   const [upvoted, setUpvoted] = useState(false);
   const [currentUpvotes, setCurrentUpvotes] = useState(upvotes);
@@ -129,7 +129,7 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
             </button>
             
             <button 
-              onClick={() => navigate(`/index/${id}`)}
+              onClick={() => navigate(`/guardian/${id}`)}
               className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-1 rounded-full text-sm transition-colors"
             >
               VIEW
@@ -141,4 +141,4 @@ const IndexCard: React.FC<IndexCardProps> = ({ id, name, tokens, gainPercentage,
   );
 };
 
-export default IndexCard;
+export default GuardianCard;

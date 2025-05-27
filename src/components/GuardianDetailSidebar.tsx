@@ -23,7 +23,7 @@ interface Token {
   error?: string;
 }
 
-interface IndexData {
+interface GuardianData {
   id: string;
   name: string;
   tokens: Token[];
@@ -33,44 +33,44 @@ interface IndexData {
   created_at: string;
 }
 
-interface IndexDetailSidebarProps {
-  indexId: string | null;
+interface GuardianDetailSidebarProps {
+  guardianId: string | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
-const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen, onClose }) => {
+const GuardianDetailSidebar: React.FC<GuardianDetailSidebarProps> = ({ guardianId, isOpen, onClose }) => {
   const { toast } = useToast();
-  const [index, setIndex] = useState<IndexData | null>(null);
+  const [guardian, setGuardian] = useState<GuardianData | null>(null);
   const [loading, setLoading] = useState(false);
   const { connected } = useWallet();
   const { setVisible } = useWalletModal();
 
   useEffect(() => {
-    if (indexId && isOpen) {
-      fetchIndexData();
+    if (guardianId && isOpen) {
+      fetchGuardianData();
     }
-  }, [indexId, isOpen]);
+  }, [guardianId, isOpen]);
 
-  const fetchIndexData = async () => {
-    if (!indexId) return;
+  const fetchGuardianData = async () => {
+    if (!guardianId) return;
     
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('indexes')
         .select('*')
-        .eq('id', indexId)
+        .eq('id', guardianId)
         .single();
 
       if (error) throw error;
 
-      setIndex(data);
+      setGuardian(data);
     } catch (error) {
       console.error('Error fetching index:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load index data',
+        description: 'Failed to load guardian data',
         variant: 'destructive',
       });
     } finally {
@@ -105,7 +105,7 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
       }`}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-stake-card sticky top-0 bg-stake-darkbg z-10">
-          <h2 className="text-2xl font-bold text-stake-text">index details</h2>
+          <h2 className="text-2xl font-bold text-stake-text">guardian details</h2>
           <Button variant="ghost" size="sm" onClick={onClose} className="text-stake-muted hover:text-stake-text">
             <X className="h-5 w-5" />
           </Button>
@@ -120,14 +120,14 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
               <Skeleton className="h-24 w-full" />
               <Skeleton className="h-24 w-full" />
             </div>
-          ) : index ? (
+          ) : guardian ? (
             <>
-              {/* Index Info */}
+              {/* Guardian Info */}
               <div>
-                <h1 className="text-3xl font-bold mb-2 text-stake-text">{index.name}</h1>
+                <h1 className="text-3xl font-bold mb-2 text-stake-text">{guardian.name}</h1>
                 <div className="flex flex-col gap-1 text-sm text-stake-muted">
                   <span>created {new Date(index.created_at).toLocaleDateString()}</span>
-                  <span>{index.tokens.length} tokens</span>
+                  <span>{guardian.tokens.length} tokens</span>
                 </div>
               </div>
 
@@ -140,11 +140,11 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="text-sm text-stake-muted">total market cap</p>
-                      <p className="text-2xl font-bold text-stake-highlight">{formatNumber(index.total_market_cap)}</p>
+                      <p className="text-2xl font-bold text-stake-highlight">{formatNumber(guardian.total_market_cap)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-stake-muted">average market cap</p>
-                      <p className="text-2xl font-bold text-stake-text">{formatNumber(index.average_market_cap)}</p>
+                      <p className="text-2xl font-bold text-stake-text">{formatNumber(guardian.average_market_cap)}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -154,7 +154,7 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
               <Card className="bg-gray-800 border-stake-accent">
                 <CardContent className="pt-4">
                   <PriceChart 
-                    tokens={index.tokens.filter(t => !t.error)} 
+                    tokens={guardian.tokens.filter(t => !t.error)} 
                     height={250}
                   />
                 </CardContent>
@@ -162,9 +162,9 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
 
               {/* Token List */}
               <div className="space-y-4">
-                <h3 className="text-xl font-bold text-stake-text">tokens in this index</h3>
+                <h3 className="text-xl font-bold text-stake-text">tokens in this guardian</h3>
                 <div className="grid gap-4">
-                  {index.tokens.map((token) => (
+                  {guardian.tokens.map((token) => (
                     <Card key={token.address} className="overflow-hidden bg-gray-800 border-stake-accent hover:border-stake-highlight transition-colors">
                       <CardContent className="p-4">
                         <div className="flex items-center gap-4">
@@ -235,12 +235,12 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
                   }
                 }}
               >
-                {connected ? 'SWAP INTO INDEX' : 'CONNECT WALLET'}
+                {connected ? 'SWAP INTO GUARDIAN' : 'CONNECT WALLET'}
               </Button>
             </>
           ) : (
             <div className="text-center py-8">
-              <p className="text-stake-muted">index not found</p>
+              <p className="text-stake-muted">guardian not found</p>
             </div>
           )}
         </div>
@@ -249,4 +249,4 @@ const IndexDetailSidebar: React.FC<IndexDetailSidebarProps> = ({ indexId, isOpen
   );
 };
 
-export default IndexDetailSidebar;
+export default GuardianDetailSidebar;

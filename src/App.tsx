@@ -9,9 +9,9 @@ import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
 import { useMemo } from 'react';
-import Index from "./pages/Index";
+import Guardian from "./pages/Guardian";
 import CreateSwap from "./pages/CreateSwap";
-import IndexDetail from "./pages/IndexDetail";
+import GuardianDetail from "./pages/GuardianDetail";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
@@ -48,9 +48,11 @@ const App = () => {
               <BrowserRouter>
                 <Routes>
                   <Route path="/" element={<Landing />} />
-                  <Route path="/index" element={<Index />} />
+                  <Route path="/guardian" element={<Guardian />} />
+                  <Route path="/index" element={<Guardian />} />
                   <Route path="/create-swap" element={<CreateSwap />} />
-                  <Route path="/index/:id" element={<IndexDetail />} />
+                  <Route path="/guardian/:id" element={<GuardianDetail />} />
+                  <Route path="/index/:id" element={<GuardianDetail />} />
                   <Route path="/documentation" element={<Documentation />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/debug" element={<VapiDebug />} />

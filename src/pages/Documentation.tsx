@@ -10,7 +10,7 @@ const Documentation = () => {
         <div className="mb-12">
           <h1 className="text-4xl font-bold mb-4">API Documentation</h1>
           <p className="text-xl text-gray-400">
-            Integrate voice-enabled AI trading agents into your application
+            Integrate voice-enabled AI trading guardians into your application
           </p>
         </div>
 
@@ -30,7 +30,7 @@ const Documentation = () => {
                 <div>
                   <h3 className="text-xl font-semibold mb-3">Introduction</h3>
                   <p className="text-gray-300 leading-relaxed">
-                    Our Voice API enables real-time communication with AI trading agents through WebRTC technology. 
+                    Our Voice API enables real-time communication with AI trading guardians through WebRTC technology. 
                     Build interactive voice experiences that analyze market data, provide trading insights, and execute 
                     commands through natural language processing.
                   </p>
@@ -42,7 +42,7 @@ const Documentation = () => {
                     <li>Real-time voice communication with sub-100ms latency</li>
                     <li>Advanced speech recognition and natural language understanding</li>
                     <li>Multi-language support with automatic translation</li>
-                    <li>Customizable agent personalities and trading strategies</li>
+                    <li>Customizable guardian personalities and trading strategies</li>
                     <li>Secure end-to-end encryption for all communications</li>
                   </ul>
                 </div>
@@ -136,12 +136,12 @@ const Documentation = () => {
                       <span className="bg-green-600 text-white px-3 py-1 rounded text-sm font-semibold">POST</span>
                       <code className="text-lg font-mono">/api/v1/voice/session</code>
                     </div>
-                    <p className="text-gray-300 mb-4">Create a new voice session with an AI trading agent</p>
+                    <p className="text-gray-300 mb-4">Create a new voice session with an AI trading guardian</p>
                     
                     <h4 className="font-semibold mb-2">Request Body</h4>
                     <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm mb-4">
                       <pre>{`{
-  "agent_type": "trading_assistant",
+  "guardian_type": "trading_assistant",
   "language": "en-US",
   "voice_config": {
     "provider": "openai",

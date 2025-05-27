@@ -13,14 +13,15 @@ const Navigation: React.FC = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <Link to="/index" className="flex items-center">
-              <span className="text-2xl font-bold text-purple-500">in-dex.fun</span>
+            <Link to="/guardian" className="flex items-center gap-3">
+              <img src="/GUARDIANLOGO.jpg" alt="Guardian" className="h-10 w-10 rounded-full" />
+              <span className="text-2xl font-bold text-purple-500">Guardian</span>
             </Link>
           </div>
           
           <div className="flex items-center space-x-4">
             <a
-              href="https://x.com/index_fun"
+              href="https://x.com/guardian_ai"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center w-10 h-10 bg-gray-800 hover:bg-gray-700 text-white rounded-full transition-all hover:scale-110"
@@ -36,7 +37,7 @@ const Navigation: React.FC = () => {
             </a>
             
             <Link to="/create-swap">
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white rounded-md">create agent</Button>
+              <Button className="bg-purple-600 hover:bg-purple-700 text-white rounded-md">create guardian</Button>
             </Link>
             
             <Button variant="ghost" className="hover:bg-gray-800 rounded-md text-gray-400 hover:text-white" onClick={() => setIsModalOpen(true)}>

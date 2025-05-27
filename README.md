@@ -1,6 +1,6 @@
-# SMART - AI Trading Agents Platform
+# Guardian - AI Trading Guardians Platform
 
-AI-powered trading agents that monitor Twitter accounts for trading signals and execute trades automatically.
+AI-powered trading guardians that monitor Twitter accounts for trading signals and execute trades automatically.
 
 ## Project Info
 
@@ -8,11 +8,11 @@ AI-powered trading agents that monitor Twitter accounts for trading signals and 
 
 ## Features
 
-- 🤖 **AI Trading Agents** - Create personalized trading agents that monitor Twitter accounts
-- 🐦 **Twitter Integration** - Real-time monitoring of up to 4 Twitter accounts per agent
+- 🤖 **AI Trading Guardians** - Create personalized trading guardians that monitor Twitter accounts
+- 🐦 **Twitter Integration** - Real-time monitoring of up to 4 Twitter accounts per guardian
 - 📊 **Smart Filters** - Set market cap, volume, and social media requirements
-- 💬 **Voice Chat** - Talk to your agent for trading recommendations
-- 📱 **SMS Alerts** - Get notified when your agent finds opportunities
+- 💬 **Voice Chat** - Talk to your guardian for trading recommendations
+- 📱 **SMS Alerts** - Get notified when your guardian finds opportunities
 - 🔍 **Multi-Source Data** - Pull data from Twitter, Pump.fun, and Photon
 
 ## Setup
@@ -61,7 +61,7 @@ For detailed setup instructions, see [docs/X_API_SETUP.md](docs/X_API_SETUP.md)
 
 ### Vapi Voice Assistant Setup
 
-Enable browser-based voice conversations with your trading agents:
+Enable browser-based voice conversations with your trading guardians:
 
 1. **Get Vapi Account**
    - Sign up at [vapi.ai](https://vapi.ai)
@@ -107,10 +107,10 @@ supabase functions deploy get-twitter-users
 
 ## Key Components
 
-- **NodeVisualizer**: Interactive agent configuration with 4 nodes
-- **AgentChat**: Voice-enabled chat interface for trading recommendations
-- **CreateSwapForm**: Agent creation with Twitter account selection
-- **IndexCard**: Display Twitter accounts with real-time data
+- **NodeVisualizer**: Interactive guardian configuration with 4 nodes
+- **GuardianChat**: Voice-enabled chat interface for trading recommendations
+- **CreateSwapForm**: Guardian creation with Twitter account selection
+- **GuardianCard**: Display Twitter accounts with real-time data
 
 ## Deployment
 

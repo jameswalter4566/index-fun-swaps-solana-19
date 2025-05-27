@@ -100,8 +100,8 @@ const Landing = () => {
   };
 
   const mockCoin = {
-    name: "AI Agent X",
-    symbol: "$AGENTX",
+    name: "AI Guardian X",
+    symbol: "$GUARDX",
     address: "DemoTokenAddressForLandingPage123",
     imageUrl: "/placeholder.svg",
     price: 0.00009474529083344235,
@@ -183,7 +183,7 @@ const Landing = () => {
       vapi.on('call-start', () => {
         console.log('Call started successfully');
         setIsVoiceCallActive(true);
-        toast.success('Connected to AI Trading Agent! Speak now...');
+        toast.success('Connected to AI Trading Guardian! Speak now...');
       });
 
       vapi.on('call-end', () => {
@@ -265,8 +265,8 @@ const Landing = () => {
           provider: "openai",
           voiceId: "nova",
         },
-        name: "AI Trading Agent",
-        firstMessage: "Hey! I'm your AI trading agent. I can help you analyze crypto markets and find the best opportunities. What are you looking for today?",
+        name: "AI Trading Guardian",
+        firstMessage: "Hey! I'm your AI trading guardian. I can help you analyze crypto markets and find the best opportunities. What are you looking for today?",
         firstMessageMode: "assistant-speaks-first",
       });
 
@@ -315,8 +315,9 @@ const Landing = () => {
       <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <h2 className="text-2xl font-bold text-purple-500">in-dex.fun</h2>
+            <div className="flex items-center gap-3">
+              <img src="/GUARDIANLOGO.jpg" alt="Guardian" className="h-10 w-10 rounded-full" />
+              <h2 className="text-2xl font-bold text-purple-500">Guardian</h2>
             </div>
             
             <nav className="flex items-center justify-center gap-4">
@@ -324,18 +325,18 @@ const Landing = () => {
                 onClick={() => navigate('/create-swap')}
                 className="glass-button"
               >
-                Create Agent
+                Create Guardian
               </button>
               
               <button
-                onClick={() => navigate('/index')}
+                onClick={() => navigate('/guardian')}
                 className="glass-button"
               >
-                Explore Agents
+                Explore Guardians
               </button>
               
               <button
-                onClick={() => navigate('/index')}
+                onClick={() => navigate('/guardian')}
                 className="glass-button"
               >
                 Trade
@@ -372,15 +373,15 @@ const Landing = () => {
         }}
       >
         <h1 className="text-6xl md:text-8xl font-bold mb-8 text-center animate-fade-in">
-          AI Trading Agents are here
+          AI Trading Guardians are here
         </h1>
         
         <div className="flex flex-col items-center gap-8 mb-16">
           <button
-            onClick={() => navigate('/index')}
+            onClick={() => navigate('/guardian')}
             className="glass-button-large animate-pulse-glow"
           >
-            Create Your Agent Now
+            Create Your Guardian Now
           </button>
           
           <button
@@ -388,7 +389,7 @@ const Landing = () => {
             className={`glass-button-large flex items-center gap-3 ${isVoiceCallActive ? 'ring-2 ring-red-500' : 'ring-2 ring-green-500'}`}
           >
             <MessageCircle className={`w-6 h-6 ${isVoiceCallActive ? 'animate-pulse' : ''}`} />
-            {isVoiceCallActive ? 'End Voice Chat' : 'Start Chatting with Agent'}
+            {isVoiceCallActive ? 'End Voice Chat' : 'Start Chatting with Guardian'}
           </button>
         </div>
 
@@ -539,24 +540,24 @@ const Landing = () => {
         className="min-h-screen py-20 relative"
       >
         <div className="container mx-auto px-4">
-          {/* First Explainer Segment - Create Agent */}
+          {/* First Explainer Segment - Create Guardian */}
           <div className="max-w-6xl mx-auto mb-32 animate-fade-in" style={{ animationDelay: '100ms' }}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              {/* Replica of Create Agent Form - Left Side */}
+              {/* Replica of Create Guardian Form - Left Side */}
               <div className="order-2 lg:order-1 transform scale-90">
                 <GlassCard className="max-w-md mx-auto">
                   <div className="p-6 space-y-6">
-                    <h2 className="text-2xl font-bold mb-4">Create New Trading Agent</h2>
+                    <h2 className="text-2xl font-bold mb-4">Create New Trading Guardian</h2>
                     
                     <div className="space-y-4">
                       <div>
-                        <Label>Agent Name</Label>
-                        <Input placeholder="My Trading Bot" className="mt-1" />
+                        <Label>Guardian Name</Label>
+                        <Input placeholder="My Trading Guardian" className="mt-1" />
                       </div>
                       
                       <div>
                         <Label>Description</Label>
-                        <Input placeholder="A smart agent that monitors crypto markets" className="mt-1" />
+                        <Input placeholder="A smart guardian that monitors crypto markets" className="mt-1" />
                       </div>
                       
                       <div className="space-y-3">
@@ -583,7 +584,7 @@ const Landing = () => {
                       </div>
                       
                       <Button className="w-full bg-purple-600 hover:bg-purple-700">
-                        Deploy Agent
+                        Deploy Guardian
                       </Button>
                     </div>
                   </div>
@@ -594,19 +595,19 @@ const Landing = () => {
               <div className="order-1 lg:order-2 space-y-4">
                 <h3 className="text-3xl font-bold">Turn your favorite KOLs into your personal trading assistant</h3>
                 <p className="text-xl text-gray-300">
-                  Trade and communicate with your agent directly from our platform. Set your parameters, choose your influencers, and let AI do the heavy lifting.
+                  Trade and communicate with your guardian directly from our platform. Set your parameters, choose your influencers, and let AI do the heavy lifting.
                 </p>
                 <Button 
                   onClick={() => navigate('/create-swap')}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
-                  Create Your Agent <ChevronRight className="ml-2 h-4 w-4" />
+                  Create Your Guardian <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Second Explainer Segment - Trading Agent Chat */}
+          {/* Second Explainer Segment - Trading Guardian Chat */}
           <div className="max-w-6xl mx-auto mb-32 animate-fade-in" style={{ animationDelay: '200ms' }}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               {/* Explainer Text - Left Side */}
@@ -616,19 +617,19 @@ const Landing = () => {
                   Our Twitter integration utilizes advanced AI modeling to mimic the personality of the KOLs that you monitor, creating a Custom AI voice personality based on your preferred KOLs!
                 </p>
                 <Button 
-                  onClick={() => navigate('/index')}
+                  onClick={() => navigate('/guardian')}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
                   Try Voice Chat <Phone className="ml-2 h-4 w-4" />
                 </Button>
               </div>
               
-              {/* Replica of Agent Chat - Right Side */}
+              {/* Replica of Guardian Chat - Right Side */}
               <div className="transform scale-90">
                 <GlassCard className="max-w-md mx-auto">
                   <div className="p-6">
                     <div className="mb-6">
-                      <h3 className="text-xl font-bold mb-2">Trading Agent Chat</h3>
+                      <h3 className="text-xl font-bold mb-2">Trading Guardian Chat</h3>
                       <div className="flex gap-2">
                         <Button 
                           className="flex-1 bg-green-600 hover:bg-green-700"
@@ -706,7 +707,7 @@ const Landing = () => {
                       <div className="text-center px-8">
                         <BarChart3 className="h-16 w-16 mx-auto mb-4 opacity-50 text-purple-500" />
                         <p className="text-lg font-medium mb-2">Chart Will Display Here!</p>
-                        <p className="text-sm text-gray-500">Search coin now or click a recommendation from the AI agent!</p>
+                        <p className="text-sm text-gray-500">Search coin now or click a recommendation from the AI guardian!</p>
                       </div>
                     </div>
                     
@@ -744,10 +745,10 @@ const Landing = () => {
               <div className="order-1 lg:order-2 space-y-4">
                 <h3 className="text-3xl font-bold">AI-Powered Coin Recommendations</h3>
                 <p className="text-xl text-gray-300">
-                  Our agent will constantly recommend new coins to you based on the parameters you set at the beginning, then you can trade live!
+                  Our guardian will constantly recommend new coins to you based on the parameters you set at the beginning, then you can trade live!
                 </p>
                 <Button 
-                  onClick={() => navigate('/index')}
+                  onClick={() => navigate('/guardian')}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
                   Start Trading <BarChart3 className="ml-2 h-4 w-4" />
@@ -799,7 +800,7 @@ const Landing = () => {
                     <div className="text-6xl font-bold text-white/80 mb-2">
                       {Math.round(orbFillPercentage)}%
                     </div>
-                    <div className="text-sm text-purple-300">Agent Power</div>
+                    <div className="text-sm text-purple-300">Guardian Power</div>
                   </div>
                 </div>
               </div>
@@ -813,7 +814,7 @@ const Landing = () => {
               >
                 {/* Background text */}
                 <span className="relative z-10">
-                  Create and deploy your own AI agent! Simply click the create new agent button then add up to 4 KOL accounts and all of your preferred coin parameters for your AI agent to constantly be on the lookout for.
+                  Create and deploy your own AI guardian! Simply click the create new guardian button then add up to 4 KOL accounts and all of your preferred coin parameters for your AI guardian to constantly be on the lookout for.
                 </span>
                 
                 {/* Highlight overlay */}
@@ -823,7 +824,7 @@ const Landing = () => {
                     clipPath: `polygon(0 0, ${textHighlightPercentage}% 0, ${textHighlightPercentage}% 100%, 0 100%)`,
                   }}
                 >
-                  Create and deploy your own AI agent! Simply click the create new agent button then add up to 4 KOL accounts and all of your preferred coin parameters for your AI agent to constantly be on the lookout for.
+                  Create and deploy your own AI guardian! Simply click the create new guardian button then add up to 4 KOL accounts and all of your preferred coin parameters for your AI guardian to constantly be on the lookout for.
                 </span>
               </div>
             </div>
@@ -838,9 +839,9 @@ const Landing = () => {
       >
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">Explore Agent Architecture</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">Explore Guardian Architecture</h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              View other agents that creators have made on the platform and copy their genetic makeup instantly!
+              View other guardians that creators have made on the platform and copy their genetic makeup instantly!
             </p>
           </div>
           
@@ -858,7 +859,7 @@ const Landing = () => {
             
             {/* Instructions */}
             <div className="mt-6 text-center text-gray-400">
-              <p className="text-sm">Drag nodes around to explore the agent architecture</p>
+              <p className="text-sm">Drag nodes around to explore the guardian architecture</p>
             </div>
           </div>
         </div>
@@ -871,7 +872,7 @@ const Landing = () => {
             {/* Chat Header */}
             <div className="p-4 border-b border-white/10">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">AI Trading Agent</h3>
+                <h3 className="text-lg font-semibold">AI Trading Guardian</h3>
                 <button
                   onClick={() => {
                     if (vapiRef.current) {
