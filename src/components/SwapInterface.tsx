@@ -246,7 +246,7 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
 
       toast({
         title: 'Swap completed!',
-        description: `Successfully swapped ${amount} ${from.symbol} for ${quote.rate.amountOut} ${toToken?.symbol || 'tokens'}`,
+        description: `Successfully swapped ${amount} ${from.symbol} for ${quote.rate?.amountOut || 'unknown amount'} ${toToken?.symbol || 'tokens'}`,
       });
 
       // Reset form but keep default amount
@@ -324,11 +324,11 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
                   <div className="font-semibold">{toToken.symbol}</div>
                   <div className="text-xs text-gray-500">{toToken.name}</div>
                 </div>
-                {swapQuote && (
+                {swapQuote && swapQuote.rate && (
                   <div className="text-right">
-                    <div className="font-semibold">{swapQuote.rate.amountOut.toFixed(6)}</div>
+                    <div className="font-semibold">{swapQuote.rate.amountOut?.toFixed(6) || '0'}</div>
                     <div className="text-xs text-gray-500">
-                      ${(swapQuote.rate.amountOut * swapQuote.rate.executionPrice).toFixed(2)}
+                      ${((swapQuote.rate.amountOut || 0) * (swapQuote.rate.executionPrice || 0)).toFixed(2)}
                     </div>
                   </div>
                 )}
@@ -398,27 +398,27 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
         </div>
 
         {/* Swap Info */}
-        {swapQuote && (
+        {swapQuote && swapQuote.rate && (
           <div className="space-y-2 p-3 bg-gray-900 rounded-lg text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500">Rate</span>
-              <span>1 {from.symbol} = {swapQuote.rate.executionPrice.toFixed(6)} {toToken?.symbol}</span>
+              <span>1 {from.symbol} = {swapQuote.rate.executionPrice?.toFixed(6) || '0'} {toToken?.symbol}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Price Impact</span>
               <span className={cn(
-                swapQuote.rate.priceImpact > 0.05 ? 'text-red-500' : 'text-green-500'
+                (swapQuote.rate.priceImpact || 0) > 0.05 ? 'text-red-500' : 'text-green-500'
               )}>
-                {(swapQuote.rate.priceImpact * 100).toFixed(2)}%
+                {((swapQuote.rate.priceImpact || 0) * 100).toFixed(2)}%
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Min Received</span>
-              <span>{swapQuote.rate.minAmountOut.toFixed(6)} {toToken?.symbol}</span>
+              <span>{swapQuote.rate.minAmountOut?.toFixed(6) || '0'} {toToken?.symbol}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Platform Fee</span>
-              <span>{swapQuote.rate.platformFeeUI} SOL</span>
+              <span>{swapQuote.rate.platformFeeUI || '0'} SOL</span>
             </div>
           </div>
         )}
@@ -469,8 +469,8 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {swapQuote ? 'Swapping...' : 'Getting Quote...'}
                   </>
-                ) : swapQuote ? (
-                  `Swap ${amount} ${from.symbol} for ${swapQuote.rate.amountOut.toFixed(6)} ${toToken?.symbol}`
+                ) : swapQuote && swapQuote.rate ? (
+                  `Swap ${amount} ${from.symbol} for ${swapQuote.rate.amountOut?.toFixed(6) || '0'} ${toToken?.symbol}`
                 ) : (
                   `Swap ${amount} ${from.symbol}`
                 )}
