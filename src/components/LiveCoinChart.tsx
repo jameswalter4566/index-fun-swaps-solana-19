@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, TrendingUp, TrendingDown, DollarSign, Users, Droplets, Activity } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, DollarSign, Users, Droplets, Activity, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,133 +25,102 @@ interface ChartProps {
   onCoinSelect: (coin: CoinData) => void;
 }
 
-interface PriceDataPoint {
+interface CandleData {
+  open: number;
+  close: number;
+  high: number;
+  low: number;
+  volume: number;
   time: number;
-  price: number;
 }
 
 const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [searchedCoin, setSearchedCoin] = useState<CoinData | null>(null);
-  const [priceHistory, setPriceHistory] = useState<PriceDataPoint[]>([]);
+  const [chartData, setChartData] = useState<CandleData[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number>(0);
-  const [isLiveData, setIsLiveData] = useState(false);
-  const wsRef = useRef<WebSocket | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [timeframe, setTimeframe] = useState('15m');
+  const [loadingChart, setLoadingChart] = useState(false);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
+
+  const displayCoin = selectedCoin || searchedCoin;
+
+  // Timeframe options
+  const timeframes = [
+    { value: '1m', label: '1M' },
+    { value: '5m', label: '5M' },
+    { value: '15m', label: '15M' },
+    { value: '30m', label: '30M' },
+    { value: '1h', label: '1H' },
+    { value: '4h', label: '4H' },
+    { value: '1d', label: '1D' },
+  ];
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
       }
     };
   }, []);
 
-  // Function to start simulated data
-  const startSimulatedData = (coin: CoinData) => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-    
-    intervalRef.current = setInterval(() => {
-      setCurrentPrice(prev => {
-        const variation = (Math.random() - 0.5) * 0.002;
-        const newPrice = prev * (1 + variation) || coin.price;
-        setPriceHistory(prevHistory => {
-          const newHistory = [...prevHistory, { time: Date.now(), price: newPrice }];
-          return newHistory.slice(-100);
-        });
-        return newPrice;
-      });
-    }, 2000);
-  };
-
-  // Function to connect to WebSocket
-  const connectToWebSocket = async (coin: CoinData) => {
-    // Close existing connection
-    if (wsRef.current) {
-      wsRef.current.close();
-    }
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-
-    // Initialize price history
-    setCurrentPrice(coin.price);
-    setPriceHistory([{ time: Date.now(), price: coin.price }]);
-    setIsLiveData(false);
-
+  // Fetch chart data
+  const fetchChartData = async (coin: CoinData) => {
+    setLoadingChart(true);
     try {
-      // Use the WebSocket proxy edge function
-      const { data: { session } } = await supabase.auth.getSession();
-      const wsUrl = `${window.location.origin.replace('http', 'ws')}/functions/v1/websocket-proxy?token=${coin.address}`;
-      
-      wsRef.current = new WebSocket(wsUrl);
-
-      wsRef.current.onopen = () => {
-        console.log('Connected to WebSocket proxy for', coin.symbol);
-        setIsLiveData(true);
-      };
-
-      wsRef.current.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          if (message.type === 'price' && message.data) {
-            const newPrice = message.data.price;
-            setCurrentPrice(newPrice);
-            setPriceHistory(prev => {
-              const newHistory = [...prev, { time: message.data.timestamp, price: newPrice }];
-              return newHistory.slice(-100);
-            });
-          }
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+      const { data, error } = await supabase.functions.invoke('get-chart-data', {
+        body: { 
+          tokenAddress: coin.address,
+          type: timeframe,
+          removeOutliers: true
         }
-      };
+      });
 
-      wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setIsLiveData(false);
-        startSimulatedData(coin);
-      };
+      if (error) throw error;
 
-      wsRef.current.onclose = () => {
-        console.log('WebSocket closed');
-        setIsLiveData(false);
-      };
-
+      if (data && data.oclhv) {
+        setChartData(data.oclhv);
+        // Update current price to latest close
+        if (data.oclhv.length > 0) {
+          setCurrentPrice(data.oclhv[data.oclhv.length - 1].close);
+        }
+      }
     } catch (error) {
-      console.error('Error connecting to WebSocket:', error);
+      console.error('Error fetching chart data:', error);
       toast({
-        title: 'Connection Error',
-        description: 'Failed to connect to live price data. Using simulated data.',
+        title: 'Chart Error',
+        description: 'Failed to load chart data',
         variant: 'destructive',
       });
-      startSimulatedData(coin);
+    } finally {
+      setLoadingChart(false);
     }
   };
 
-  // Subscribe to price updates when a coin is selected
+  // Fetch chart data when coin or timeframe changes
   useEffect(() => {
-    if (!selectedCoin) return;
+    if (!displayCoin) return;
 
-    connectToWebSocket(selectedCoin);
+    fetchChartData(displayCoin);
+
+    // Refresh chart data every 30 seconds
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+    }
+    
+    refreshIntervalRef.current = setInterval(() => {
+      fetchChartData(displayCoin);
+    }, 30000);
 
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
       }
     };
-  }, [selectedCoin?.address]); // Only depend on address
+  }, [displayCoin?.address, timeframe]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -179,8 +148,7 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
 
         setSearchedCoin(coinData);
         onCoinSelect(coinData);
-        // Immediately connect to WebSocket for live data
-        connectToWebSocket(coinData);
+        setCurrentPrice(coinData.price);
       }
     } catch (error) {
       console.error('Error searching coin:', error);
@@ -194,56 +162,159 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
     }
   };
 
-  const displayCoin = selectedCoin || searchedCoin;
+  // Render candlestick chart
+  const renderCandlestickChart = () => {
+    if (chartData.length === 0) return null;
 
-  // Simple line chart rendering
-  const renderChart = () => {
-    if (priceHistory.length < 2) return null;
+    const width = 800;
+    const height = 400;
+    const padding = 60;
+    const candleWidth = Math.max(2, (width - 2 * padding) / chartData.length - 2);
 
-    const width = 600;
-    const height = 300;
-    const padding = 40;
-
-    const minPrice = Math.min(...priceHistory.map(p => p.price));
-    const maxPrice = Math.max(...priceHistory.map(p => p.price));
+    // Calculate price range
+    const prices = chartData.flatMap(c => [c.high, c.low]);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
     const priceRange = maxPrice - minPrice || 1;
 
-    const points = priceHistory.map((point, index) => {
-      const x = padding + (index / (priceHistory.length - 1)) * (width - 2 * padding);
-      const y = height - padding - ((point.price - minPrice) / priceRange) * (height - 2 * padding);
-      return `${x},${y}`;
-    }).join(' ');
+    // Helper to convert price to Y coordinate
+    const priceToY = (price: number) => {
+      return height - padding - ((price - minPrice) / priceRange) * (height - 2 * padding);
+    };
 
-    const isPositive = priceHistory[priceHistory.length - 1].price >= priceHistory[0].price;
+    // Format price for display
+    const formatChartPrice = (price: number) => {
+      if (price < 0.00001) return price.toExponential(2);
+      if (price < 0.01) return price.toFixed(6);
+      return price.toFixed(4);
+    };
 
     return (
-      <svg width={width} height={height} className="w-full h-full">
-        {/* Grid lines */}
-        {[0, 1, 2, 3, 4].map(i => (
-          <line
-            key={i}
-            x1={padding}
-            y1={padding + i * (height - 2 * padding) / 4}
-            x2={width - padding}
-            y2={padding + i * (height - 2 * padding) / 4}
-            stroke="#e5e7eb"
-            strokeDasharray="5,5"
-          />
-        ))}
+      <svg width={width} height={height} className="w-full h-full" viewBox={`0 0 ${width} ${height}`}>
+        {/* Background */}
+        <rect width={width} height={height} fill="#0a0a0a" />
         
-        {/* Price line */}
-        <polyline
-          points={points}
-          fill="none"
-          stroke={isPositive ? '#10b981' : '#ef4444'}
-          strokeWidth="2"
-        />
+        {/* Grid lines and price labels */}
+        {[0, 1, 2, 3, 4, 5].map(i => {
+          const y = padding + i * (height - 2 * padding) / 5;
+          const price = maxPrice - (i * priceRange / 5);
+          return (
+            <g key={i}>
+              <line
+                x1={padding}
+                y1={y}
+                x2={width - padding}
+                y2={y}
+                stroke="#333"
+                strokeDasharray="5,5"
+              />
+              <text
+                x={width - padding + 5}
+                y={y + 4}
+                fill="#999"
+                fontSize="10"
+                textAnchor="start"
+              >
+                ${formatChartPrice(price)}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Candlesticks */}
+        {chartData.map((candle, index) => {
+          const x = padding + index * ((width - 2 * padding) / chartData.length) + candleWidth / 2;
+          const isGreen = candle.close >= candle.open;
+          const color = isGreen ? '#10b981' : '#ef4444';
+          
+          const bodyTop = priceToY(Math.max(candle.open, candle.close));
+          const bodyBottom = priceToY(Math.min(candle.open, candle.close));
+          const bodyHeight = Math.max(1, bodyBottom - bodyTop);
+
+          return (
+            <g key={index}>
+              {/* Wick */}
+              <line
+                x1={x}
+                y1={priceToY(candle.high)}
+                x2={x}
+                y2={priceToY(candle.low)}
+                stroke={color}
+                strokeWidth="1"
+              />
+              {/* Body */}
+              <rect
+                x={x - candleWidth / 2}
+                y={bodyTop}
+                width={candleWidth}
+                height={bodyHeight}
+                fill={color}
+                stroke={color}
+                strokeWidth="1"
+              />
+            </g>
+          );
+        })}
+
+        {/* Volume bars at bottom */}
+        {chartData.length > 0 && (() => {
+          const maxVolume = Math.max(...chartData.map(c => c.volume));
+          const volumeHeight = 60;
+          
+          return chartData.map((candle, index) => {
+            const x = padding + index * ((width - 2 * padding) / chartData.length) + candleWidth / 2;
+            const barHeight = (candle.volume / maxVolume) * volumeHeight;
+            const isGreen = candle.close >= candle.open;
+            
+            return (
+              <rect
+                key={`vol-${index}`}
+                x={x - candleWidth / 2}
+                y={height - padding + 10}
+                width={candleWidth}
+                height={barHeight}
+                fill={isGreen ? '#10b98133' : '#ef444433'}
+              />
+            );
+          });
+        })()}
+
+        {/* Axes */}
+        <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#666" />
+        <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#666" />
         
-        {/* Area under curve */}
-        <polygon
-          points={`${padding},${height - padding} ${points} ${width - padding},${height - padding}`}
-          fill={isPositive ? '#10b98120' : '#ef444420'}
-        />
+        {/* Current price line */}
+        {currentPrice > 0 && (
+          <>
+            <line
+              x1={padding}
+              y1={priceToY(currentPrice)}
+              x2={width - padding}
+              y2={priceToY(currentPrice)}
+              stroke="#fbbf24"
+              strokeDasharray="5,5"
+              strokeWidth="1"
+            />
+            <rect
+              x={width - padding - 60}
+              y={priceToY(currentPrice) - 10}
+              width="60"
+              height="20"
+              fill="#fbbf24"
+              rx="2"
+            />
+            <text
+              x={width - padding - 30}
+              y={priceToY(currentPrice) + 4}
+              fill="#000"
+              fontSize="10"
+              textAnchor="middle"
+              fontWeight="bold"
+            >
+              ${formatChartPrice(currentPrice)}
+            </text>
+          </>
+        )}
       </svg>
     );
   };
@@ -279,24 +350,36 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                 <div>
                   <h3 className="font-semibold flex items-center gap-2">
                     {displayCoin.symbol}
-                    {isLiveData && (
-                      <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full animate-pulse">
-                        LIVE
-                      </span>
-                    )}
+                    <BarChart3 className="h-4 w-4 text-gray-500" />
                   </h3>
                   <p className="text-sm text-gray-500">{displayCoin.name}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold">${currentPrice.toFixed(8)}</p>
-                <p className={cn(
-                  "text-sm flex items-center gap-1",
-                  displayCoin.priceChange24h >= 0 ? "text-green-600" : "text-red-600"
-                )}>
-                  {displayCoin.priceChange24h >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {displayCoin.priceChange24h >= 0 ? '+' : ''}{displayCoin.priceChange24h.toFixed(2)}%
-                </p>
+              <div className="flex items-center gap-4">
+                {/* Timeframe selector */}
+                <div className="flex gap-1">
+                  {timeframes.map(tf => (
+                    <Button
+                      key={tf.value}
+                      size="sm"
+                      variant={timeframe === tf.value ? "default" : "outline"}
+                      onClick={() => setTimeframe(tf.value)}
+                      className="px-2 py-1 text-xs"
+                    >
+                      {tf.label}
+                    </Button>
+                  ))}
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold">${currentPrice.toFixed(8)}</p>
+                  <p className={cn(
+                    "text-sm flex items-center gap-1",
+                    displayCoin.priceChange24h >= 0 ? "text-green-600" : "text-red-600"
+                  )}>
+                    {displayCoin.priceChange24h >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                    {displayCoin.priceChange24h >= 0 ? '+' : ''}{displayCoin.priceChange24h.toFixed(2)}%
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -304,11 +387,18 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
         
         <CardContent>
           {displayCoin ? (
-            <div className="h-[300px] flex items-center justify-center">
-              {renderChart()}
+            <div className="h-[400px] flex items-center justify-center bg-black rounded-lg p-4">
+              {loadingChart ? (
+                <div className="text-gray-500">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                  <p>Loading chart data...</p>
+                </div>
+              ) : (
+                renderCandlestickChart()
+              )}
             </div>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-gray-500">
+            <div className="h-[400px] flex items-center justify-center text-gray-500">
               <div className="text-center">
                 <Activity className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>Search for a token or select from recommendations</p>
