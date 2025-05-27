@@ -59,8 +59,14 @@ serve(async (req) => {
     };
 
     // Add optional parameters if provided
-    if (priorityFee !== undefined) swapBody.priorityFee = priorityFee;
-    if (priorityFeeLevel) swapBody.priorityFeeLevel = priorityFeeLevel;
+    // Skip priority fee parameters when set to 'auto' to avoid API errors
+    if (priorityFee !== undefined && priorityFee !== 'auto') {
+      swapBody.priorityFee = priorityFee;
+    }
+    // Only add priorityFeeLevel if priorityFee is explicitly set to a numeric value
+    if (priorityFee !== undefined && priorityFee !== 'auto' && priorityFeeLevel) {
+      swapBody.priorityFeeLevel = priorityFeeLevel;
+    }
     if (txVersion) swapBody.txVersion = txVersion;
     if (fee) swapBody.fee = fee;
     if (feeType) swapBody.feeType = feeType;

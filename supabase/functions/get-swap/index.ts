@@ -47,8 +47,14 @@ serve(async (req) => {
     });
 
     // Add optional parameters if provided
-    if (priorityFee) swapParams.append('priorityFee', priorityFee);
-    if (priorityFeeLevel) swapParams.append('priorityFeeLevel', priorityFeeLevel);
+    // Skip priority fee parameters when set to 'auto' to avoid API errors
+    if (priorityFee && priorityFee !== 'auto') {
+      swapParams.append('priorityFee', priorityFee);
+    }
+    // Only add priorityFeeLevel if priorityFee is explicitly set to a numeric value
+    if (priorityFee && priorityFee !== 'auto' && priorityFeeLevel) {
+      swapParams.append('priorityFeeLevel', priorityFeeLevel);
+    }
     if (fee) swapParams.append('fee', fee);
     if (feeType) swapParams.append('feeType', feeType);
 
