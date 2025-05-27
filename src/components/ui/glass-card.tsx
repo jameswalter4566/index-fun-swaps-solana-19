@@ -26,14 +26,11 @@ export const GlassCard: React.FC<GlassProps> = ({
     {...rest}
   >
     {glow && (
-      /* halo highlight that slowly moves */
+      /* static purple glow positioned on the right */
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-[inherit] animate-spin-slow
-                   bg-[radial-gradient(circle_at_30%_30%,rgba(153,69,255,.55),transparent_60%)]"
-        style={{
-          animationDuration: '14s'
-        }}
+        className="pointer-events-none absolute top-0 right-0 w-1/2 h-full rounded-[inherit]
+                   bg-[radial-gradient(circle_at_70%_50%,rgba(153,69,255,.35),transparent_50%)]"
       />
     )}
 

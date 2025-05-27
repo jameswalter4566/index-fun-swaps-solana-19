@@ -7,22 +7,21 @@ import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'rec
 import { format } from 'date-fns';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
-import WebSocketService from '@/lib/websocket-service';
 import NodeVisualizer from '@/components/NodeVisualizer';
+import Vapi from '@vapi-ai/web';
 
 const Landing = () => {
   const navigate = useNavigate();
   const [currentSection, setCurrentSection] = useState(0);
   const sectionsRef = useRef<(HTMLElement | null)[]>([]);
   const [isVapiListening, setIsVapiListening] = useState(false);
-  const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const wsServiceRef = useRef<WebSocketService | null>(null);
+  const [isVoiceCallActive, setIsVoiceCallActive] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [orbFillPercentage, setOrbFillPercentage] = useState(0);
   const [textHighlightPercentage, setTextHighlightPercentage] = useState(0);
   const orbRef = useRef<HTMLDivElement | null>(null);
   const textRef = useRef<HTMLDivElement | null>(null);
+  const vapiRef = useRef<any>(null);
 
   // Hardcoded mock data
   const mockChartData = {
@@ -146,41 +145,49 @@ const Landing = () => {
   }, []);
 
   const handleStartChat = async () => {
-    if (isWebSocketConnected) {
-      // Disconnect
-      wsServiceRef.current?.disconnect();
-      setIsWebSocketConnected(false);
-      toast.info("Disconnected from agent");
+    if (isVoiceCallActive) {
+      // End the call
+      if (vapiRef.current) {
+        vapiRef.current.stop();
+        setIsVoiceCallActive(false);
+        toast.info("Call ended");
+      }
       return;
     }
 
-    setIsLoading(true);
-
     try {
-      // Get WebSocket URL
-      const { data, error } = await supabase.functions.invoke('vapi-websocket-call');
-      
-      if (error) {
-        console.error('Error getting WebSocket URL:', error);
-        toast.error('Failed to connect to agent');
-        return;
+      if (!vapiRef.current) {
+        const publicKey = '098bd142-677b-40a8-ab39-11792cb7737b';
+        console.log('🚀 Creating Vapi instance...');
+        vapiRef.current = new Vapi(publicKey);
+        console.log('✅ Vapi SDK initialized');
       }
 
-      if (!data?.url) {
-        console.error('No WebSocket URL returned');
-        toast.error('Failed to connect to agent');
-        return;
-      }
+      const vapi = vapiRef.current;
 
-      // Initialize WebSocket service
-      wsServiceRef.current = new WebSocketService();
-      
-      // Set up message handler
-      wsServiceRef.current.onMessage((message) => {
-        console.log('Received message:', message);
+      vapi.on('call-start', () => {
+        console.log('Call started successfully');
+        setIsVoiceCallActive(true);
+        toast.success('Connected to AI Trading Agent! Speak now...');
+      });
+
+      vapi.on('call-end', () => {
+        console.log('Call ended');
+        setIsVoiceCallActive(false);
+      });
+
+      vapi.on('speech-start', () => {
+        console.log('Assistant started speaking');
+      });
+
+      vapi.on('speech-end', () => {
+        console.log('Assistant finished speaking');
+      });
+
+      vapi.on('message', (message: any) => {
+        console.log('Vapi message:', message);
         
-        if (message.type === 'transcript' && message.role === 'assistant') {
-          // You could show the transcript in a toast or update UI
+        if (message.type === 'transcript' && message.role === 'assistant' && message.transcript) {
           toast(message.transcript, {
             duration: 5000,
             position: 'bottom-right',
@@ -188,20 +195,41 @@ const Landing = () => {
         }
       });
 
-      // Connect to WebSocket
-      const connected = await wsServiceRef.current.connect(data.url);
-      
-      if (connected) {
-        setIsWebSocketConnected(true);
-        toast.success('Connected to agent! Start speaking...');
-      } else {
-        toast.error('Failed to establish connection');
-      }
+      vapi.on('error', (error: any) => {
+        console.error('Vapi error:', error);
+        toast.error(error.message || 'An error occurred during the voice call');
+      });
+
+      console.log('📞 Starting Vapi call...');
+      const call = await vapi.start({
+        transcriber: {
+          provider: "deepgram",
+          model: "nova-2",
+          language: "en-US",
+        },
+        model: {
+          provider: "openai",
+          model: "gpt-4-turbo",
+          messages: [
+            {
+              role: "system",
+              content: "You are a DEGEN crypto trading assistant. You help users analyze cryptocurrency markets. Keep responses short and enthusiastic about crypto opportunities.",
+            },
+          ],
+          temperature: 0.7,
+        },
+        voice: {
+          provider: "openai",
+          voiceId: "nova",
+        },
+        name: "AI Trading Agent",
+        firstMessage: "Hey! I'm your AI trading agent. I can help you analyze crypto markets and find the best opportunities. What are you looking for today?",
+        firstMessageMode: "assistant-speaks-first",
+      });
+
     } catch (error) {
-      console.error('Error in handleStartChat:', error);
-      toast.error('Failed to connect to agent');
-    } finally {
-      setIsLoading(false);
+      console.error('Error starting voice call:', error);
+      toast.error('Failed to start voice call. Please check your microphone permissions.');
     }
   };
 
@@ -315,12 +343,11 @@ const Landing = () => {
           
           <Button
             onClick={handleStartChat}
-            disabled={isLoading || isWebSocketConnected}
-            className="bg-green-600 hover:bg-green-700 text-white px-10 py-5 rounded-full text-lg flex items-center gap-3 transition-all duration-300"
+            className={`${isVoiceCallActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white px-10 py-5 rounded-full text-lg flex items-center gap-3 transition-all duration-300`}
             size="lg"
           >
-            <MessageCircle className={`w-6 h-6 ${isWebSocketConnected ? 'animate-pulse' : ''}`} />
-            {isWebSocketConnected ? 'Connected to Agent' : 'Start Chatting with Agent'}
+            <MessageCircle className={`w-6 h-6 ${isVoiceCallActive ? 'animate-pulse' : ''}`} />
+            {isVoiceCallActive ? 'End Voice Chat' : 'Start Chatting with Agent'}
           </Button>
         </div>
 
