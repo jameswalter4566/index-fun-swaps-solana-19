@@ -79,9 +79,19 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const solanaApiKey = Deno.env.get('SOLANA_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const solanaApiKey = Deno.env.get('SOLANA_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Missing required Supabase environment variables');
+    }
+    
+    if (!solanaApiKey) {
+      console.error('SOLANA_KEY environment variable is not set');
+      throw new Error('SOLANA_KEY environment variable is not set. Please set it in Supabase Edge Functions settings.');
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Parse request body
@@ -89,19 +99,33 @@ serve(async (req) => {
     const { limit = 10, bypassFilters = false } = body;
 
     // Log API key status for debugging (without exposing the actual key)
-    console.log('SOLANA_KEY environment variable status:', solanaApiKey ? `Set (length: ${solanaApiKey.length})` : 'Not set');
+    console.log('SOLANA_KEY environment variable status:', `Set (length: ${solanaApiKey.length})`);
+    console.log('Making request to Solana Tracker API...');
 
     // Try to fetch from Solana Tracker API with correct base URL
     const response = await fetch('https://data.solanatracker.io/tokens/latest', {
+      method: 'GET',
       headers: {
         'x-api-key': solanaApiKey,
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
       }
     });
 
     if (!response.ok) {
-      console.error('Solana Tracker API error:', response.status, response.statusText);
-      throw new Error(`Solana Tracker API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Solana Tracker API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
+      if (response.status === 401) {
+        throw new Error('Solana Tracker API authentication failed. Please check that your SOLANA_KEY is valid and has an active subscription.');
+      }
+      
+      throw new Error(`Solana Tracker API error: ${response.status} - ${errorText}`);
     }
 
     const tokens: SolanaTokenData[] = await response.json();
