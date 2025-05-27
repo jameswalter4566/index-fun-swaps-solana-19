@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import GuardianCard from '@/components/GuardianCard';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ const Landing = () => {
   const vapiRef = useRef<any>(null);
   const [currentUserTranscript, setCurrentUserTranscript] = useState('');
   const [currentAssistantTranscript, setCurrentAssistantTranscript] = useState('');
+  const [featuredGuardians, setFeaturedGuardians] = useState<any[]>([]);
   const [chatHistory, setChatHistory] = useState<{role: 'user' | 'assistant', text: string}[]>([]);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -108,6 +110,26 @@ const Landing = () => {
     marketCap: 9474529.08,
     volume24h: 145915.72
   };
+
+  // Fetch featured guardians
+  useEffect(() => {
+    const fetchFeaturedGuardians = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('indexes')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(4);
+
+        if (error) throw error;
+        setFeaturedGuardians(data || []);
+      } catch (error) {
+        console.error('Error fetching featured guardians:', error);
+      }
+    };
+
+    fetchFeaturedGuardians();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -350,7 +372,7 @@ const Landing = () => {
               </button>
               
               <a
-                href="https://x.com/index_fun"
+                href="https://x.com/guardian_ai"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="glass-button inline-block"
@@ -372,9 +394,20 @@ const Landing = () => {
           transition: 'all 0.8s ease-in-out'
         }}
       >
-        <h1 className="text-6xl md:text-8xl font-bold mb-8 text-center animate-fade-in">
-          AI Trading Guardians are here
-        </h1>
+        {/* Logo and Branding */}
+        <div className="flex flex-col items-center mb-12 animate-fade-in">
+          <img 
+            src="/GUARDIANLOGO.jpg" 
+            alt="Guardian Logo" 
+            className="w-32 h-32 md:w-48 md:h-48 rounded-full mb-6 shadow-2xl animate-pulse-glow"
+          />
+          <h1 className="text-6xl md:text-8xl font-bold mb-2 text-center">
+            GUARDIAN
+          </h1>
+          <p className="text-2xl md:text-3xl text-purple-400">
+            ai trading guardians
+          </p>
+        </div>
         
         <div className="flex flex-col items-center gap-8 mb-16">
           <button
@@ -389,148 +422,39 @@ const Landing = () => {
             className={`glass-button-large flex items-center gap-3 ${isVoiceCallActive ? 'ring-2 ring-red-500' : 'ring-2 ring-green-500'}`}
           >
             <MessageCircle className={`w-6 h-6 ${isVoiceCallActive ? 'animate-pulse' : ''}`} />
-            {isVoiceCallActive ? 'End Voice Chat' : 'Start Chatting with Guardian'}
+            {isVoiceCallActive ? 'End Voice Chat' : 'Test Guardian Voice Chat'}
           </button>
         </div>
 
-        {/* Mini Index Page Recreation */}
-        <div className="w-full max-w-6xl mx-auto px-4">
-          <GlassCard glow className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Chart Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-2xl font-bold">{mockCoin.name}</h3>
-                    <p className="text-purple-400">{mockCoin.symbol}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-mono">${mockCoin.price.toFixed(8)}</p>
-                    <p className="text-green-400">+1849.32%</p>
-                  </div>
-                </div>
-                
-                <div className="h-[400px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={mockChartData.oclhv.map((candle: any) => ({
-                        time: candle.time * 1000,
-                        price: candle.close,
-                        high: candle.high,
-                        low: candle.low,
-                        displayTime: format(new Date(candle.time * 1000), 'HH:mm')
-                      }))}
-                      margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
-                    >
-                      <defs>
-                        <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <XAxis 
-                        dataKey="displayTime" 
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: '#6b7280', fontSize: 12 }}
-                      />
-                      <YAxis 
-                        hide
-                        domain={['dataMin * 0.95', 'dataMax * 1.05']}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                          border: '1px solid #8b5cf6',
-                          borderRadius: '8px',
-                          padding: '10px'
-                        }}
-                        labelStyle={{ color: '#e5e7eb' }}
-                        itemStyle={{ color: '#8b5cf6' }}
-                        formatter={(value: any) => `$${Number(value).toFixed(8)}`}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="price"
-                        stroke="#8b5cf6"
-                        fillOpacity={1}
-                        fill="url(#priceGradient)"
-                        strokeWidth={2}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Token Stats */}
-                <div className="grid grid-cols-2 gap-4">
-                  <GlassCard className="p-4">
-                    <p className="text-sm text-gray-400">Market Cap</p>
-                    <p className="text-xl font-mono">${(mockTokenStats.marketCap / 1000000).toFixed(2)}M</p>
-                  </GlassCard>
-                  <GlassCard className="p-4">
-                    <p className="text-sm text-gray-400">24h Volume</p>
-                    <p className="text-xl font-mono">${(mockTokenStats.volume24h / 1000).toFixed(2)}K</p>
-                  </GlassCard>
-                  <GlassCard className="p-4">
-                    <p className="text-sm text-gray-400">Holders</p>
-                    <p className="text-xl font-mono">{mockTokenStats.holders.toLocaleString()}</p>
-                  </GlassCard>
-                  <GlassCard className="p-4">
-                    <p className="text-sm text-gray-400">Liquidity</p>
-                    <p className="text-xl font-mono">${(mockTokenStats.liquidity / 1000000).toFixed(2)}M</p>
-                  </GlassCard>
-                </div>
-              </div>
-
-              {/* Top Traders & Holders */}
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-lg font-semibold mb-3">Top Traders</h4>
-                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                    {mockTopTraders.slice(0, 5).map((trader) => (
-                      <GlassCard key={trader.wallet} className="p-3">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-sm font-mono">{trader.wallet.slice(0, 8)}...{trader.wallet.slice(-6)}</p>
-                            <p className="text-xs text-gray-400">Rank #{trader.rank}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className={`text-sm font-bold ${trader.totalPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              ${trader.totalPnL.toFixed(2)}
-                            </p>
-                            <p className={`text-xs ${parseFloat(trader.roi) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              {trader.roi}%
-                            </p>
-                          </div>
-                        </div>
-                      </GlassCard>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-lg font-semibold mb-3">Top Holders</h4>
-                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                    {mockTokenHolders.topHolders.slice(0, 5).map((holder) => (
-                      <GlassCard key={holder.wallet} className="p-3">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-sm font-mono">{holder.wallet.slice(0, 8)}...{holder.wallet.slice(-6)}</p>
-                            <p className="text-xs text-gray-400">{holder.percentage.toFixed(2)}% of supply</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-bold">${(holder.valueUSD / 1000).toFixed(2)}K</p>
-                            {holder.isWhale && <span className="text-xs text-yellow-400">🐋 Whale</span>}
-                          </div>
-                        </div>
-                      </GlassCard>
-                    ))}
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </GlassCard>
+        {/* Featured Guardians */}
+        <div className="w-full max-w-7xl mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-8">Featured Guardians</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featuredGuardians.length > 0 ? (
+              featuredGuardians.map((guardian) => (
+                <GuardianCard
+                  key={guardian.id}
+                  id={guardian.id}
+                  name={guardian.name}
+                  tokens={guardian.tokens}
+                  gainPercentage={0}
+                  upvotes={0}
+                />
+              ))
+            ) : (
+              // Mock Guardian Cards if no data
+              Array.from({ length: 4 }).map((_, i) => (
+                <GuardianCard
+                  key={`mock-${i}`}
+                  id={`mock-${i}`}
+                  name="Loading..."
+                  tokens={[]}
+                  gainPercentage={0}
+                  upvotes={0}
+                />
+              ))
+            )}
+          </div>
         </div>
       </section>
 
