@@ -22,6 +22,10 @@ const Landing = () => {
   const orbRef = useRef<HTMLDivElement | null>(null);
   const textRef = useRef<HTMLDivElement | null>(null);
   const vapiRef = useRef<any>(null);
+  const [currentUserTranscript, setCurrentUserTranscript] = useState('');
+  const [currentAssistantTranscript, setCurrentAssistantTranscript] = useState('');
+  const [chatHistory, setChatHistory] = useState<{role: 'user' | 'assistant', text: string}[]>([]);
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
   // Hardcoded mock data
   const mockChartData = {
@@ -144,6 +148,13 @@ const Landing = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatHistory, currentUserTranscript, currentAssistantTranscript]);
+
   const handleStartChat = async () => {
     if (isVoiceCallActive) {
       // End the call
@@ -174,6 +185,15 @@ const Landing = () => {
       vapi.on('call-end', () => {
         console.log('Call ended');
         setIsVoiceCallActive(false);
+        // Save any pending transcripts to chat history
+        if (currentUserTranscript.trim()) {
+          setChatHistory(prev => [...prev, { role: 'user', text: currentUserTranscript.trim() }]);
+          setCurrentUserTranscript('');
+        }
+        if (currentAssistantTranscript.trim()) {
+          setChatHistory(prev => [...prev, { role: 'assistant', text: currentAssistantTranscript.trim() }]);
+          setCurrentAssistantTranscript('');
+        }
       });
 
       vapi.on('speech-start', () => {
@@ -187,11 +207,30 @@ const Landing = () => {
       vapi.on('message', (message: any) => {
         console.log('Vapi message:', message);
         
-        if (message.type === 'transcript' && message.role === 'assistant' && message.transcript) {
-          toast(message.transcript, {
-            duration: 5000,
-            position: 'bottom-right',
-          });
+        if (message.type === 'transcript') {
+          if (message.role === 'user' && message.transcript) {
+            // Handle user transcript
+            if (message.transcriptType === 'final') {
+              // Final transcript - add to chat history and clear current
+              const fullText = currentUserTranscript + ' ' + message.transcript;
+              setChatHistory(prev => [...prev, { role: 'user', text: fullText.trim() }]);
+              setCurrentUserTranscript('');
+            } else {
+              // Partial transcript - update current
+              setCurrentUserTranscript(prev => prev + ' ' + message.transcript);
+            }
+          } else if (message.role === 'assistant' && message.transcript) {
+            // Handle assistant transcript
+            if (message.transcriptType === 'final') {
+              // Final transcript - add to chat history and clear current
+              const fullText = currentAssistantTranscript + ' ' + message.transcript;
+              setChatHistory(prev => [...prev, { role: 'assistant', text: fullText.trim() }]);
+              setCurrentAssistantTranscript('');
+            } else {
+              // Partial transcript - update current
+              setCurrentAssistantTranscript(prev => prev + ' ' + message.transcript);
+            }
+          }
         }
       });
 
@@ -595,6 +634,84 @@ const Landing = () => {
           </div>
         </div>
       </section>
+
+      {/* Voice Chat Window */}
+      {isVoiceCallActive && (
+        <div className="fixed bottom-4 right-4 w-96 h-[500px] z-50">
+          <GlassCard className="h-full flex flex-col p-0 overflow-hidden">
+            {/* Chat Header */}
+            <div className="p-4 border-b border-white/10">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">AI Trading Agent</h3>
+                <button
+                  onClick={() => {
+                    if (vapiRef.current) {
+                      vapiRef.current.stop();
+                      setIsVoiceCallActive(false);
+                    }
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="text-sm text-gray-400 mt-1">Voice chat active</p>
+            </div>
+
+            {/* Chat Messages */}
+            <div 
+              ref={chatScrollRef}
+              className="flex-1 overflow-y-auto p-4 space-y-4"
+            >
+              {/* Chat History */}
+              {chatHistory.map((message, index) => (
+                <div
+                  key={index}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] px-4 py-2 rounded-2xl ${
+                      message.role === 'user'
+                        ? 'bg-blue-600 text-white rounded-br-sm'
+                        : 'bg-gray-700 text-white rounded-bl-sm'
+                    }`}
+                  >
+                    <p className="text-sm">{message.text}</p>
+                  </div>
+                </div>
+              ))}
+
+              {/* Current User Transcript */}
+              {currentUserTranscript.trim() && (
+                <div className="flex justify-end">
+                  <div className="max-w-[80%] px-4 py-2 rounded-2xl bg-blue-600 text-white rounded-br-sm opacity-70">
+                    <p className="text-sm">{currentUserTranscript.trim()}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Current Assistant Transcript */}
+              {currentAssistantTranscript.trim() && (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] px-4 py-2 rounded-2xl bg-gray-700 text-white rounded-bl-sm opacity-70">
+                    <p className="text-sm">{currentAssistantTranscript.trim()}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Chat Footer */}
+            <div className="p-4 border-t border-white/10">
+              <div className="flex items-center gap-2">
+                <div className="animate-pulse flex items-center gap-2 text-sm text-gray-400">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span>Listening...</span>
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+      )}
     </div>
   );
 };
