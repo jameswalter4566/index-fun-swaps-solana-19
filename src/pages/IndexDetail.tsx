@@ -115,18 +115,16 @@ const IndexDetail: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex gap-4 p-4 overflow-hidden">
         {/* Left Side - Agent Chat with Monitored Accounts */}
-        <div className="w-96 flex-shrink-0">
-          <GlassCard className="h-full" glow>
-            <div className="p-0 h-full">
-              <AgentChat 
-                agentName={index.name} 
-                agentId={index.id} 
-                isPersistent={true}
-                indexTokens={index.tokens}
-                twitterAccounts={twitterAccounts}
-                onCoinSelect={setSelectedCoin}
-              />
-            </div>
+        <div className="w-96 flex-shrink-0 h-full">
+          <GlassCard className="h-full p-0 relative" glow>
+            <AgentChat 
+              agentName={index.name} 
+              agentId={index.id} 
+              isPersistent={true}
+              indexTokens={index.tokens}
+              twitterAccounts={twitterAccounts}
+              onCoinSelect={setSelectedCoin}
+            />
           </GlassCard>
         </div>
 

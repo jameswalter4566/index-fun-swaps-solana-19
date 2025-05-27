@@ -3,7 +3,6 @@ import { GlassCard } from '@/components/ui/glass-card';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Mic, MicOff, Send, X, Phone, PhoneOff, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -808,7 +807,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
 
   // Persistent view
   const persistentView = (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="absolute inset-0 flex flex-col overflow-hidden bg-gray-900 rounded-lg">
       {/* Header - Fixed height */}
       <div className="flex-shrink-0 flex flex-col gap-2 p-3 border-b">
         <div className="w-full text-center">
@@ -1011,7 +1010,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
           </div>
           
           <div className="p-0 flex flex-col h-[calc(100%-73px)]">
-            <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
+            <div className="flex-1 overflow-y-auto p-4 agent-chat-messages" ref={scrollAreaRef}>
               <div className="space-y-4">
                 {messages.map((message) => (
                   <div key={message.id}>
@@ -1019,7 +1018,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
             
             <div className="p-4 border-t flex gap-2">
               <Input
