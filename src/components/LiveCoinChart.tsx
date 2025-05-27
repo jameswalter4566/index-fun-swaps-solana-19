@@ -169,7 +169,9 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
     const width = 800;
     const height = 400;
     const padding = 60;
-    const candleWidth = Math.max(2, (width - 2 * padding) / chartData.length - 2);
+    const candleSpacing = 3; // Space between candles
+    const maxCandleWidth = 12; // Maximum candle width
+    const candleWidth = Math.min(maxCandleWidth, Math.max(1, ((width - 2 * padding) / chartData.length) - candleSpacing));
 
     // Calculate price range
     const prices = chartData.flatMap(c => [c.high, c.low]);
@@ -223,7 +225,9 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
 
         {/* Candlesticks */}
         {chartData.map((candle, index) => {
-          const x = padding + index * ((width - 2 * padding) / chartData.length) + candleWidth / 2;
+          const totalWidth = width - 2 * padding;
+          const xSpacing = totalWidth / chartData.length;
+          const x = padding + (index * xSpacing) + (xSpacing / 2);
           const isGreen = candle.close >= candle.open;
           const color = isGreen ? '#10b981' : '#ef4444';
           
@@ -240,7 +244,8 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                 x2={x}
                 y2={priceToY(candle.low)}
                 stroke={color}
-                strokeWidth="1"
+                strokeWidth="0.5"
+                opacity="0.8"
               />
               {/* Body */}
               <rect
@@ -250,7 +255,8 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                 height={bodyHeight}
                 fill={color}
                 stroke={color}
-                strokeWidth="1"
+                strokeWidth="0.5"
+                rx="0.5"
               />
             </g>
           );
@@ -259,10 +265,12 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
         {/* Volume bars at bottom */}
         {chartData.length > 0 && (() => {
           const maxVolume = Math.max(...chartData.map(c => c.volume));
-          const volumeHeight = 60;
+          const volumeHeight = 40;
+          const totalWidth = width - 2 * padding;
+          const xSpacing = totalWidth / chartData.length;
           
           return chartData.map((candle, index) => {
-            const x = padding + index * ((width - 2 * padding) / chartData.length) + candleWidth / 2;
+            const x = padding + (index * xSpacing) + (xSpacing / 2);
             const barHeight = (candle.volume / maxVolume) * volumeHeight;
             const isGreen = candle.close >= candle.open;
             
@@ -270,7 +278,7 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
               <rect
                 key={`vol-${index}`}
                 x={x - candleWidth / 2}
-                y={height - padding + 10}
+                y={height - 40 - barHeight}
                 width={candleWidth}
                 height={barHeight}
                 fill={isGreen ? '#10b98133' : '#ef444433'}
