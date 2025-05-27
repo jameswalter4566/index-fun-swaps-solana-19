@@ -2,12 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GlassCard } from '@/components/ui/glass-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, TrendingUp, TrendingDown, DollarSign, Users, Droplets, Activity, BarChart3, Trophy, Wallet, Eye, EyeOff } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, DollarSign, Users, Droplets, Activity, BarChart3, Trophy, Wallet, Eye, EyeOff, ArrowRightLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import SwapInterface from '@/components/SwapInterface';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 interface CoinData {
   address: string;
@@ -84,8 +87,10 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
   const [loadingHolders, setLoadingHolders] = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
   const [revealedWallets, setRevealedWallets] = useState<Set<string>>(new Set());
+  const [showSwapDialog, setShowSwapDialog] = useState(false);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
+  const { connected } = useWallet();
 
   const displayCoin = selectedCoin || searchedCoin;
 
@@ -478,6 +483,15 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                 </div>
               </div>
               <div className="flex items-center gap-4">
+                {/* Swap Button */}
+                <Button
+                  onClick={() => setShowSwapDialog(true)}
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <ArrowRightLeft className="h-4 w-4 mr-1" />
+                  Swap
+                </Button>
                 {/* Timeframe selector */}
                 <div className="flex gap-1">
                   {timeframes.map(tf => (
@@ -817,6 +831,31 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
           </div>
         )}
       </GlassCard>
+
+      {/* Swap Dialog */}
+      <Dialog open={showSwapDialog} onOpenChange={setShowSwapDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Swap Tokens</DialogTitle>
+          </DialogHeader>
+          <SwapInterface 
+            toToken={displayCoin ? {
+              address: displayCoin.address,
+              symbol: displayCoin.symbol,
+              name: displayCoin.name,
+              logo: displayCoin.logo
+            } : undefined}
+            onSwapComplete={() => {
+              setShowSwapDialog(false);
+              // Optionally refresh data
+              if (displayCoin) {
+                fetchChartData(displayCoin);
+                fetchTokenStats(displayCoin);
+              }
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

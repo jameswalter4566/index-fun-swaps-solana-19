@@ -1,0 +1,401 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { Connection, VersionedTransaction, Transaction } from '@solana/web3.js';
+import { ArrowDownUp, Loader2, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface SwapInterfaceProps {
+  fromToken?: {
+    address: string;
+    symbol: string;
+    name: string;
+    logo?: string;
+    decimals?: number;
+  };
+  toToken?: {
+    address: string;
+    symbol: string;
+    name: string;
+    logo?: string;
+    decimals?: number;
+  };
+  onSwapComplete?: () => void;
+}
+
+const SwapInterface: React.FC<SwapInterfaceProps> = ({ 
+  fromToken, 
+  toToken: initialToToken,
+  onSwapComplete 
+}) => {
+  const { publicKey, signTransaction, sendTransaction, connected } = useWallet();
+  const { toast } = useToast();
+  
+  const [amount, setAmount] = useState('');
+  const [slippage, setSlippage] = useState(10);
+  const [toToken, setToToken] = useState(initialToToken);
+  const [toTokenAddress, setToTokenAddress] = useState(initialToToken?.address || '');
+  const [loading, setLoading] = useState(false);
+  const [swapQuote, setSwapQuote] = useState<any>(null);
+  const [priorityFee, setPriorityFee] = useState('auto');
+  const [priorityFeeLevel, setPriorityFeeLevel] = useState('medium');
+
+  // Default SOL as from token if not provided
+  const defaultFromToken = {
+    address: 'So11111111111111111111111111111111111111112',
+    symbol: 'SOL',
+    name: 'Solana',
+    decimals: 9
+  };
+
+  const from = fromToken || defaultFromToken;
+
+  useEffect(() => {
+    if (initialToToken) {
+      setToToken(initialToToken);
+      setToTokenAddress(initialToToken.address);
+    }
+  }, [initialToToken]);
+
+  const connection = new Connection(
+    'https://mainnet.helius-rpc.com/?api-key=9c6bbd13-8d15-4803-8c06-a08cf73ac3f8',
+    'confirmed'
+  );
+
+  const getSwapQuote = async () => {
+    if (!amount || !toTokenAddress || !publicKey) return;
+
+    setLoading(true);
+    try {
+      // Use URL params for GET request
+      const params = new URLSearchParams({
+        from: from.address,
+        to: toTokenAddress,
+        amount,
+        slippage: slippage.toString(),
+        payer: publicKey.toString()
+      });
+      
+      if (priorityFee && priorityFee !== 'auto') {
+        params.append('priorityFee', priorityFee);
+      } else if (priorityFee === 'auto') {
+        params.append('priorityFee', 'auto');
+        params.append('priorityFeeLevel', priorityFeeLevel);
+      }
+
+      const { data, error } = await supabase.functions.invoke(`get-swap?${params.toString()}`);
+
+      if (error) throw error;
+
+      setSwapQuote(data);
+      return data;
+    } catch (error) {
+      console.error('Error getting swap quote:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to get swap quote',
+        variant: 'destructive',
+      });
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const executeSwap = async () => {
+    if (!connected || !publicKey || !signTransaction || !sendTransaction) {
+      toast({
+        title: 'Wallet not connected',
+        description: 'Please connect your wallet to swap',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!amount || !toTokenAddress) {
+      toast({
+        title: 'Invalid input',
+        description: 'Please enter amount and select tokens',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Get fresh swap quote
+      const quote = await getSwapQuote();
+      if (!quote) return;
+
+      // Deserialize the transaction
+      const serializedTransactionBuffer = Buffer.from(quote.txn, "base64");
+      let txn;
+
+      if (quote.type === 'v0') {
+        txn = VersionedTransaction.deserialize(serializedTransactionBuffer);
+      } else {
+        txn = Transaction.from(serializedTransactionBuffer);
+      }
+
+      if (!txn) {
+        throw new Error('Failed to deserialize transaction');
+      }
+
+      // Sign the transaction
+      const signedTxn = await signTransaction(txn);
+
+      // Send the transaction
+      const txid = await sendTransaction(signedTxn, connection, {
+        skipPreflight: true,
+        maxRetries: 4,
+      });
+
+      toast({
+        title: 'Swap initiated',
+        description: `Transaction ID: ${txid.slice(0, 8)}...${txid.slice(-8)}`,
+      });
+
+      // Wait for confirmation
+      const confirmation = await connection.confirmTransaction(txid, 'confirmed');
+      
+      if (confirmation.value.err) {
+        throw new Error('Transaction failed');
+      }
+
+      toast({
+        title: 'Swap completed!',
+        description: `Successfully swapped ${amount} ${from.symbol} for ${quote.rate.amountOut} ${toToken?.symbol || 'tokens'}`,
+      });
+
+      // Reset form
+      setAmount('');
+      setSwapQuote(null);
+      
+      if (onSwapComplete) {
+        onSwapComplete();
+      }
+
+    } catch (error) {
+      console.error('Swap error:', error);
+      toast({
+        title: 'Swap failed',
+        description: error.message || 'Failed to complete swap',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAmountChange = (value: string) => {
+    // Only allow numbers and decimals
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setAmount(value);
+      setSwapQuote(null); // Clear quote when amount changes
+    }
+  };
+
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ArrowDownUp className="h-5 w-5" />
+          Swap Tokens
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* From Token */}
+        <div className="space-y-2">
+          <Label>From</Label>
+          <div className="flex items-center gap-2 p-3 bg-gray-900 rounded-lg">
+            {from.logo && (
+              <img src={from.logo} alt={from.symbol} className="w-8 h-8 rounded-full" />
+            )}
+            <div className="flex-1">
+              <div className="font-semibold">{from.symbol}</div>
+              <div className="text-xs text-gray-500">{from.name}</div>
+            </div>
+            <Input
+              type="text"
+              placeholder="0.0"
+              value={amount}
+              onChange={(e) => handleAmountChange(e.target.value)}
+              className="w-32 text-right bg-transparent border-0 focus:ring-0"
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-center">
+          <ArrowDownUp className="h-6 w-6 text-gray-500" />
+        </div>
+
+        {/* To Token */}
+        <div className="space-y-2">
+          <Label>To</Label>
+          <div className="flex items-center gap-2 p-3 bg-gray-900 rounded-lg">
+            {toToken ? (
+              <>
+                {toToken.logo && (
+                  <img src={toToken.logo} alt={toToken.symbol} className="w-8 h-8 rounded-full" />
+                )}
+                <div className="flex-1">
+                  <div className="font-semibold">{toToken.symbol}</div>
+                  <div className="text-xs text-gray-500">{toToken.name}</div>
+                </div>
+                {swapQuote && (
+                  <div className="text-right">
+                    <div className="font-semibold">{swapQuote.rate.amountOut.toFixed(6)}</div>
+                    <div className="text-xs text-gray-500">
+                      ${(swapQuote.rate.amountOut * swapQuote.rate.executionPrice).toFixed(2)}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Input
+                type="text"
+                placeholder="Enter token address"
+                value={toTokenAddress}
+                onChange={(e) => setToTokenAddress(e.target.value)}
+                className="flex-1 bg-transparent"
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Slippage */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>Slippage Tolerance</Label>
+            <span className="text-sm text-gray-500">{slippage}%</span>
+          </div>
+          <Slider
+            value={[slippage]}
+            onValueChange={(value) => setSlippage(value[0])}
+            min={0.1}
+            max={50}
+            step={0.1}
+            className="w-full"
+          />
+        </div>
+
+        {/* Priority Fee */}
+        <div className="space-y-2">
+          <Label>Priority Fee</Label>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant={priorityFee === 'auto' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setPriorityFee('auto')}
+            >
+              Auto
+            </Button>
+            <Button
+              variant={priorityFee !== 'auto' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setPriorityFee('0.0001')}
+            >
+              Custom
+            </Button>
+          </div>
+          {priorityFee === 'auto' && (
+            <div className="flex gap-1">
+              {['min', 'low', 'medium', 'high', 'veryHigh'].map((level) => (
+                <Button
+                  key={level}
+                  variant={priorityFeeLevel === level ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1 text-xs"
+                  onClick={() => setPriorityFeeLevel(level)}
+                >
+                  {level}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Swap Info */}
+        {swapQuote && (
+          <div className="space-y-2 p-3 bg-gray-900 rounded-lg text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Rate</span>
+              <span>1 {from.symbol} = {swapQuote.rate.executionPrice.toFixed(6)} {toToken?.symbol}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Price Impact</span>
+              <span className={cn(
+                swapQuote.rate.priceImpact > 0.05 ? 'text-red-500' : 'text-green-500'
+              )}>
+                {(swapQuote.rate.priceImpact * 100).toFixed(2)}%
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Min Received</span>
+              <span>{swapQuote.rate.minAmountOut.toFixed(6)} {toToken?.symbol}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Platform Fee</span>
+              <span>{swapQuote.rate.platformFeeUI} SOL</span>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="space-y-2">
+          {!connected ? (
+            <Button className="w-full" disabled>
+              Connect Wallet to Swap
+            </Button>
+          ) : !swapQuote ? (
+            <Button 
+              className="w-full" 
+              onClick={getSwapQuote}
+              disabled={!amount || !toTokenAddress || loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Getting Quote...
+                </>
+              ) : (
+                'Get Quote'
+              )}
+            </Button>
+          ) : (
+            <Button 
+              className="w-full" 
+              onClick={executeSwap}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Swapping...
+                </>
+              ) : (
+                `Swap ${amount} ${from.symbol} for ${swapQuote.rate.amountOut.toFixed(6)} ${toToken?.symbol}`
+              )}
+            </Button>
+          )}
+        </div>
+
+        {/* Warning for high slippage */}
+        {slippage > 15 && (
+          <div className="flex items-center gap-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-sm">
+            <AlertCircle className="h-4 w-4 text-yellow-500" />
+            <span className="text-yellow-500">High slippage tolerance may result in unfavorable trades</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default SwapInterface;
