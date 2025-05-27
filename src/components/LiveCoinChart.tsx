@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, TrendingUp, TrendingDown, DollarSign, Users, Droplets, Activity, BarChart3 } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, DollarSign, Users, Droplets, Activity, BarChart3, Trophy, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface CoinData {
   address: string;
@@ -34,6 +35,40 @@ interface CandleData {
   time: number;
 }
 
+interface TopTrader {
+  rank: number;
+  wallet: string;
+  held: number;
+  sold: number;
+  holding: number;
+  realizedPnL: number;
+  unrealizedPnL: number;
+  totalPnL: number;
+  totalInvested: number;
+  roi: string;
+  status: string;
+}
+
+interface TokenHolder {
+  rank: number;
+  wallet: string;
+  amount: number;
+  valueUSD: number;
+  percentage: number;
+  isWhale: boolean;
+  isTop10: boolean;
+}
+
+interface TokenStats {
+  totalBuyers24h: number;
+  totalSellers24h: number;
+  volume24h: number;
+  transactions24h: number;
+  uniqueWallets24h: number;
+  priceChange24h: number;
+  buyPressure: string;
+}
+
 const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,6 +77,12 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
   const [currentPrice, setCurrentPrice] = useState<number>(0);
   const [timeframe, setTimeframe] = useState('15m');
   const [loadingChart, setLoadingChart] = useState(false);
+  const [topTraders, setTopTraders] = useState<TopTrader[]>([]);
+  const [tokenHolders, setTokenHolders] = useState<TokenHolder[]>([]);
+  const [tokenStats, setTokenStats] = useState<TokenStats | null>(null);
+  const [loadingTraders, setLoadingTraders] = useState(false);
+  const [loadingHolders, setLoadingHolders] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(false);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
@@ -100,11 +141,72 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
     }
   };
 
-  // Fetch chart data when coin or timeframe changes
+  // Fetch top traders
+  const fetchTopTraders = async (coin: CoinData) => {
+    setLoadingTraders(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-top-traders', {
+        body: { tokenAddress: coin.address }
+      });
+
+      if (error) throw error;
+      if (data && data.traders) {
+        setTopTraders(data.traders);
+      }
+    } catch (error) {
+      console.error('Error fetching top traders:', error);
+    } finally {
+      setLoadingTraders(false);
+    }
+  };
+
+  // Fetch token holders
+  const fetchTokenHolders = async (coin: CoinData) => {
+    setLoadingHolders(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-token-holders', {
+        body: { tokenAddress: coin.address }
+      });
+
+      if (error) throw error;
+      if (data && data.holders) {
+        setTokenHolders(data.holders.topHolders);
+      }
+    } catch (error) {
+      console.error('Error fetching token holders:', error);
+    } finally {
+      setLoadingHolders(false);
+    }
+  };
+
+  // Fetch token stats
+  const fetchTokenStats = async (coin: CoinData) => {
+    setLoadingStats(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-token-stats', {
+        body: { tokenAddress: coin.address }
+      });
+
+      if (error) throw error;
+      if (data && data.summary) {
+        setTokenStats(data.summary);
+      }
+    } catch (error) {
+      console.error('Error fetching token stats:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  // Fetch all data when coin changes
   useEffect(() => {
     if (!displayCoin) return;
 
+    // Fetch all data
     fetchChartData(displayCoin);
+    fetchTopTraders(displayCoin);
+    fetchTokenHolders(displayCoin);
+    fetchTokenStats(displayCoin);
 
     // Refresh chart data every 30 seconds
     if (refreshIntervalRef.current) {
@@ -415,6 +517,124 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
               </div>
             </div>
           )}
+          
+          {/* Data Tabs - Only show when coin is selected */}
+          {displayCoin && (
+            <div className="mt-6">
+              <Tabs defaultValue="traders" className="w-full">
+                <TabsList className="w-full justify-start bg-purple-900/20 border border-purple-500/20 rounded-full p-1">
+                  <TabsTrigger 
+                    value="traders" 
+                    className="rounded-full data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2"
+                  >
+                    <Trophy className="h-4 w-4" />
+                    Top Traders
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="holders" 
+                    className="rounded-full data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2"
+                  >
+                    <Wallet className="h-4 w-4" />
+                    Holders
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="traders" className="mt-4">
+                  {loadingTraders ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-500">Loading top traders...</p>
+                    </div>
+                  ) : topTraders.length > 0 ? (
+                    <div className="max-h-[300px] overflow-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Rank</TableHead>
+                            <TableHead>Wallet</TableHead>
+                            <TableHead>Total PnL</TableHead>
+                            <TableHead>ROI</TableHead>
+                            <TableHead>Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {topTraders.slice(0, 10).map((trader) => (
+                            <TableRow key={trader.wallet}>
+                              <TableCell className="font-medium">#{trader.rank}</TableCell>
+                              <TableCell className="font-mono text-xs">
+                                {trader.wallet.slice(0, 4)}...{trader.wallet.slice(-4)}
+                              </TableCell>
+                              <TableCell className={trader.totalPnL >= 0 ? "text-green-600" : "text-red-600"}>
+                                ${trader.totalPnL.toFixed(2)}
+                              </TableCell>
+                              <TableCell className={trader.totalPnL >= 0 ? "text-green-600" : "text-red-600"}>
+                                {trader.roi}
+                              </TableCell>
+                              <TableCell>
+                                <span className={cn(
+                                  "text-xs px-2 py-1 rounded-full",
+                                  trader.status === "holding" 
+                                    ? "bg-green-500/20 text-green-500 border border-green-500/30" 
+                                    : "bg-gray-500/20 text-gray-500 border border-gray-500/30"
+                                )}>
+                                  {trader.status}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-500 py-8">No trader data available</p>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="holders" className="mt-4">
+                  {loadingHolders ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-500">Loading holders...</p>
+                    </div>
+                  ) : tokenHolders.length > 0 ? (
+                    <div className="max-h-[300px] overflow-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Rank</TableHead>
+                            <TableHead>Wallet</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Value</TableHead>
+                            <TableHead>%</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {tokenHolders.slice(0, 10).map((holder) => (
+                            <TableRow key={holder.wallet}>
+                              <TableCell className="font-medium">
+                                #{holder.rank}
+                                {holder.isWhale && <span className="ml-1 text-yellow-500">🐋</span>}
+                              </TableCell>
+                              <TableCell className="font-mono text-xs">
+                                {holder.wallet.slice(0, 4)}...{holder.wallet.slice(-4)}
+                              </TableCell>
+                              <TableCell>{(holder.amount / 1e9).toFixed(2)}B</TableCell>
+                              <TableCell>${(holder.valueUSD / 1e3).toFixed(1)}K</TableCell>
+                              <TableCell className={holder.isTop10 ? "text-yellow-500 font-semibold" : ""}>
+                                {holder.percentage.toFixed(2)}%
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-500 py-8">No holder data available</p>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -453,6 +673,49 @@ const LiveCoinChart: React.FC<ChartProps> = ({ selectedCoin, onCoinSelect }) => 
                 <span className="font-semibold">{(displayCoin.supply / 1e9).toFixed(2)}B</span>
               </div>
             </div>
+
+            {/* Token Stats from API */}
+            {tokenStats && (
+              <>
+                <hr className="border-stake-border" />
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    24h Activity
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="space-y-1">
+                      <p className="text-gray-500">Volume</p>
+                      <p className="font-semibold">${(tokenStats.volume24h / 1e6).toFixed(2)}M</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-gray-500">Transactions</p>
+                      <p className="font-semibold">{tokenStats.transactions24h.toLocaleString()}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-gray-500">Buyers</p>
+                      <p className="font-semibold text-green-600">{tokenStats.totalBuyers24h.toLocaleString()}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-gray-500">Sellers</p>
+                      <p className="font-semibold text-red-600">{tokenStats.totalSellers24h.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-gray-500 text-sm">Buy Pressure</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex-1 bg-gray-700 rounded-full h-2 overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
+                          style={{ width: tokenStats.buyPressure }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold">{tokenStats.buyPressure}</span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
 
             <hr className="border-stake-border" />
 
