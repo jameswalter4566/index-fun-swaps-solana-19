@@ -88,22 +88,14 @@ interface AgentChatProps {
   onCoinSelect?: (coin: any) => void;
 }
 
-const AgentChat: React.FC<AgentChatProps> = ({ 
-  agentName, 
-  agentId, 
-  isPersistent = false, 
-  indexTokens = [], 
-  twitterAccounts = [], 
-  onCoinSelect 
-}) => {
-  // All hooks must be defined before any conditional logic
+const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentId, isPersistent = false, indexTokens = [], twitterAccounts = [], onCoinSelect }) => {
   const [isOpen, setIsOpen] = useState(isPersistent);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const lastRecommendationCheckRef = useRef<Date>(new Date());
   const [isVoiceCallActive, setIsVoiceCallActive] = useState(false);
   const [currentCallId, setCurrentCallId] = useState<string | null>(null);
-  const vapiRef = useRef<any>(null);
+  const vapiRef = useRef<any>(null); // Will be Vapi instance when SDK is installed
   const [showAgentMakeup, setShowAgentMakeup] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -125,9 +117,10 @@ const AgentChat: React.FC<AgentChatProps> = ({
 
   const fetchTweets = async () => {
     try {
+      // Get Twitter usernames from indexTokens
       const twitterUsernames = indexTokens
         .filter(token => token.name?.startsWith('@'))
-        .map(token => token.name);
+        .map(token => token.name); // Keep @ symbol for the edge function
 
       if (twitterUsernames.length === 0) {
         console.log('No Twitter accounts found in index');
@@ -136,6 +129,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
 
       console.log('Fetching tweets for:', twitterUsernames);
 
+      // First, trigger the edge function to fetch fresh tweets
       try {
         const { data: fetchResult, error: fetchError } = await supabase.functions.invoke('retrieve-new-tweets', {
           body: {
@@ -154,6 +148,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         console.error('Error calling retrieve-new-tweets:', err);
       }
 
+      // Now fetch tweets from database
       const cleanUsernames = twitterUsernames.map(u => u.replace('@', ''));
       const { data: tweets, error } = await supabase
         .from('kol_tweets')
@@ -164,6 +159,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
 
       if (error) throw error;
 
+      // Convert tweets to messages
       const tweetMessages: Message[] = tweets?.map(tweet => ({
         id: `tweet-${tweet.tweet_id}`,
         sender: 'tweet' as const,
@@ -191,6 +187,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
 
   const fetchMentions = async () => {
     try {
+      // Get Twitter usernames from indexTokens
       const twitterUsernames = indexTokens
         .filter(token => token.name?.startsWith('@'))
         .map(token => token.name.substring(1));
@@ -199,6 +196,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         return [];
       }
 
+      // Fetch tweets that mention any of our tracked accounts
       const { data: mentions, error } = await supabase
         .from('kol_tweets')
         .select('*')
@@ -208,9 +206,11 @@ const AgentChat: React.FC<AgentChatProps> = ({
 
       if (error) {
         console.error('Error fetching mentions:', error);
+        // Fallback: just return empty array for now
         return [];
       }
 
+      // Filter to only tweets that actually mention our accounts
       const filteredMentions = mentions?.filter(tweet => {
         const tweetLower = tweet.tweet_text.toLowerCase();
         return twitterUsernames.some(username => 
@@ -218,6 +218,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         );
       }) || [];
 
+      // Convert mentions to messages
       const mentionMessages: Message[] = filteredMentions.map(mention => ({
         id: `mention-${mention.tweet_id}`,
         sender: 'mention' as const,
@@ -245,15 +246,17 @@ const AgentChat: React.FC<AgentChatProps> = ({
 
   const fetchCoinRecommendations = async () => {
     try {
+      // Call the coin-recommendations edge function without filters
       const { data, error } = await supabase.functions.invoke('coin-recommendations', {
         body: {
           limit: 5,
-          bypassFilters: true
+          bypassFilters: true // This tells the function to ignore user filters
         }
       });
 
       if (error) throw error;
 
+      // Convert recommendations to messages
       const recommendationMessages: Message[] = data?.recommendations?.map((rec: any) => {
         const coinData = {
           symbol: rec.symbol,
@@ -284,18 +287,22 @@ const AgentChat: React.FC<AgentChatProps> = ({
   const startVoiceCall = async () => {
     console.log('🎯 startVoiceCall triggered!');
     try {
+      // Initialize Vapi FIRST for immediate voice response
       if (!vapiRef.current) {
+        // HARDCODED PUBLIC KEY
         const publicKey = '098bd142-677b-40a8-ab39-11792cb7737b';
         console.log('📝 Using hardcoded public key');
         
         console.log('🚀 Creating Vapi instance...');
         vapiRef.current = new Vapi(publicKey);
         
+        // The SDK handles audio automatically via Daily.co
         console.log('✅ Vapi SDK initialized - audio will be handled automatically');
       }
 
       const vapi = vapiRef.current;
 
+      // Set up event listeners
       vapi.on('call-start', () => {
         console.log('Call started successfully');
         setIsVoiceCallActive(true);
@@ -318,6 +325,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
       vapi.on('message', (message: any) => {
         console.log('Vapi message:', message);
         
+        // Handle different message types
         if (message.type === 'transcript') {
           if (message.role === 'assistant' && message.transcript) {
             const assistantMessage: Message = {
@@ -348,6 +356,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         });
       });
 
+      // Start the Vapi call IMMEDIATELY
       console.log('📞 Starting Vapi call...');
       const call = await vapi.start({
         transcriber: {
@@ -380,6 +389,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         setCurrentCallId(call.id);
       }
 
+      // THEN fetch data in the background while Vapi is speaking
       const loadingMessage: Message = {
         id: Date.now().toString(),
         text: '🔄 Gathering latest tweets and analyzing coins...',
@@ -388,14 +398,17 @@ const AgentChat: React.FC<AgentChatProps> = ({
       };
       setMessages(prev => [...prev, loadingMessage]);
 
+      // Fetch data in parallel
       const [tweetMessages, mentionMessages, recommendationMessages] = await Promise.all([
         fetchTweets(),
         fetchMentions(),
         fetchCoinRecommendations()
       ]);
 
+      // Remove loading message
       setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id));
 
+      // Add tweets header if we have tweets
       if (tweetMessages.length > 0) {
         const tweetsHeader: Message = {
           id: 'tweets-header',
@@ -406,6 +419,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         setMessages(prev => [...prev, tweetsHeader, ...tweetMessages]);
       }
 
+      // Add mentions header if we have mentions
       if (mentionMessages.length > 0) {
         const mentionsHeader: Message = {
           id: 'mentions-header',
@@ -416,6 +430,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         setMessages(prev => [...prev, mentionsHeader, ...mentionMessages]);
       }
 
+      // Add recommendations header if we have recommendations
       if (recommendationMessages.length > 0) {
         const recsHeader: Message = {
           id: 'recs-header',
@@ -445,6 +460,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
       setIsVoiceCallActive(false);
       setCurrentCallId(null);
 
+      // Add message about voice call ending
       const endMessage: Message = {
         id: Date.now().toString(),
         text: '📞 Voice call ended.',
@@ -480,6 +496,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
 
+    // Simple response for now
     setTimeout(() => {
       const agentResponse: Message = {
         id: (Date.now() + 1).toString(),
@@ -505,6 +522,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
 
   // Initialize speech recognition
   useEffect(() => {
+    // Request notification permission
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
@@ -535,6 +553,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
       };
     }
 
+    // Cleanup on unmount
     return () => {
       if (vapiRef.current && typeof vapiRef.current.stop === 'function') {
         vapiRef.current.stop();
@@ -552,332 +571,312 @@ const AgentChat: React.FC<AgentChatProps> = ({
     }
   };
 
-  // Render message content helper
-  const renderMessageContent = (message: Message) => {
-    if (message.sender === 'tweet' && message.tweetData) {
-      return (
-        <Card className={cn(
-          "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800",
-          "transition-all duration-300",
-          message.expanded ? "max-w-full" : "max-w-lg"
-        )}>
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              {message.tweetData.authorImage && (
-                <img 
-                  src={message.tweetData.authorImage} 
-                  alt={message.tweetData.author}
-                  className="w-10 h-10 rounded-full"
-                />
-              )}
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">{message.tweetData.author}</span>
-                    <span className="text-xs text-gray-600 dark:text-gray-400">
-                      {new Date(message.tweetData.createdAt).toLocaleString()}
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleMessageExpansion(message.id)}
-                    className="h-6 w-6 p-0"
-                  >
-                    {message.expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <p className={cn(
-                  "text-sm text-gray-800 dark:text-gray-200",
-                  !message.expanded && "line-clamp-3"
-                )}>{message.tweetData.text}</p>
-                {message.tweetData.likes !== undefined && (
-                  <div className="flex gap-4 mt-2 text-xs text-gray-600 dark:text-gray-400">
-                    <span>❤️ {message.tweetData.likes}</span>
-                    <span>🔁 {message.tweetData.retweets || 0}</span>
-                    <span>💬 {message.tweetData.replies || 0}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    if (message.sender === 'mention' && message.tweetData) {
-      return (
-        <Card className={cn(
-          "bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800",
-          "transition-all duration-300",
-          message.expanded ? "max-w-full" : "max-w-lg"
-        )}>
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs bg-purple-200 dark:bg-purple-800 px-2 py-1 rounded text-purple-900 dark:text-purple-100">Mention</span>
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">{message.tweetData.author}</span>
-                    <span className="text-xs text-gray-600 dark:text-gray-400">
-                      {new Date(message.tweetData.createdAt).toLocaleString()}
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleMessageExpansion(message.id)}
-                    className="h-6 w-6 p-0"
-                  >
-                    {message.expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <p className={cn(
-                  "text-sm text-gray-800 dark:text-gray-200",
-                  !message.expanded && "line-clamp-3"
-                )}>{message.tweetData.text}</p>
-                {message.tweetData.likes !== undefined && (
-                  <div className="flex gap-4 mt-2 text-xs text-gray-600 dark:text-gray-400">
-                    <span>❤️ {message.tweetData.likes}</span>
-                    <span>🔁 {message.tweetData.retweets || 0}</span>
-                    <span>💬 {message.tweetData.replies || 0}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    if (message.sender === 'recommendation' && message.coinRecommendations) {
-      return (
-        <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
-          <CardContent className="p-4">
-            {message.coinRecommendations.map((coin) => (
-              <div key={coin.symbol} className="flex items-center gap-4">
-                {coin.logo && (
-                  <img src={coin.logo} alt={coin.name} className="w-12 h-12 rounded-full" />
-                )}
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-lg text-gray-900 dark:text-gray-100">{coin.symbol}</span>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{coin.name}</span>
-                    </div>
-                    <span className={cn(
-                      "px-2 py-1 rounded text-xs font-semibold",
-                      coin.confidence === 'high' && 'bg-green-500/20 text-green-800 dark:text-green-200',
-                      coin.confidence === 'medium' && 'bg-yellow-500/20 text-yellow-800 dark:text-yellow-200',
-                      coin.confidence === 'low' && 'bg-red-500/20 text-red-800 dark:text-red-200'
-                    )}>
-                      {coin.confidence} confidence
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm mb-2">
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Price:</span>
-                      <span className="font-semibold ml-1 text-gray-900 dark:text-gray-100">${formatPrice(coin.price)}</span>
-                      {coin.priceChange24h !== undefined && (
-                        <span className={cn(
-                          "ml-2 text-xs",
-                          coin.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'
-                        )}>
-                          {coin.priceChange24h >= 0 ? '+' : ''}{coin.priceChange24h.toFixed(2)}%
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Market Cap:</span>
-                      <span className="font-semibold ml-1 text-gray-900 dark:text-gray-100">{formatMarketCap(coin.marketCap)}</span>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 italic">{coin.reason}</p>
-                  {onCoinSelect && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-2 w-full"
-                      onClick={() => onCoinSelect(coin)}
-                    >
-                      View Chart
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      );
-    }
-
+  if (isPersistent) {
     return (
-      <div
-        className={cn(
-          "flex",
-          message.sender === 'user' ? 'justify-end' : 'justify-start'
-        )}
-      >
-        <div
-          className={cn(
-            "max-w-[80%] rounded-lg px-4 py-2",
-            message.sender === 'user'
-              ? 'bg-stake-accent text-white'
-              : 'bg-stake-card'
-          )}
-        >
-          <p className="text-sm">{message.text}</p>
-          <span className="text-xs opacity-60 mt-1 block">
-            {message.timestamp.toLocaleTimeString()}
-          </span>
-        </div>
-      </div>
-    );
-  };
-
-  // Persistent view
-  const persistentView = (
-    <div className="h-full flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
-        <div className="flex items-center gap-2">
+      <div className="h-full flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
           <CardTitle className="text-lg">{agentName} Trading Agent</CardTitle>
-          {twitterAccounts.length > 0 && (
-            <span className="text-xs text-gray-500">({twitterAccounts.length} accounts)</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={showAgentMakeup ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowAgentMakeup(!showAgentMakeup)}
-            className="text-xs"
-          >
-            {showAgentMakeup ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
-            View Agent Makeup
-          </Button>
-          {isVoiceCallActive ? (
+          <div className="flex items-center gap-2">
             <Button
-              variant="destructive"
-              size="icon"
-              onClick={endVoiceCall}
-              className="h-8 w-8"
-              title="End voice call"
+              variant={showAgentMakeup ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowAgentMakeup(!showAgentMakeup)}
+              className="text-xs"
             >
-              <PhoneOff className="h-4 w-4" />
+              {showAgentMakeup ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
+              View Agent Makeup
             </Button>
-          ) : (
-            <Button
-              variant="default"
-              size="icon"
-              onClick={startVoiceCall}
-              className="h-8 w-8 bg-green-600 hover:bg-green-700"
-              title="Start voice call - Fetches tweets and recommendations"
-            >
-              <Phone className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      
-      <CardContent className="p-0 flex flex-col flex-1 overflow-hidden">
-        {showAgentMakeup && (
-          <div className="p-4 border-b bg-stake-darkbg">
-            <NodeVisualizer agentId={agentId} />
+            {isVoiceCallActive ? (
+              <Button
+                variant="destructive"
+                size="icon"
+                onClick={endVoiceCall}
+                className="h-8 w-8"
+                title="End voice call"
+              >
+                <PhoneOff className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                variant="default"
+                size="icon"
+                onClick={startVoiceCall}
+                className="h-8 w-8 bg-green-600 hover:bg-green-700"
+                title="Start voice call - Fetches tweets and recommendations"
+              >
+                <Phone className="h-4 w-4" />
+              </Button>
+            )}
           </div>
-        )}
+        </CardHeader>
         
-        <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div key={message.id}>
-                {renderMessageContent(message)}
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-        
-        {/* Monitored Accounts Section */}
-        {twitterAccounts.length > 0 && (
-          <div className="border-t border-stake-border">
-            <div className="p-3 border-b border-stake-border bg-stake-darkbg">
-              <h4 className="text-sm font-semibold">Monitored Accounts</h4>
+        <CardContent className="p-0 flex flex-col flex-1 overflow-hidden">
+          {showAgentMakeup && (
+            <div className="p-4 border-b bg-stake-darkbg">
+              <NodeVisualizer agentId={agentId} />
             </div>
-            <div className="max-h-48 overflow-y-auto">
-              {twitterAccounts.map((token) => {
-                const metadata = token.metadata as any;
-                
-                return (
-                  <div key={token.address} className="p-2 border-b border-stake-border hover:bg-stake-darkbg transition-colors">
-                    <div className="flex items-center gap-2">
-                      <img 
-                        src={token.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${token.name}`} 
-                        alt={token.name}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <p className="font-medium text-xs truncate">
-                            {metadata?.display_name || token.name}
-                          </p>
-                          {metadata?.verified && (
-                            <svg className="w-3 h-3 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-                            </svg>
+          )}
+          
+          <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <div key={message.id}>
+                  {message.sender === 'tweet' && message.tweetData ? (
+                    <Card className={cn(
+                      "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800",
+                      "transition-all duration-300",
+                      message.expanded ? "max-w-full" : "max-w-lg"
+                    )}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          {message.tweetData.authorImage && (
+                            <img 
+                              src={message.tweetData.authorImage} 
+                              alt={message.tweetData.author}
+                              className="w-10 h-10 rounded-full"
+                            />
                           )}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-gray-900 dark:text-gray-100">{message.tweetData.author}</span>
+                                <span className="text-xs text-gray-600 dark:text-gray-400">
+                                  {new Date(message.tweetData.createdAt).toLocaleString()}
+                                </span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleMessageExpansion(message.id)}
+                                className="h-6 w-6 p-0"
+                              >
+                                {message.expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                            <p className={cn(
+                              "text-sm text-gray-800 dark:text-gray-200",
+                              !message.expanded && "line-clamp-3"
+                            )}>{message.tweetData.text}</p>
+                            {message.tweetData.likes !== undefined && (
+                              <div className="flex gap-4 mt-2 text-xs text-gray-600 dark:text-gray-400">
+                                <span>❤️ {message.tweetData.likes}</span>
+                                <span>🔁 {message.tweetData.retweets || 0}</span>
+                                <span>💬 {message.tweetData.replies || 0}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-xs text-gray-500 truncate">{token.name}</p>
+                      </CardContent>
+                    </Card>
+                  ) : message.sender === 'mention' && message.tweetData ? (
+                    <Card className={cn(
+                      "bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800",
+                      "transition-all duration-300",
+                      message.expanded ? "max-w-full" : "max-w-lg"
+                    )}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs bg-purple-200 dark:bg-purple-800 px-2 py-1 rounded text-purple-900 dark:text-purple-100">Mention</span>
+                                <span className="font-semibold text-gray-900 dark:text-gray-100">{message.tweetData.author}</span>
+                                <span className="text-xs text-gray-600 dark:text-gray-400">
+                                  {new Date(message.tweetData.createdAt).toLocaleString()}
+                                </span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleMessageExpansion(message.id)}
+                                className="h-6 w-6 p-0"
+                              >
+                                {message.expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                            <p className={cn(
+                              "text-sm text-gray-800 dark:text-gray-200",
+                              !message.expanded && "line-clamp-3"
+                            )}>{message.tweetData.text}</p>
+                            {message.tweetData.likes !== undefined && (
+                              <div className="flex gap-4 mt-2 text-xs text-gray-600 dark:text-gray-400">
+                                <span>❤️ {message.tweetData.likes}</span>
+                                <span>🔁 {message.tweetData.retweets || 0}</span>
+                                <span>💬 {message.tweetData.replies || 0}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : message.sender === 'recommendation' && message.coinRecommendations ? (
+                    <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+                      <CardContent className="p-4">
+                        {message.coinRecommendations.map((coin) => (
+                          <div key={coin.symbol} className="flex items-center gap-4">
+                            {coin.logo && (
+                              <img src={coin.logo} alt={coin.name} className="w-12 h-12 rounded-full" />
+                            )}
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-lg text-gray-900 dark:text-gray-100">{coin.symbol}</span>
+                                  <span className="text-sm text-gray-700 dark:text-gray-300">{coin.name}</span>
+                                </div>
+                                <span className={cn(
+                                  "px-2 py-1 rounded text-xs font-semibold",
+                                  coin.confidence === 'high' && 'bg-green-500/20 text-green-800 dark:text-green-200',
+                                  coin.confidence === 'medium' && 'bg-yellow-500/20 text-yellow-800 dark:text-yellow-200',
+                                  coin.confidence === 'low' && 'bg-red-500/20 text-red-800 dark:text-red-200'
+                                )}>
+                                  {coin.confidence} confidence
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                                <div>
+                                  <span className="text-gray-600 dark:text-gray-400">Price:</span>
+                                  <span className="font-semibold ml-1 text-gray-900 dark:text-gray-100">${formatPrice(coin.price)}</span>
+                                  {coin.priceChange24h !== undefined && (
+                                    <span className={cn(
+                                      "ml-2 text-xs",
+                                      coin.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'
+                                    )}>
+                                      {coin.priceChange24h >= 0 ? '+' : ''}{coin.priceChange24h.toFixed(2)}%
+                                    </span>
+                                  )}
+                                </div>
+                                <div>
+                                  <span className="text-gray-600 dark:text-gray-400">Market Cap:</span>
+                                  <span className="font-semibold ml-1 text-gray-900 dark:text-gray-100">{formatMarketCap(coin.marketCap)}</span>
+                                </div>
+                              </div>
+                              <p className="text-sm text-gray-700 dark:text-gray-300 italic">{coin.reason}</p>
+                            </div>
+                            {/* Add View Chart button */}
+                            {onCoinSelect && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="mt-2 w-full"
+                                onClick={() => onCoinSelect(coin)}
+                              >
+                                View Chart
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div
+                      className={cn(
+                        "flex",
+                        message.sender === 'user' ? 'justify-end' : 'justify-start'
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "max-w-[80%] rounded-lg px-4 py-2",
+                          message.sender === 'user'
+                            ? 'bg-stake-accent text-white'
+                            : 'bg-stake-card'
+                        )}
+                      >
+                        <p className="text-sm">{message.text}</p>
+                        <span className="text-xs opacity-60 mt-1 block">
+                          {message.timestamp.toLocaleTimeString()}
+                        </span>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  )}
+                </div>
+              ))}
             </div>
-          </div>
-        )}
-        
-        <div className="p-4 border-t">
-          <div className="flex gap-2">
-            <Input
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Ask about trading opportunities..."
-              className="flex-1"
-              disabled={isVoiceCallActive}
-            />
-            
-            <Button
-              size="icon"
-              onClick={() => handleSendMessage()}
-              disabled={!inputText.trim() || isVoiceCallActive}
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-            
-            <Button
-              onClick={toggleListening}
-              className={cn(
-                "px-3",
-                isListening && "bg-red-500 hover:bg-red-600"
-              )}
-              disabled={isVoiceCallActive}
-            >
-              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            </Button>
-          </div>
+          </ScrollArea>
           
-          {isVoiceCallActive && (
-            <div className="mt-3 bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-sm text-green-600">
-              🎙️ Voice call active - Speak naturally with your agent
+          {/* Monitored Accounts Section */}
+          {twitterAccounts.length > 0 && (
+            <div className="border-t border-stake-border">
+              <div className="p-3 border-b border-stake-border bg-stake-darkbg">
+                <h4 className="text-sm font-semibold">Monitored Accounts</h4>
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                {twitterAccounts.map((token) => {
+                  const metadata = token.metadata as any;
+                  
+                  return (
+                    <div key={token.address} className="p-2 border-b border-stake-border hover:bg-stake-darkbg transition-colors">
+                      <div className="flex items-center gap-2">
+                        <img 
+                          src={token.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${token.name}`} 
+                          alt={token.name}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1">
+                            <p className="font-medium text-xs truncate">
+                              {metadata?.display_name || token.name}
+                            </p>
+                            {metadata?.verified && (
+                              <svg className="w-3 h-3 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                              </svg>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 truncate">{token.name}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
-        </div>
-      </CardContent>
-    </div>
-  );
+          
+          <div className="p-4 border-t">
+            <div className="flex gap-2">
+              <Input
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Ask about trading opportunities..."
+                className="flex-1"
+                disabled={isVoiceCallActive}
+              />
+              
+              <Button
+                size="icon"
+                onClick={() => handleSendMessage()}
+                disabled={!inputText.trim() || isVoiceCallActive}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+              
+              <Button
+                onClick={toggleListening}
+                className={cn(
+                  "px-3",
+                  isListening && "bg-red-500 hover:bg-red-600"
+                )}
+                disabled={isVoiceCallActive}
+              >
+                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </Button>
+            </div>
+            
+            {isVoiceCallActive && (
+              <div className="mt-3 bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-sm text-green-600">
+                🎙️ Voice call active - Speak naturally with your agent
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </div>
+    );
+  }
 
-  // Floating chat view
-  const floatingView = (
+  // Non-persistent view (floating chat)
+  return (
     <>
       {/* Microphone Button */}
       <div className="fixed bottom-8 right-8 z-50">
@@ -938,8 +937,57 @@ const AgentChat: React.FC<AgentChatProps> = ({
             <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
               <div className="space-y-4">
                 {messages.map((message) => (
-                  <div key={message.id}>
-                    {renderMessageContent(message)}
+                  <div
+                    key={message.id}
+                    className={cn(
+                      "flex",
+                      message.sender === 'user' ? 'justify-end' : 'justify-start'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "max-w-[80%] rounded-lg px-4 py-2",
+                        message.sender === 'user'
+                          ? 'bg-stake-accent text-white'
+                          : 'bg-stake-card'
+                      )}
+                    >
+                      <p className="text-sm">{message.text}</p>
+                      
+                      {message.coinRecommendations && (
+                        <div className="mt-3 space-y-2">
+                          {message.coinRecommendations.map((coin) => (
+                            <div
+                              key={coin.symbol}
+                              className="bg-black/20 rounded-md p-3 text-xs"
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-bold">{coin.symbol}</span>
+                                <span
+                                  className={cn(
+                                    "px-2 py-0.5 rounded text-xs",
+                                    coin.confidence === 'high' && 'bg-green-500/20 text-green-400',
+                                    coin.confidence === 'medium' && 'bg-yellow-500/20 text-yellow-400',
+                                    coin.confidence === 'low' && 'bg-red-500/20 text-red-400'
+                                  )}
+                                >
+                                  {coin.confidence} confidence
+                                </span>
+                              </div>
+                              <div className="text-gray-400 space-y-0.5">
+                                <div>Price: ${formatPrice(coin.price)}</div>
+                                <div>Market Cap: {formatMarketCap(coin.marketCap)}</div>
+                                <div className="italic">{coin.reason}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <span className="text-xs opacity-60 mt-1 block">
+                        {message.timestamp.toLocaleTimeString()}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -976,9 +1024,6 @@ const AgentChat: React.FC<AgentChatProps> = ({
       )}
     </>
   );
-
-  // Single return statement - no conditional returns
-  return isPersistent ? persistentView : floatingView;
 };
 
 export default AgentChat;
