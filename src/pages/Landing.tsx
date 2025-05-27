@@ -2,12 +2,13 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
-import { Mic, MessageCircle } from "lucide-react";
+import { Mic, MessageCircle, Plus, Compass, TrendingUp, Twitter } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { format } from 'date-fns';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 import WebSocketService from '@/lib/websocket-service';
+import NodeVisualizer from '@/components/NodeVisualizer';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -17,6 +18,11 @@ const Landing = () => {
   const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const wsServiceRef = useRef<WebSocketService | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [orbFillPercentage, setOrbFillPercentage] = useState(0);
+  const [textHighlightPercentage, setTextHighlightPercentage] = useState(0);
+  const orbRef = useRef<HTMLDivElement | null>(null);
+  const textRef = useRef<HTMLDivElement | null>(null);
 
   // Hardcoded mock data
   const mockChartData = {
@@ -109,9 +115,33 @@ const Landing = () => {
           }
         }
       });
+
+      // Calculate scroll progress for section 2 animations
+      if (sectionsRef.current[1]) {
+        const section2 = sectionsRef.current[1];
+        const rect = section2.getBoundingClientRect();
+        const sectionTop = section2.offsetTop;
+        const sectionHeight = section2.offsetHeight;
+        
+        // Calculate how much of section 2 is in view
+        if (scrollPosition >= sectionTop - windowHeight && scrollPosition <= sectionTop + sectionHeight) {
+          const progress = Math.max(0, Math.min(1, 
+            (scrollPosition - (sectionTop - windowHeight)) / (windowHeight + sectionHeight)
+          ));
+          
+          setScrollProgress(progress);
+          
+          // Update orb fill (0-100%)
+          setOrbFillPercentage(progress * 100);
+          
+          // Update text highlight (0-100%)
+          setTextHighlightPercentage(progress * 100);
+        }
+      }
     };
 
     window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial calculation
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -210,10 +240,60 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
+      {/* Header Navigation */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <h2 className="text-2xl font-bold text-purple-500">in-dex.fun</h2>
+            </div>
+            
+            <nav className="flex items-center gap-6">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/create-swap')}
+                className="text-white hover:text-purple-400 flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Create Agent
+              </Button>
+              
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/index')}
+                className="text-white hover:text-purple-400 flex items-center gap-2"
+              >
+                <Compass className="w-4 h-4" />
+                Explore Agents
+              </Button>
+              
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/index')}
+                className="text-white hover:text-purple-400 flex items-center gap-2"
+              >
+                <TrendingUp className="w-4 h-4" />
+                Trade
+              </Button>
+              
+              <a
+                href="https://x.com/index_fun"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white hover:text-purple-400 flex items-center gap-2"
+              >
+                <Twitter className="w-4 h-4" />
+                Twitter
+              </a>
+            </nav>
+          </div>
+        </div>
+      </header>
+
       {/* Section 1: Hero */}
       <section 
         ref={el => sectionsRef.current[0] = el}
-        className="h-screen flex flex-col items-center justify-center relative"
+        className="h-screen flex flex-col items-center justify-center relative pt-16"
         style={{
           opacity: currentSection === 0 ? 1 : 0,
           transform: currentSection === 0 ? 'translateY(0)' : 'translateY(100px)',
@@ -396,12 +476,110 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Placeholder for future sections */}
+      {/* Section 2: Orb and Text Animation */}
       <section 
         ref={el => sectionsRef.current[1] = el}
-        className="h-screen flex items-center justify-center"
+        className="h-screen flex items-center justify-center relative"
       >
-        <h2 className="text-4xl">Section 2 - Coming Soon</h2>
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Orb Animation */}
+            <div className="flex justify-center lg:justify-end">
+              <div 
+                ref={orbRef}
+                className="relative w-80 h-80 rounded-full bg-gray-900/50 backdrop-blur-sm border border-purple-500/20 overflow-hidden"
+              >
+                {/* Purple fill that animates with scroll */}
+                <div 
+                  className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-purple-600 to-purple-400 transition-all duration-100 ease-out"
+                  style={{
+                    height: `${orbFillPercentage}%`,
+                  }}
+                >
+                  {/* Animated waves on top of the fill */}
+                  <div className="absolute top-0 left-0 right-0 h-8">
+                    <svg className="w-full h-full" viewBox="0 0 100 10" preserveAspectRatio="none">
+                      <path 
+                        d="M0,5 Q25,0 50,5 T100,5 L100,10 L0,10 Z" 
+                        fill="rgba(147, 51, 234, 0.3)"
+                        className="animate-pulse"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                
+                {/* Glow effect */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600/20 to-purple-400/20 blur-xl" />
+                
+                {/* Inner orb content */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-6xl font-bold text-white/80 mb-2">
+                      {Math.round(orbFillPercentage)}%
+                    </div>
+                    <div className="text-sm text-purple-300">Agent Power</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Text with Highlight Animation */}
+            <div className="lg:pl-8">
+              <div 
+                ref={textRef}
+                className="relative text-3xl md:text-4xl font-bold text-white leading-relaxed"
+              >
+                {/* Background text */}
+                <span className="relative z-10">
+                  Create and deploy your own AI agent! Simply click the create new agent button then add up to 4 KOL accounts and all of your preferred coin parameters for your AI agent to constantly be on the lookout for.
+                </span>
+                
+                {/* Highlight overlay */}
+                <span 
+                  className="absolute top-0 left-0 text-transparent bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text z-20 overflow-hidden whitespace-pre-wrap"
+                  style={{
+                    clipPath: `polygon(0 0, ${textHighlightPercentage}% 0, ${textHighlightPercentage}% 100%, 0 100%)`,
+                  }}
+                >
+                  Create and deploy your own AI agent! Simply click the create new agent button then add up to 4 KOL accounts and all of your preferred coin parameters for your AI agent to constantly be on the lookout for.
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 3: Node Editor */}
+      <section 
+        ref={el => sectionsRef.current[2] = el}
+        className="min-h-screen flex flex-col items-center justify-center relative py-20"
+      >
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">Explore Agent Architecture</h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              View other agents that creators have made on the platform and copy their genetic makeup instantly!
+            </p>
+          </div>
+          
+          {/* Node Editor Container */}
+          <div className="relative bg-gray-900/50 backdrop-blur-sm border border-purple-500/20 rounded-2xl p-8 max-w-6xl mx-auto">
+            <div className="h-[600px] relative">
+              <NodeVisualizer 
+                nodeTypeFilter={[]}
+                minConfidence={0}
+                showNodeVisualizer={true}
+                autoMode={false}
+                searchQuery=""
+              />
+            </div>
+            
+            {/* Instructions */}
+            <div className="mt-6 text-center text-gray-400">
+              <p className="text-sm">Drag nodes around to explore the agent architecture</p>
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   );
