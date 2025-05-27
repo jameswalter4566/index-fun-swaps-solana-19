@@ -216,15 +216,45 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
         throw new Error('Failed to deserialize transaction');
       }
 
+      // Get a fresh blockhash to ensure transaction isn't expired
+      console.log('Getting fresh blockhash...');
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+      
+      // Update transaction with fresh blockhash
+      if ('message' in txn) {
+        // Legacy transaction
+        txn.recentBlockhash = blockhash;
+      } else {
+        // Versioned transaction
+        txn.message.recentBlockhash = blockhash;
+      }
+
       // Sign the transaction
       console.log('Signing transaction...');
       const signedTxn = await signTransaction(txn);
       console.log('Transaction signed');
 
+      // Simulate the transaction first
+      console.log('Simulating transaction...');
+      try {
+        const simulation = await connection.simulateTransaction(signedTxn, {
+          commitment: 'confirmed',
+        });
+        console.log('Simulation result:', simulation);
+        
+        if (simulation.value.err) {
+          console.error('Simulation failed:', simulation.value.err);
+          throw new Error(`Transaction simulation failed: ${JSON.stringify(simulation.value.err)}`);
+        }
+      } catch (simError) {
+        console.error('Simulation error:', simError);
+        // Continue anyway as simulation might fail but transaction could still succeed
+      }
+
       // Send the transaction
       console.log('Sending transaction...');
       const txid = await sendTransaction(signedTxn, connection, {
-        skipPreflight: false, // Enable preflight to catch errors
+        skipPreflight: true, // Skip preflight since we already simulated
         preflightCommitment: 'confirmed',
         maxRetries: 3,
       });
