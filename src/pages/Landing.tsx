@@ -2,13 +2,17 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
-import { Mic, MessageCircle } from "lucide-react";
+import { Mic, MessageCircle, Search, BarChart3, Trophy, Wallet, Phone, Monitor, Send, X, ChevronRight } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { format } from 'date-fns';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 import NodeVisualizer from '@/components/NodeVisualizer';
 import Vapi from '@vapi-ai/web';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -119,14 +123,14 @@ const Landing = () => {
         }
       });
 
-      // Calculate scroll progress for section 2 animations
-      if (sectionsRef.current[1]) {
-        const section2 = sectionsRef.current[1];
-        const rect = section2.getBoundingClientRect();
-        const sectionTop = section2.offsetTop;
-        const sectionHeight = section2.offsetHeight;
+      // Calculate scroll progress for section 3 animations (orb section)
+      if (sectionsRef.current[2]) {
+        const section3 = sectionsRef.current[2];
+        const rect = section3.getBoundingClientRect();
+        const sectionTop = section3.offsetTop;
+        const sectionHeight = section3.offsetHeight;
         
-        // Calculate how much of section 2 is in view
+        // Calculate how much of section 3 is in view
         if (scrollPosition >= sectionTop - windowHeight && scrollPosition <= sectionTop + sectionHeight) {
           const progress = Math.max(0, Math.min(1, 
             (scrollPosition - (sectionTop - windowHeight)) / (windowHeight + sectionHeight)
@@ -529,9 +533,234 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Section 2: Orb and Text Animation */}
+      {/* Section 2: Platform Features */}
       <section 
         ref={el => sectionsRef.current[1] = el}
+        className="min-h-screen py-20 relative"
+      >
+        <div className="container mx-auto px-4">
+          {/* First Explainer Segment - Create Agent */}
+          <div className="max-w-6xl mx-auto mb-32 animate-fade-in" style={{ animationDelay: '100ms' }}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              {/* Replica of Create Agent Form - Left Side */}
+              <div className="order-2 lg:order-1 transform scale-90">
+                <GlassCard className="max-w-md mx-auto">
+                  <div className="p-6 space-y-6">
+                    <h2 className="text-2xl font-bold mb-4">Create New Trading Agent</h2>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Agent Name</Label>
+                        <Input placeholder="My Trading Bot" className="mt-1" />
+                      </div>
+                      
+                      <div>
+                        <Label>Description</Label>
+                        <Input placeholder="A smart agent that monitors crypto markets" className="mt-1" />
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <Label>Monitor Twitter Accounts (KOLs)</Label>
+                        <div className="flex gap-2">
+                          <Input placeholder="@cryptowhale" className="flex-1" />
+                          <Button size="sm">Add</Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="secondary">@elonmusk</Badge>
+                          <Badge variant="secondary">@VitalikButerin</Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Min Market Cap</Label>
+                          <Input placeholder="$100K" />
+                        </div>
+                        <div>
+                          <Label>Max Market Cap</Label>
+                          <Input placeholder="$10M" />
+                        </div>
+                      </div>
+                      
+                      <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                        Deploy Agent
+                      </Button>
+                    </div>
+                  </div>
+                </GlassCard>
+              </div>
+              
+              {/* Explainer Text - Right Side */}
+              <div className="order-1 lg:order-2 space-y-4">
+                <h3 className="text-3xl font-bold">Turn your favorite KOLs into your personal trading assistant</h3>
+                <p className="text-xl text-gray-300">
+                  Trade and communicate with your agent directly from our platform. Set your parameters, choose your influencers, and let AI do the heavy lifting.
+                </p>
+                <Button 
+                  onClick={() => navigate('/create-swap')}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  Create Your Agent <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Second Explainer Segment - Trading Agent Chat */}
+          <div className="max-w-6xl mx-auto mb-32 animate-fade-in" style={{ animationDelay: '200ms' }}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              {/* Explainer Text - Left Side */}
+              <div className="space-y-4">
+                <h3 className="text-3xl font-bold">AI Voice Personality Based on Your KOLs</h3>
+                <p className="text-xl text-gray-300">
+                  Our Twitter integration utilizes advanced AI modeling to mimic the personality of the KOLs that you monitor, creating a Custom AI voice personality based on your preferred KOLs!
+                </p>
+                <Button 
+                  onClick={() => navigate('/index')}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  Try Voice Chat <Phone className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+              
+              {/* Replica of Agent Chat - Right Side */}
+              <div className="transform scale-90">
+                <GlassCard className="max-w-md mx-auto">
+                  <div className="p-6">
+                    <div className="mb-6">
+                      <h3 className="text-xl font-bold mb-2">Trading Agent Chat</h3>
+                      <div className="flex gap-2">
+                        <Button 
+                          className="flex-1 bg-green-600 hover:bg-green-700"
+                          size="sm"
+                        >
+                          <Phone className="mr-2 h-4 w-4" />
+                          Start Call
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          size="sm"
+                        >
+                          <Monitor className="mr-2 h-4 w-4" />
+                          Screen Share
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* Chat Window */}
+                    <div className="bg-black/50 rounded-lg p-4 h-64 mb-4 overflow-y-auto">
+                      <div className="space-y-3">
+                        <div className="flex justify-start">
+                          <div className="bg-gray-700 rounded-lg px-4 py-2 max-w-[80%]">
+                            <p className="text-sm">Hey! I've found some interesting opportunities based on your KOLs' activity.</p>
+                          </div>
+                        </div>
+                        <div className="flex justify-end">
+                          <div className="bg-blue-600 rounded-lg px-4 py-2 max-w-[80%]">
+                            <p className="text-sm">What are the top picks?</p>
+                          </div>
+                        </div>
+                        <div className="flex justify-start">
+                          <div className="bg-gray-700 rounded-lg px-4 py-2 max-w-[80%]">
+                            <p className="text-sm">$PEPE is getting massive attention. Elon just tweeted about meme coins!</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Monitored Accounts */}
+                    <div className="border-t border-gray-700 pt-4">
+                      <h4 className="text-sm font-semibold mb-2">Monitored Accounts</h4>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge>@elonmusk</Badge>
+                        <Badge>@VitalikButerin</Badge>
+                        <Badge>@CZ_Binance</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </GlassCard>
+              </div>
+            </div>
+          </div>
+
+          {/* Third Explainer Segment - Live Chart */}
+          <div className="max-w-6xl mx-auto animate-fade-in" style={{ animationDelay: '300ms' }}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              {/* Replica of Live Chart - Left Side */}
+              <div className="order-2 lg:order-1 transform scale-90">
+                <GlassCard className="flex-1">
+                  <div className="p-6">
+                    <div className="pb-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Input
+                          placeholder="Enter token address..."
+                          className="flex-1 border-purple-500/50 focus:border-purple-500"
+                        />
+                        <Button className="bg-purple-600 hover:bg-purple-700" size="icon">
+                          <Search className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="h-[400px] flex items-center justify-center text-gray-400 bg-black/50 rounded-lg">
+                      <div className="text-center px-8">
+                        <BarChart3 className="h-16 w-16 mx-auto mb-4 opacity-50 text-purple-500" />
+                        <p className="text-lg font-medium mb-2">Chart Will Display Here!</p>
+                        <p className="text-sm text-gray-500">Search coin now or click a recommendation from the AI agent!</p>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6">
+                      <Tabs defaultValue="traders" className="w-full">
+                        <TabsList className="w-full justify-start bg-gray-800 border border-gray-700 rounded-full p-1">
+                          <TabsTrigger value="traders" className="rounded-full data-[state=active]:bg-purple-600">
+                            <Trophy className="h-4 w-4 mr-2" />
+                            Top Traders
+                          </TabsTrigger>
+                          <TabsTrigger value="holders" className="rounded-full data-[state=active]:bg-purple-600">
+                            <Wallet className="h-4 w-4 mr-2" />
+                            Holders
+                          </TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="traders" className="mt-4">
+                          <div className="text-center py-8">
+                            <Trophy className="h-12 w-12 mx-auto mb-3 opacity-20 text-purple-500" />
+                            <p className="text-gray-400">Our AI will populate this with trader information</p>
+                          </div>
+                        </TabsContent>
+                        <TabsContent value="holders" className="mt-4">
+                          <div className="text-center py-8">
+                            <Wallet className="h-12 w-12 mx-auto mb-3 opacity-20 text-purple-500" />
+                            <p className="text-gray-400">Holder data will appear here</p>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+                  </div>
+                </GlassCard>
+              </div>
+              
+              {/* Explainer Text - Right Side */}
+              <div className="order-1 lg:order-2 space-y-4">
+                <h3 className="text-3xl font-bold">AI-Powered Coin Recommendations</h3>
+                <p className="text-xl text-gray-300">
+                  Our agent will constantly recommend new coins to you based on the parameters you set at the beginning, then you can trade live!
+                </p>
+                <Button 
+                  onClick={() => navigate('/index')}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  Start Trading <BarChart3 className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 3: Orb and Text Animation (Previously Section 2) */}
+      <section 
+        ref={el => sectionsRef.current[2] = el}
         className="h-screen flex items-center justify-center relative"
       >
         <div className="container mx-auto px-4">
@@ -602,9 +831,9 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Section 3: Node Editor */}
+      {/* Section 4: Node Editor (Previously Section 3) */}
       <section 
-        ref={el => sectionsRef.current[2] = el}
+        ref={el => sectionsRef.current[3] = el}
         className="min-h-screen flex flex-col items-center justify-center relative py-20"
       >
         <div className="container mx-auto px-4">
