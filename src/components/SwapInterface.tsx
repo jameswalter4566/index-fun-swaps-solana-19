@@ -376,8 +376,12 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
         <div className="space-y-2">
           {!connected ? (
             <Button 
-              className="w-full" 
-              onClick={() => setVisible(true)}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 cursor-pointer" 
+              onClick={() => {
+                console.log('Connect wallet button clicked');
+                setVisible(true);
+              }}
+              type="button"
             >
               Connect Wallet to Swap
             </Button>
@@ -387,6 +391,12 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
               <Button 
                 className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" 
                 onClick={() => {
+                  // Double check wallet connection
+                  if (!connected) {
+                    setVisible(true);
+                    return;
+                  }
+                  
                   if (!swapQuote) {
                     // Get quote first, then execute
                     getSwapQuote().then((quote) => {
