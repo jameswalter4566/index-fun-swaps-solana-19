@@ -807,9 +807,9 @@ const AgentChat: React.FC<AgentChatProps> = ({
 
   // Persistent view
   const persistentView = (
-    <div className="absolute inset-0 flex flex-col overflow-hidden bg-gray-900 rounded-lg">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Header - Fixed height */}
-      <div className="flex-shrink-0 flex flex-col gap-2 p-3 border-b">
+      <div className="flex-shrink-0 flex flex-col gap-2 p-3 border-b border-gray-700">
         <div className="w-full text-center">
           <h3 className="text-lg font-bold tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 animate-pulse">
             {agentName.toUpperCase()}
@@ -908,7 +908,7 @@ const AgentChat: React.FC<AgentChatProps> = ({
         )}
         
         {/* Input area - Fixed height */}
-        <div className="flex-shrink-0 p-3 border-t">
+        <div className="flex-shrink-0 p-3 border-t border-gray-700">
           <div className="flex gap-1.5">
             <Input
               value={inputText}

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { GlassCard } from '@/components/ui/glass-card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
@@ -116,7 +115,7 @@ const IndexDetail: React.FC = () => {
       <div className="flex-1 flex gap-4 p-4 overflow-hidden">
         {/* Left Side - Agent Chat with Monitored Accounts */}
         <div className="w-96 flex-shrink-0 h-full">
-          <GlassCard className="h-full p-0 relative" glow>
+          <div className="h-full bg-gray-800/30 backdrop-blur-xl rounded-lg border border-gray-700 relative overflow-hidden">
             <AgentChat 
               agentName={index.name} 
               agentId={index.id} 
@@ -125,7 +124,7 @@ const IndexDetail: React.FC = () => {
               twitterAccounts={twitterAccounts}
               onCoinSelect={setSelectedCoin}
             />
-          </GlassCard>
+          </div>
         </div>
 
         {/* Right Side - Live Chart */}
