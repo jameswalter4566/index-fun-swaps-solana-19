@@ -98,7 +98,7 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
 
 
   const connection = new Connection(
-    'https://api.mainnet-beta.solana.com',
+    'https://mainnet.helius-rpc.com/?api-key=726140d8-6b0d-4719-8702-682d81e94a37',
     {
       commitment: 'confirmed',
       wsEndpoint: undefined // Disable WebSocket to avoid connection errors
