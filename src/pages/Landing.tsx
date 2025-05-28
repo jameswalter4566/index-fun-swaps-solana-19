@@ -373,10 +373,10 @@ const Landing = () => {
             className="w-24 h-24 sm:w-32 sm:h-32 md:w-48 md:h-48 rounded-full mb-4 md:mb-6 shadow-2xl animate-pulse-glow"
           />
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold mb-2 text-center">
-            GUARDIAN
+            guardian
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-purple-400">
-            ai trading guardians
+            build AI trading assistants using KOLs you trust
           </p>
         </div>
         
