@@ -33,138 +33,25 @@ const Landing = () => {
   const [chatHistory, setChatHistory] = useState<{role: 'user' | 'assistant', text: string}[]>([]);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
-  // Hardcoded mock data
-  const mockChartData = {
-    "oclhv": [
-      { "open": 0.000004854431116746769, "close": 0.00003899970329722762, "low": 0.000004854431116746769, "high": 0.00003899970329722762, "volume": 9555.164365922716, "time": 1748319660 },
-      { "open": 0.00003899970329722762, "close": 0.000040070822644761225, "low": 0.00003801216901977105, "high": 0.000040070822644761225, "volume": 3132.175725172424, "time": 1748319720 },
-      { "open": 0.000040070822644761225, "close": 0.00007108755310689704, "low": 0.00003800997420330293, "high": 0.00007108755310689704, "volume": 5413.937615739946, "time": 1748319780 },
-      { "open": 0.00007108755310689704, "close": 0.0000874378922010721, "low": 0.00007108755310689704, "high": 0.0000874378922010721, "volume": 5068.496358666287, "time": 1748319840 },
-      { "open": 0.0000874378922010721, "close": 0.00009339696251221232, "low": 0.00008267299549052405, "high": 0.00009339696251221232, "volume": 5263.2647625796135, "time": 1748319900 },
-      { "open": 0.00009339696251221232, "close": 0.00009577971216691349, "low": 0.0000873608306097982, "high": 0.00009577971216691349, "volume": 3232.6038956580696, "time": 1748319960 },
-      { "open": 0.00009577971216691349, "close": 0.00009839852333016925, "low": 0.0000926966910050848, "high": 0.00009839852333016925, "volume": 8103.056198750356, "time": 1748320020 },
-      { "open": 0.00009839852333016925, "close": 0.00008609296076524529, "low": 0.00008609296076524529, "high": 0.00009839852333016925, "volume": 5683.701145249119, "time": 1748320080 },
-      { "open": 0.00008609296076524529, "close": 0.00008723248839936553, "low": 0.00008386812723838779, "high": 0.00008723248839936553, "volume": 1420.5830535598366, "time": 1748320140 },
-      { "open": 0.00008723248839936553, "close": 0.00008812469858190626, "low": 0.0000870263537378095, "high": 0.00008812469858190626, "volume": 263.1894310923997, "time": 1748320200 },
-      { "open": 0.00008812469858190626, "close": 0.00008743617921103195, "low": 0.0000874361667271997, "high": 0.00008812469858190626, "volume": 3764.5522010234845, "time": 1748320260 },
-      { "open": 0.00008743617921103195, "close": 0.00008907190643707422, "low": 0.0000865119339477863, "high": 0.00008907190643707422, "volume": 4119.362855715291, "time": 1748320320 },
-      { "open": 0.00008907190643707422, "close": 0.00008955599080431769, "low": 0.00008854225567123346, "high": 0.00008955599080431769, "volume": 3339.4075637803544, "time": 1748320380 },
-      { "open": 0.00008955599080431769, "close": 0.00009827732581929371, "low": 0.0000895532239151267, "high": 0.00009827732581929371, "volume": 5001.963993623193, "time": 1748320440 },
-      { "open": 0.00009827732581929371, "close": 0.00009909817067511757, "low": 0.00009762014585244879, "high": 0.00009909817067511757, "volume": 8891.849084545584, "time": 1748320500 },
-      { "open": 0.00009909817067511757, "close": 0.00009882169448932199, "low": 0.00009735444460895815, "high": 0.00009909817067511757, "volume": 7401.051331153967, "time": 1748320560 },
-      { "open": 0.00009882169448932199, "close": 0.0000996872573904796, "low": 0.00009882169448932199, "high": 0.0000996872573904796, "volume": 9912.91990043622, "time": 1748320620 },
-      { "open": 0.0000996872573904796, "close": 0.00009737579842919403, "low": 0.0000968687150216734, "high": 0.0000996872573904796, "volume": 6056.988570679215, "time": 1748320680 },
-      { "open": 0.00009737579842919403, "close": 0.00010758525550829115, "low": 0.00009737579842919403, "high": 0.00010758525550829115, "volume": 3728.1319893951245, "time": 1748320740 },
-      { "open": 0.00010758525550829115, "close": 0.00011472355113010295, "low": 0.00010758525550829115, "high": 0.00011472355113010295, "volume": 4225.371288485006, "time": 1748320800 },
-      { "open": 0.00011472355113010295, "close": 0.00008746506457155095, "low": 0.00008647615291630717, "high": 0.00011472355113010295, "volume": 6213.271440532544, "time": 1748320860 },
-      { "open": 0.00008746506457155095, "close": 0.00009117818938954124, "low": 0.00008692569502592593, "high": 0.00009117818938954124, "volume": 3688.266407321621, "time": 1748320920 },
-      { "open": 0.00009117818938954124, "close": 0.00008928981765203288, "low": 0.00008207477033806699, "high": 0.00009401052399712655, "volume": 7070.792627111538, "time": 1748320980 },
-      { "open": 0.00008928981765203288, "close": 0.00009131220975481032, "low": 0.0000885252543749757, "high": 0.00009161705876029676, "volume": 6232.830248908196, "time": 1748321040 },
-      { "open": 0.00009131220975481032, "close": 0.00009317647328417604, "low": 0.00009131220975481032, "high": 0.00009317647328417604, "volume": 1929.3487172020052, "time": 1748321100 },
-      { "open": 0.00009317647328417604, "close": 0.00009354839890881808, "low": 0.00009308818569119109, "high": 0.00009354839890881808, "volume": 8601.718024128006, "time": 1748321160 },
-      { "open": 0.00009354839890881808, "close": 0.00009474529083344235, "low": 0.00009354839890881808, "high": 0.00009474529083344235, "volume": 8601.718024128006, "time": 1748321220 }
-    ],
-    "stats": {
-      "totalVolume": 145915.7168205601,
-      "priceRange": { "min": 0.000004854431116746769, "max": 0.00011472355113010295 },
-      "candleCount": 27,
-      "timeframe": "1m"
-    }
-  };
 
-  const mockTopTraders = [
-    { "rank": 1, "wallet": "CNdfoojU91E23xkLNmyrWKsa5CoxjWouGfJZYyrEjBio", "held": 773112127.6569841, "sold": 41852286, "holding": 3232357.726984, "realizedPnL": 1072.433873473898, "unrealizedPnL": 247.18385908987995, "totalPnL": 1319.617732563778, "totalInvested": 13934.707945255643, "roi": "-90.53", "status": "holding" },
-    { "rank": 2, "wallet": "A5p2oSJgjkE97wC1Va3B2H3J2T9nkndVBm72E975w2X8", "held": 9355036.52, "sold": 9355036.52, "holding": 1108319.024113, "realizedPnL": 1012.4409592763801, "unrealizedPnL": 4.079076518513091, "totalPnL": 1016.5200357948931, "totalInvested": 100.92893175744226, "roi": "907.16", "status": "holding" },
-    { "rank": 3, "wallet": "o8trzFarepqgFyXKuaYEWtR5SjsVtveeCtjrbDmrVVc", "held": 10401323.473999001, "sold": 10401323.473999001, "holding": 2179625.46243, "realizedPnL": 996.0815026712864, "unrealizedPnL": -19.011063537507255, "totalPnL": 977.0704391337792, "totalInvested": 296.1546340436304, "roi": "229.92", "status": "holding" },
-    { "rank": 4, "wallet": "5VpKeDCGkiybwsbjbWdRCkNsjyj11F5TqHVbgL7e6Qbb", "held": 9383112.88, "sold": 9383112.88, "holding": 1653637.106092, "realizedPnL": 961.3731098627026, "unrealizedPnL": 0.660774596393765, "totalPnL": 962.0338844590963, "totalInvested": 156.01355395248237, "roi": "516.63", "status": "holding" },
-    { "rank": 5, "wallet": "eCw4wyBMQx434DmSRTzuRTmGwZZkx198JFn7cUJN51G", "held": 9782067.214943, "sold": 9782067.214943, "holding": 3519587.943513, "realizedPnL": 961.7255484811103, "unrealizedPnL": -17.400110709839964, "totalPnL": 944.3254377712703, "totalInvested": 383.8784570479207, "roi": "146.00", "status": "holding" }
-  ];
-
-  const mockTokenHolders = {
-    "totalHolders": 3604,
-    "topHolders": [
-      { "rank": 1, "wallet": "2k7MKz7MjhoPKYGxFWZxh7t7bztL8UqFxBvgQk1R5cYV", "amount": 181841966.372541, "valueUSD": 17228.66998969144, "percentage": 18.184196637254104, "isWhale": true, "isTop10": true },
-      { "rank": 2, "wallet": "36zF6irPPRjbHrPR5Bz5tpT4LRzoR4JbXS45xQVhZfMq", "amount": 11454112.777839, "valueUSD": 1085.2232463754042, "percentage": 1.1454112777838998, "isWhale": true, "isTop10": true },
-      { "rank": 3, "wallet": "78b2NKEr1AW5vSNBesxcidmsZxy7WDchvQjynzvz1opU", "amount": 11297666.386932, "valueUSD": 1070.4006875690782, "percentage": 1.1297666386932, "isWhale": true, "isTop10": true },
-      { "rank": 4, "wallet": "BpVm1LfQSretTHJmSDRjpXT5QpJcgJb74eGQuegMKqmR", "amount": 11110007.745239, "valueUSD": 1052.6209149844663, "percentage": 1.1110007745239001, "isWhale": true, "isTop10": true },
-      { "rank": 5, "wallet": "EmgwtJCtU7G2azU4mRPTCmaZxuco3N3DNW6KvDqmZyHu", "amount": 10894348.975487, "valueUSD": 1032.1882621235304, "percentage": 1.0894348975487, "isWhale": true, "isTop10": true }
-    ]
-  };
-
-  const mockTokenStats = {
-    "price": 0.00009474529083344235,
-    "priceChange24h": 1849.32,
-    "volume24h": 145915.72,
-    "liquidity": 1234567.89,
-    "marketCap": 9474529.08,
-    "holders": 3604,
-    "fdv": 94745290.83
-  };
-
-  const mockCoin = {
-    name: "AI Guardian X",
-    symbol: "$GUARDX",
-    address: "DemoTokenAddressForLandingPage123",
-    imageUrl: "/placeholder.svg",
-    price: 0.00009474529083344235,
-    marketCap: 9474529.08,
-    volume24h: 145915.72
-  };
-
-  // Hardcoded featured guardians
+  // Fetch featured guardians
   useEffect(() => {
-    const hardcodedGuardians = [
-      {
-        id: 'fullwarp',
-        name: 'Weird Ai Experiments',
-        tokens: [{
-          symbol: 'FULLWARP',
-          mint: '2Wc1fnTcXrN6C3w6q96GgUTgX7WMVRKML4ZMircFpump',
-          price: 0.0005714098075665512,
-          marketCap: 571409.8075665513,
-          liquidity: 87300.27131058635,
-          priceChange24h: 510.3473234863227
-        }]
-      },
-      {
-        id: 'kappa',
-        name: 'the face of sarcasm',
-        tokens: [{
-          symbol: 'KAPPA',
-          mint: '93s39pnRwp5NUxvJ3A5zDWoXxKxqW4RCVzMuNsKZbonk',
-          price: 0.0032321455938371492,
-          marketCap: 3232145.5938371494,
-          liquidity: 214136.09828612852,
-          priceChange24h: 4542.747536476007
-        }]
-      },
-      {
-        id: 'up',
-        name: 'up up up up up up up up up up up',
-        tokens: [{
-          symbol: 'up',
-          mint: '6yMUY2SBA9cKT935FxEDG4oEs8fMx3Tfw8SsyKupVfER',
-          price: 0.0005446783650440638,
-          marketCap: 544674.3246898537,
-          liquidity: 88787.17800330414,
-          priceChange24h: 609.150103759731
-        }]
-      },
-      {
-        id: 'trenches',
-        name: 'TheTrenches',
-        tokens: [{
-          symbol: 'Trenches',
-          mint: '4z7secBe41i5Svtotp4k2FsjMVV6xykEVnrD4kdFpump',
-          price: 0.0028562706169808533,
-          marketCap: 2856266.6214968064,
-          liquidity: 288775.0865630243,
-          priceChange24h: -58.972945274212876
-        }]
+    const fetchFeaturedGuardians = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('indexes')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(4);
+
+        if (error) throw error;
+        setFeaturedGuardians(data || []);
+      } catch (error) {
+        console.error('Error fetching featured guardians:', error);
       }
-    ];
-    
-    setFeaturedGuardians(hardcodedGuardians);
+    };
+
+    fetchFeaturedGuardians();
   }, []);
 
   useEffect(() => {
