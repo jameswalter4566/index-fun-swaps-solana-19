@@ -951,7 +951,6 @@ const GuardianChat: React.FC<GuardianChatProps> = ({
             </div>
           </div>
         )}
-        </div>
       </div>
     </div>
   );

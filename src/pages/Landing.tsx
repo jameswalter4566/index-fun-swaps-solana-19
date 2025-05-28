@@ -338,7 +338,7 @@ const Landing = () => {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-center h-16">
             <a 
-              href="https://twitter.com/yourhandle" 
+              href="https://x.com/guardiandotc" 
               target="_blank" 
               rel="noopener noreferrer"
               className="hover:opacity-80 transition-opacity"
@@ -376,7 +376,7 @@ const Landing = () => {
             guardian
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-purple-400">
-            build AI trading assistants using KOLs you trust
+            Create AI trading assistants modeled off your trusted KOLs - then speak to them.
           </p>
         </div>
         
