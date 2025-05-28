@@ -341,45 +341,6 @@ const Landing = () => {
               <img src="/GUARDIANLOGO.jpg" alt="Guardian" className="h-10 w-10 rounded-full" />
               <h2 className="text-2xl font-bold text-purple-500">Guardian</h2>
             </div>
-            
-            <nav className="flex items-center justify-center gap-4">
-              <button
-                onClick={() => navigate('/create-swap')}
-                className="glass-button"
-              >
-                Create Guardian
-              </button>
-              
-              <button
-                onClick={() => navigate('/guardian')}
-                className="glass-button"
-              >
-                Explore Guardians
-              </button>
-              
-              <button
-                onClick={() => navigate('/guardian')}
-                className="glass-button"
-              >
-                Trade
-              </button>
-              
-              <button
-                onClick={() => navigate('/documentation')}
-                className="glass-button"
-              >
-                Documentation
-              </button>
-              
-              <a
-                href="https://x.com/guardian_ai"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="glass-button inline-block"
-              >
-                Twitter
-              </a>
-            </nav>
           </div>
         </div>
       </header>
