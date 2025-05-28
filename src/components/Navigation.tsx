@@ -21,7 +21,7 @@ const Navigation: React.FC = () => {
           
           <div className="flex items-center space-x-4">
             <a
-              href="https://x.com/guardian_ai"
+              href="https://x.com/guardiandotcash"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center w-10 h-10 bg-gray-800 hover:bg-gray-700 text-white rounded-full transition-all hover:scale-110"

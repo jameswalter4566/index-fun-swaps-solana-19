@@ -338,7 +338,7 @@ const Landing = () => {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-center h-16">
             <a 
-              href="https://x.com/guardiandotc" 
+              href="https://x.com/guardiandotcash" 
               target="_blank" 
               rel="noopener noreferrer"
               className="hover:opacity-80 transition-opacity"
