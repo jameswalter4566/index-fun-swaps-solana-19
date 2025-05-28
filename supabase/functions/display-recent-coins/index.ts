@@ -11,59 +11,48 @@ serve(async (req) => {
     // Hardcoded recent coins data
     const recentCoins = [
       {
-        symbol: "TRUMP",
-        name: "Official Trump",
-        address: "HWp6qhMXzLZrNPuNQmu65HQhzNEXTDtaYxBL8jz1pump",
-        price: 45.98,
-        marketCap: 9200000000,
-        confidence: 'high',
-        reason: 'Official Trump memecoin with massive political momentum',
-        logo: 'https://dd.dexscreener.com/ds-data/tokens/solana/HWp6qhMXzLZrNPuNQmu65HQhzNEXTDtaYxBL8jz1pump.png',
-        priceChange24h: 234.5
-      },
-      {
-        symbol: "MELANIA",
-        name: "Melania Meme",
-        address: "5s2hKgAQW96MHTbq5GjKU4uwR25Ci8QrruHjcT8Epump",
-        price: 5.21,
-        marketCap: 1040000000,
-        confidence: 'high',
-        reason: 'Official Melania token launched by First Lady',
-        logo: 'https://dd.dexscreener.com/ds-data/tokens/solana/5s2hKgAQW96MHTbq5GjKU4uwR25Ci8QrruHjcT8Epump.png',
-        priceChange24h: 89.7
-      },
-      {
-        symbol: "ai16z",
-        name: "ai16z",
-        address: "9RSfJCgcqBQP6vKmRvJmMRU4fqVm1LmcGPYLSfBZpump",
-        price: 1.68,
-        marketCap: 1680000000,
-        confidence: 'medium',
-        reason: 'Leading AI agent token with strong community',
-        logo: 'https://dd.dexscreener.com/ds-data/tokens/solana/9RSfJCgcqBQP6vKmRvJmMRU4fqVm1LmcGPYLSfBZpump.png',
-        priceChange24h: -12.3
-      },
-      {
-        symbol: "ELIZA",
-        name: "ELIZA",
-        address: "FqMRkQQfgfJeRvDBqezFWkPZggebnY5jR8HsZT8Apump",
-        price: 0.0421,
-        marketCap: 42100000,
-        confidence: 'medium',
-        reason: 'AI agent framework token gaining developer adoption',
-        logo: 'https://dd.dexscreener.com/ds-data/tokens/solana/FqMRkQQfgfJeRvDBqezFWkPZggebnY5jR8HsZT8Apump.png',
-        priceChange24h: 15.8
-      },
-      {
-        symbol: "GOAT",
-        name: "Goatseus Maximus",
-        address: "5vPgKKrCsynyrvQsV3jaMedfxJWGfwZ9Ld6R98pump",
-        price: 0.389,
-        marketCap: 389000000,
+        symbol: "CHRISTINE",
+        name: "FIRST FART ATTACK VICTIM",
+        address: "J7yvpbShxTuumuovJ1kJe17JN9RtNHFCFtbWL9Bwpump",
+        price: 0.000028677254962367262,
+        marketCap: 28677.254962367264,
         confidence: 'low',
-        reason: 'First AI-created memecoin with cult following',
-        logo: 'https://dd.dexscreener.com/ds-data/tokens/solana/5vPgKKrCsynyrvQsV3jaMedfxJWGfwZ9Ld6R98pump.png',
-        priceChange24h: -5.2
+        reason: 'New memecoin with growing community',
+        logo: 'https://image.solanatracker.io/proxy?url=https%3A%2F%2Fipfs-forward.solanatracker.io%2Fipfs%2Fbafkreieau2oyjrznj3urpxibmx2yyj5yrvbjjvbd7ixt53ubhd7ettx2te',
+        priceChange24h: -48.93
+      },
+      {
+        symbol: "RFM",
+        name: "RareFishMarket",
+        address: "78taWtddNwhsZSBtWu4HqD7TDXYxg3j18K6K5UHdpump",
+        price: 0.00004735100727098856,
+        marketCap: 47350.48572080379,
+        confidence: 'low',
+        reason: 'High volume trading activity',
+        logo: 'https://image.solanatracker.io/proxy?url=https%3A%2F%2Fipfs-forward.solanatracker.io%2Fipfs%2Fbafkreidsmk42u7ws5w3egyxgu2or4v2g6j3x2yikxpw2p4rzevra6mtere',
+        priceChange24h: -45.14
+      },
+      {
+        symbol: "MEALY",
+        name: "Mealy",
+        address: "J1cGm3nJcfHjLEnTGwbTTqV3kKYmEuEUgyJ6K2fL3SRj",
+        price: 0,
+        marketCap: 0,
+        confidence: 'low',
+        reason: 'AI-powered recipe app token',
+        logo: 'https://image.solanatracker.io/proxy?url=https%3A%2F%2Fipfs-forward.solanatracker.io%2Fipfs%2Fbafkreibx7dulvfiwgyv5yjrixodrjsod4kmcbptuiycgbq4m35hv7chrt4',
+        priceChange24h: -100
+      },
+      {
+        symbol: "DHUK",
+        name: "DHUK",
+        address: "4inmnMuvcsC53J9V7pHoXvNZd3NwEvkezfht7XrBpump",
+        price: 0.00005644508056158,
+        marketCap: 56445.065185065716,
+        confidence: 'medium',
+        reason: 'Community-driven duck token',
+        logo: 'https://image.solanatracker.io/proxy?url=https%3A%2F%2Fipfs-forward.solanatracker.io%2Fipfs%2FQmUk3e6sdJUG6G9rsjLBscrav43ZXzN9VA2mN7R1765nrz',
+        priceChange24h: -19.75
       }
     ];
 
