@@ -44,6 +44,12 @@ const Navigation: React.FC = () => {
               how it works
             </Button>
             
+            <Link to="/documentation">
+              <Button variant="ghost" className="hover:bg-gray-800 rounded-md text-gray-400 hover:text-white">
+                documentation
+              </Button>
+            </Link>
+            
             <WalletConnect />
           </div>
         </div>

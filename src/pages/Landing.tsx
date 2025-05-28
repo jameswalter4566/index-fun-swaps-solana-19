@@ -111,24 +111,60 @@ const Landing = () => {
     volume24h: 145915.72
   };
 
-  // Fetch featured guardians
+  // Hardcoded featured guardians
   useEffect(() => {
-    const fetchFeaturedGuardians = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('indexes')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(4);
-
-        if (error) throw error;
-        setFeaturedGuardians(data || []);
-      } catch (error) {
-        console.error('Error fetching featured guardians:', error);
+    const hardcodedGuardians = [
+      {
+        id: 'fullwarp',
+        name: 'Weird Ai Experiments',
+        tokens: [{
+          symbol: 'FULLWARP',
+          mint: '2Wc1fnTcXrN6C3w6q96GgUTgX7WMVRKML4ZMircFpump',
+          price: 0.0005714098075665512,
+          marketCap: 571409.8075665513,
+          liquidity: 87300.27131058635,
+          priceChange24h: 510.3473234863227
+        }]
+      },
+      {
+        id: 'kappa',
+        name: 'the face of sarcasm',
+        tokens: [{
+          symbol: 'KAPPA',
+          mint: '93s39pnRwp5NUxvJ3A5zDWoXxKxqW4RCVzMuNsKZbonk',
+          price: 0.0032321455938371492,
+          marketCap: 3232145.5938371494,
+          liquidity: 214136.09828612852,
+          priceChange24h: 4542.747536476007
+        }]
+      },
+      {
+        id: 'up',
+        name: 'up up up up up up up up up up up',
+        tokens: [{
+          symbol: 'up',
+          mint: '6yMUY2SBA9cKT935FxEDG4oEs8fMx3Tfw8SsyKupVfER',
+          price: 0.0005446783650440638,
+          marketCap: 544674.3246898537,
+          liquidity: 88787.17800330414,
+          priceChange24h: 609.150103759731
+        }]
+      },
+      {
+        id: 'trenches',
+        name: 'TheTrenches',
+        tokens: [{
+          symbol: 'Trenches',
+          mint: '4z7secBe41i5Svtotp4k2FsjMVV6xykEVnrD4kdFpump',
+          price: 0.0028562706169808533,
+          marketCap: 2856266.6214968064,
+          liquidity: 288775.0865630243,
+          priceChange24h: -58.972945274212876
+        }]
       }
-    };
-
-    fetchFeaturedGuardians();
+    ];
+    
+    setFeaturedGuardians(hardcodedGuardians);
   }, []);
 
   useEffect(() => {
@@ -372,11 +408,11 @@ const Landing = () => {
             alt="Guardian Logo" 
             className="w-24 h-24 sm:w-32 sm:h-32 md:w-48 md:h-48 rounded-full mb-4 md:mb-6 shadow-2xl animate-pulse-glow"
           />
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold mb-2 text-center">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold mb-2 text-center text-white">
             guardian
           </h1>
-          <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-purple-400">
-            Create AI trading assistants modeled off your trusted KOLs - then speak to them.
+          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-white lowercase">
+            create ai trading assistants modeled off your trusted kols - then speak to them.
           </p>
         </div>
         

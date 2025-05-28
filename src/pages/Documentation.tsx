@@ -10,7 +10,7 @@ const Documentation = () => {
         <div className="mb-12">
           <h1 className="text-4xl font-bold mb-4">API Documentation</h1>
           <p className="text-xl text-gray-400">
-            Integrate voice-enabled AI trading guardians into your application
+            Build powerful AI trading assistants with our comprehensive API
           </p>
         </div>
 
@@ -30,30 +30,32 @@ const Documentation = () => {
                 <div>
                   <h3 className="text-xl font-semibold mb-3">Introduction</h3>
                   <p className="text-gray-300 leading-relaxed">
-                    Our Voice API enables real-time communication with AI trading guardians through WebRTC technology. 
-                    Build interactive voice experiences that analyze market data, provide trading insights, and execute 
-                    commands through natural language processing.
+                    The Guardian API allows you to create, deploy, and interact with AI-powered trading assistants 
+                    that monitor social media, analyze market trends, and provide personalized trading recommendations. 
+                    Our API supports both REST endpoints and WebSocket connections for real-time communication.
                   </p>
                 </div>
 
                 <div>
                   <h3 className="text-xl font-semibold mb-3">Key Features</h3>
                   <ul className="list-disc list-inside space-y-2 text-gray-300">
-                    <li>Real-time voice communication with sub-100ms latency</li>
-                    <li>Advanced speech recognition and natural language understanding</li>
-                    <li>Multi-language support with automatic translation</li>
-                    <li>Customizable guardian personalities and trading strategies</li>
-                    <li>Secure end-to-end encryption for all communications</li>
+                    <li>Real-time monitoring of Twitter KOLs and influencers</li>
+                    <li>AI-powered coin recommendations based on social sentiment</li>
+                    <li>Voice-enabled trading assistant interactions</li>
+                    <li>Customizable trading parameters and filters</li>
+                    <li>WebSocket support for live price and recommendation updates</li>
+                    <li>Historical data analysis and backtesting capabilities</li>
                   </ul>
                 </div>
 
                 <div>
                   <h3 className="text-xl font-semibold mb-3">Use Cases</h3>
                   <ul className="list-disc list-inside space-y-2 text-gray-300">
-                    <li>Voice-controlled trading terminals</li>
-                    <li>Automated market analysis and alerts</li>
-                    <li>Educational trading assistants</li>
-                    <li>Portfolio management interfaces</li>
+                    <li>Automated trading bots based on KOL activity</li>
+                    <li>Social sentiment analysis dashboards</li>
+                    <li>Custom trading strategies using Guardian intelligence</li>
+                    <li>Real-time market alerts and notifications</li>
+                    <li>Voice-enabled trading interfaces</li>
                   </ul>
                 </div>
               </div>
@@ -81,8 +83,8 @@ const Documentation = () => {
                 <div>
                   <h3 className="text-xl font-semibold mb-3">Obtaining API Keys</h3>
                   <p className="text-gray-300 mb-4">
-                    API keys can be generated from your account dashboard. Each key is associated with specific 
-                    permissions and rate limits.
+                    To request an API key, please send an email to <a href="mailto:API@guardian.cash" className="text-purple-400 hover:text-purple-300 underline">API@guardian.cash</a> 
+                    with your use case and expected volume. Our team will review your request and provide access within 24-48 hours.
                   </p>
                   
                   <div className="bg-yellow-900/20 border border-yellow-600/50 rounded-lg p-4">
@@ -134,33 +136,37 @@ const Documentation = () => {
                   <div className="border-l-4 border-purple-500 pl-6">
                     <div className="flex items-center gap-3 mb-2">
                       <span className="bg-green-600 text-white px-3 py-1 rounded text-sm font-semibold">POST</span>
-                      <code className="text-lg font-mono">/api/v1/voice/session</code>
+                      <code className="text-lg font-mono">/api/v1/guardians</code>
                     </div>
-                    <p className="text-gray-300 mb-4">Create a new voice session with an AI trading guardian</p>
+                    <p className="text-gray-300 mb-4">Create a new AI trading guardian with custom parameters</p>
                     
                     <h4 className="font-semibold mb-2">Request Body</h4>
                     <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm mb-4">
                       <pre>{`{
-  "guardian_type": "trading_assistant",
+  "name": "My Trading Guardian",
+  "description": "A guardian that monitors crypto KOLs",
+  "kol_accounts": ["@elonmusk", "@VitalikButerin"],
   "language": "en-US",
-  "voice_config": {
-    "provider": "openai",
-    "voice_id": "nova"
+  "filters": {
+    "min_market_cap": 100000,
+    "max_market_cap": 10000000,
+    "min_liquidity": 50000,
+    "min_holder_count": 100
   },
-  "session_config": {
-    "max_duration": 3600,
-    "auto_end_silence": 30
-  }
+  "voice_enabled": true
 }`}</pre>
                     </div>
                     
                     <h4 className="font-semibold mb-2">Response</h4>
                     <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm">
                       <pre>{`{
-  "session_id": "sess_abc123xyz",
-  "websocket_url": "wss://api.example.com/ws/sess_abc123xyz",
-  "expires_at": "2024-01-01T12:00:00Z",
-  "ice_servers": [...]
+  "guardian_id": "guard_abc123xyz",
+  "status": "active",
+  "websocket_url": "wss://api.guardian.cash/ws/guard_abc123xyz",
+  "api_endpoints": {
+    "recommendations": "/api/v1/guardians/guard_abc123xyz/recommendations",
+    "voice_session": "/api/v1/guardians/guard_abc123xyz/voice"
+  }
 }`}</pre>
                     </div>
                   </div>
@@ -168,16 +174,16 @@ const Documentation = () => {
                   <div className="border-l-4 border-purple-500 pl-6">
                     <div className="flex items-center gap-3 mb-2">
                       <span className="bg-red-600 text-white px-3 py-1 rounded text-sm font-semibold">DELETE</span>
-                      <code className="text-lg font-mono">/api/v1/voice/session/:session_id</code>
+                      <code className="text-lg font-mono">/api/v1/guardians/:guardian_id</code>
                     </div>
-                    <p className="text-gray-300 mb-4">End an active voice session</p>
+                    <p className="text-gray-300 mb-4">Delete a guardian and all associated data</p>
                     
                     <h4 className="font-semibold mb-2">Response</h4>
                     <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm">
                       <pre>{`{
-  "status": "ended",
-  "duration": 245,
-  "transcript_url": "https://api.example.com/transcripts/sess_abc123xyz"
+  "status": "deleted",
+  "guardian_id": "guard_abc123xyz",
+  "message": "Guardian successfully deleted"
 }`}</pre>
                     </div>
                   </div>
@@ -238,44 +244,53 @@ const Documentation = () => {
                   <h3 className="text-xl font-semibold mb-4">JavaScript/TypeScript</h3>
                   <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm overflow-x-auto">
                     <pre>{`// Initialize voice session
-const response = await fetch('https://api.example.com/v1/voice/session', {
+// Create a new Guardian
+const response = await fetch('https://api.guardian.cash/v1/guardians', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer YOUR_API_KEY',
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    agent_type: 'trading_assistant',
-    language: 'en-US'
+    name: 'Crypto KOL Tracker',
+    kol_accounts: ['@elonmusk', '@VitalikButerin'],
+    filters: {
+      min_market_cap: 100000,
+      max_market_cap: 10000000
+    }
   })
 });
 
-const { websocket_url, session_id } = await response.json();
+const { guardian_id, websocket_url } = await response.json();
 
 // Connect to WebSocket
 const ws = new WebSocket(websocket_url);
 
 ws.onopen = () => {
-  console.log('Connected to voice agent');
+  console.log('Connected to Guardian WebSocket');
   
-  // Start sending audio data
-  navigator.mediaDevices.getUserMedia({ audio: true })
-    .then(stream => {
-      // Process and send audio chunks
-    });
+  // Subscribe to real-time updates
+  ws.send(JSON.stringify({
+    type: 'subscribe',
+    channels: ['recommendations', 'price_updates', 'kol_activity']
+  }));
 };
 
 ws.onmessage = (event) => {
   const message = JSON.parse(event.data);
   
   switch(message.type) {
-    case 'agent.response':
-      // Play agent audio response
-      playAudio(message.audio);
+    case 'recommendation':
+      // New coin recommendation from Guardian
+      console.log('New recommendation:', message.coin);
       break;
-    case 'transcript.final':
-      // Display final transcript
-      console.log('User said:', message.text);
+    case 'kol_activity':
+      // KOL posted about a coin
+      console.log('KOL activity:', message.kol, message.coin);
+      break;
+    case 'price_update':
+      // Real-time price update
+      console.log('Price update:', message.symbol, message.price);
       break;
   }
 };`}</pre>
@@ -294,26 +309,29 @@ async def voice_session():
     headers = {'Authorization': 'Bearer YOUR_API_KEY'}
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            'https://api.example.com/v1/voice/session',
+            'https://api.guardian.cash/v1/guardians',
             headers=headers,
-            json={'agent_type': 'trading_assistant'}
+            json={
+                'name': 'Python Guardian',
+                'kol_accounts': ['@elonmusk'],
+                'filters': {'min_market_cap': 100000}
+            }
         ) as response:
             data = await response.json()
     
     # Connect to WebSocket
     async with websockets.connect(data['websocket_url']) as websocket:
-        # Send audio data
-        audio_data = get_audio_stream()
+        # Subscribe to updates
         await websocket.send(json.dumps({
-            'type': 'audio.data',
-            'data': audio_data
+            'type': 'subscribe',
+            'channels': ['recommendations']
         }))
         
-        # Receive responses
+        # Handle incoming messages
         async for message in websocket:
             msg = json.loads(message)
-            if msg['type'] == 'agent.response':
-                play_audio(msg['audio'])`}</pre>
+            if msg['type'] == 'recommendation':
+                print(f"New coin: {msg['coin']['symbol']} - ${msg['coin']['price']}"))`}</pre>
                   </div>
                 </div>
               </div>
