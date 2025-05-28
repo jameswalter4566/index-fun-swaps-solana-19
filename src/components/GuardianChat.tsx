@@ -132,6 +132,40 @@ const GuardianChat: React.FC<GuardianChatProps> = ({
     }
   }, [messages]);
 
+  // Fetch initial coin recommendations when component mounts
+  useEffect(() => {
+    const loadInitialRecommendations = async () => {
+      try {
+        const loadingMessage: Message = {
+          id: 'initial-loading',
+          text: '🔄 Loading top coin recommendations...',
+          sender: 'guardian',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, loadingMessage]);
+
+        const recommendationMessages = await fetchCoinRecommendations();
+        
+        setMessages(prev => prev.filter(msg => msg.id !== 'initial-loading'));
+        
+        if (recommendationMessages.length > 0) {
+          const header: Message = {
+            id: 'initial-recommendations-header',
+            text: `🚀 Top 5 Coins by Market Cap`,
+            sender: 'guardian',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, header, ...recommendationMessages]);
+        }
+      } catch (error) {
+        console.error('Error loading initial recommendations:', error);
+        setMessages(prev => prev.filter(msg => msg.id !== 'initial-loading'));
+      }
+    };
+
+    loadInitialRecommendations();
+  }, [agentId]);
+
   // Helper function to finalize accumulated transcripts
   const finalizeUserTranscript = () => {
     if (currentUserTranscript.trim()) {
@@ -909,45 +943,14 @@ const GuardianChat: React.FC<GuardianChatProps> = ({
           </div>
         )}
         
-        {/* Input area - Fixed height */}
-        <div className="flex-shrink-0 p-3 border-t border-gray-700">
-          <div className="flex gap-1.5">
-            <Input
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Ask about trading..."
-              className="flex-1 h-8 text-sm"
-              disabled={isVoiceCallActive}
-            />
-            
-            <Button
-              size="sm"
-              onClick={() => handleSendMessage()}
-              disabled={!inputText.trim() || isVoiceCallActive}
-              className="h-8 w-8 p-0"
-            >
-              <Send className="h-3 w-3" />
-            </Button>
-            
-            <Button
-              size="sm"
-              onClick={toggleListening}
-              className={cn(
-                "h-8 px-2",
-                isListening && "bg-red-500 hover:bg-red-600"
-              )}
-              disabled={isVoiceCallActive}
-            >
-              {isListening ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
-            </Button>
-          </div>
-          
-          {isVoiceCallActive && (
-            <div className="mt-2 bg-green-500/10 border border-green-500/20 rounded-lg p-2 text-xs text-green-600">
+        {/* Voice call status only */}
+        {isVoiceCallActive && (
+          <div className="flex-shrink-0 p-3 border-t border-gray-700">
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2 text-xs text-green-600">
               🎙️ Voice call active - Speak naturally with your guardian
             </div>
-          )}
+          </div>
+        )}
         </div>
       </div>
     </div>
