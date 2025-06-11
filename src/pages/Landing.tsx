@@ -259,7 +259,7 @@ const Landing = () => {
       {/* Header Navigation */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-center h-16">
+          <div className="flex items-center justify-center h-14 sm:h-16">
             <a 
               href="https://x.com/guardiandotcash" 
               target="_blank" 
@@ -359,12 +359,12 @@ const Landing = () => {
       >
         <div className="container mx-auto px-4">
           {/* First Explainer Segment - Create Guardian */}
-          <div className="max-w-6xl mx-auto mb-32 animate-fade-in" style={{ animationDelay: '100ms' }}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="max-w-6xl mx-auto mb-16 sm:mb-32 animate-fade-in" style={{ animationDelay: '100ms' }}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               {/* Replica of Create Guardian Form - Left Side */}
-              <div className="order-2 lg:order-1 transform scale-90">
-                <GlassCard className="max-w-md mx-auto">
-                  <div className="p-6 space-y-6">
+              <div className="order-2 lg:order-1 w-full lg:w-auto">
+                <GlassCard className="max-w-full sm:max-w-md mx-auto">
+                  <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                     <h2 className="text-2xl font-bold mb-4">Create New Trading Guardian</h2>
                     
                     <div className="space-y-4">
@@ -410,9 +410,9 @@ const Landing = () => {
               </div>
               
               {/* Explainer Text - Right Side */}
-              <div className="order-1 lg:order-2 space-y-4">
-                <h3 className="text-3xl font-bold">Turn your favorite KOLs into your personal trading assistant</h3>
-                <p className="text-xl text-gray-300">
+              <div className="order-1 lg:order-2 space-y-4 px-4 lg:px-0">
+                <h3 className="text-2xl sm:text-3xl font-bold">Turn your favorite KOLs into your personal trading assistant</h3>
+                <p className="text-lg sm:text-xl text-gray-300">
                   Trade and communicate with your guardian directly from our platform. Set your parameters, choose your influencers, and let AI do the heavy lifting.
                 </p>
                 <Button 
@@ -426,11 +426,11 @@ const Landing = () => {
           </div>
 
           {/* Second Explainer Segment - Trading Guardian Chat */}
-          <div className="max-w-6xl mx-auto mb-32 animate-fade-in" style={{ animationDelay: '200ms' }}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="max-w-6xl mx-auto mb-16 sm:mb-32 animate-fade-in" style={{ animationDelay: '200ms' }}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               {/* Explainer Text - Left Side */}
-              <div className="space-y-4">
-                <h3 className="text-3xl font-bold">AI Voice Personality Based on Your KOLs</h3>
+              <div className="space-y-4 px-4 lg:px-0">
+                <h3 className="text-2xl sm:text-3xl font-bold">AI Voice Personality Based on Your KOLs</h3>
                 <p className="text-xl text-gray-300">
                   Our Twitter integration utilizes advanced AI modeling to mimic the personality of the KOLs that you monitor, creating a Custom AI voice personality based on your preferred KOLs!
                 </p>
@@ -443,9 +443,9 @@ const Landing = () => {
               </div>
               
               {/* Replica of Guardian Chat - Right Side */}
-              <div className="transform scale-90">
-                <GlassCard className="max-w-md mx-auto">
-                  <div className="p-6">
+              <div className="w-full lg:w-auto">
+                <GlassCard className="max-w-full sm:max-w-md mx-auto">
+                  <div className="p-4 sm:p-6">
                     <div className="mb-6">
                       <h3 className="text-xl font-bold mb-2">Trading Guardian Chat</h3>
                       <div className="flex gap-2">
@@ -467,7 +467,7 @@ const Landing = () => {
                     </div>
                     
                     {/* Chat Window */}
-                    <div className="bg-black/50 rounded-lg p-4 h-64 mb-4 overflow-y-auto">
+                    <div className="bg-black/50 rounded-lg p-3 sm:p-4 h-48 sm:h-64 mb-4 overflow-y-auto">
                       <div className="space-y-3">
                         <div className="flex justify-start">
                           <div className="bg-gray-700 rounded-lg px-4 py-2 max-w-[80%]">
@@ -504,11 +504,11 @@ const Landing = () => {
 
           {/* Third Explainer Segment - Live Chart */}
           <div className="max-w-6xl mx-auto animate-fade-in" style={{ animationDelay: '300ms' }}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               {/* Replica of Live Chart - Left Side */}
-              <div className="order-2 lg:order-1 transform scale-90">
-                <GlassCard className="flex-1">
-                  <div className="p-6">
+              <div className="order-2 lg:order-1 w-full lg:w-auto">
+                <GlassCard className="w-full">
+                  <div className="p-4 sm:p-6">
                     <div className="pb-2">
                       <div className="flex items-center gap-2 mb-2">
                         <Input
@@ -521,7 +521,7 @@ const Landing = () => {
                       </div>
                     </div>
                     
-                    <div className="h-[400px] flex items-center justify-center text-gray-400 bg-black/50 rounded-lg">
+                    <div className="h-[300px] sm:h-[350px] lg:h-[400px] flex items-center justify-center text-gray-400 bg-black/50 rounded-lg">
                       <div className="text-center px-8">
                         <BarChart3 className="h-16 w-16 mx-auto mb-4 opacity-50 text-purple-500" />
                         <p className="text-lg font-medium mb-2">Chart Will Display Here!</p>
@@ -560,8 +560,8 @@ const Landing = () => {
               </div>
               
               {/* Explainer Text - Right Side */}
-              <div className="order-1 lg:order-2 space-y-4">
-                <h3 className="text-3xl font-bold">AI-Powered Coin Recommendations</h3>
+              <div className="order-1 lg:order-2 space-y-4 px-4 lg:px-0">
+                <h3 className="text-2xl sm:text-3xl font-bold">AI-Powered Coin Recommendations</h3>
                 <p className="text-xl text-gray-300">
                   Our guardian will constantly recommend new coins to you based on the parameters you set at the beginning, then you can trade live!
                 </p>
@@ -685,7 +685,7 @@ const Landing = () => {
 
       {/* Voice Chat Window */}
       {isVoiceCallActive && (
-        <div className="fixed bottom-4 right-4 w-96 h-[500px] z-50">
+        <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:w-96 h-[400px] sm:h-[500px] z-50">
           <GlassCard className="h-full flex flex-col p-0 overflow-hidden">
             {/* Chat Header */}
             <div className="p-4 border-b border-white/10">

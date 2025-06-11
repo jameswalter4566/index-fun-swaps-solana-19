@@ -90,11 +90,11 @@ const Guardian: React.FC = () => {
         </div>
         
         <Tabs defaultValue="all" className="mb-8" onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 max-w-md mx-auto bg-stake-darkbg">
-            <TabsTrigger value="all" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">all</TabsTrigger>
-            <TabsTrigger value="top" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">top rated</TabsTrigger>
-            <TabsTrigger value="gainers" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">best gainers</TabsTrigger>
-            <TabsTrigger value="recent" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white">most recent</TabsTrigger>
+          <TabsList className="grid grid-cols-2 sm:grid-cols-4 max-w-md mx-auto bg-stake-darkbg">
+            <TabsTrigger value="all" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white text-xs sm:text-sm">all</TabsTrigger>
+            <TabsTrigger value="top" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white text-xs sm:text-sm">top rated</TabsTrigger>
+            <TabsTrigger value="gainers" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white text-xs sm:text-sm">best gainers</TabsTrigger>
+            <TabsTrigger value="recent" className="data-[state=active]:bg-stake-accent data-[state=active]:text-white text-xs sm:text-sm">most recent</TabsTrigger>
           </TabsList>
           
           <TabsContent value="all" className="mt-6">
